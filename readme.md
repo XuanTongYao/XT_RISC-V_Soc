@@ -2,7 +2,14 @@
 
 个人学习作品。
 
-一个极其简易的RV32I指令集单核SOC，几乎所有用户级与特权级(部分指令例如内存屏障暂不支持)支持，仅运行机器模式。
+一个极其简易的RV32I指令集单核MCU，几乎所有用户级与特权级(部分指令例如内存屏障暂不支持)支持，仅运行机器模式。
+
+1. [RTL](RTL)包含了所有Verilog代码
+2. [C_lib](C_lib)包含了本MCU的C语言库文件，包括寄存器定义、启动文件等
+3. [Tools](Tools)有c语言编译工具，编译脚本
+4. [Tests](tests)包含了测试用的C语言代码，同时也是编译脚本默认寻找**源文件**的位置
+
+顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
 
 PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件。
 外设也基本是围绕[该FPGA](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
