@@ -1,0 +1,241 @@
+`include "../../Defines/InstructionDefines.sv"
+
+//----------纯组合逻辑----------//
+module InstructionExecute (
+    // 来自ID_EX
+    input        ram_load_access_id_ex,
+    input [31:0] ram_load_addr_id_ex,
+    input [31:0] instruction_addr_id_ex,
+    input [31:0] next_pc,                 // 下一个PC其实就存在IF_ID里面，不需要单独寄存
+    input [31:0] instruction_id_ex,
+    input [31:0] operand1,
+    input [31:0] operand2,
+    input        reg_wen_id_ex,
+
+    // 传递给寄存器
+    output logic [ 4:0] reg_waddr,
+    output logic [31:0] reg_wdata,
+    output logic        reg_wen_out,
+
+    // 访问控制与状态寄存器
+    output logic exception_returned,
+    output logic csr_r_en,
+    output logic csr_w_en,
+    output logic [11:0] csr_rwaddr,
+    output logic [31:0] csr_wdata,
+    input [31:0] csr_rdata,
+    input [31:0] csr_mepc,
+
+    // 访存
+    input [31:0] ram_load_data,
+    output logic ram_load_en,
+    output logic [31:0] ram_load_addr,
+    output logic ram_store_en,
+    output logic [1:0] ram_store_width,
+    output logic [31:0] ram_store_addr,
+    output logic [31:0] ram_store_data,
+
+    // 传递给核心控制器
+    output logic [31:0] jump_addr_ex,
+    output logic jump_en_ex,
+    output logic wait_for_interrupt
+);
+  // TODO实际上这个地方应该有异常判断
+  wire [31:0] inst = instruction_id_ex;
+
+
+  //----------指令信息提取----------//
+  wire [6:0] opcode = inst[6:0];  // R I S B U J
+  wire [4:0] rd = inst[11:7];  // R I U J
+
+  // 立即数
+  wire [31:0] imm_i = {{20{inst[31]}}, inst[31:20]};
+  wire [31:0] imm_s = {{20{inst[31]}}, inst[31:25], inst[11:7]};
+  wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
+  wire [31:0] imm_u = {inst[31:12], 12'b0};
+  wire [31:0] imm_j = {{12{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
+
+  // 其他
+  wire [2:0] funct3 = inst[14:12];  // R I S B
+  wire [4:0] rs1 = inst[19:15];  // R I S B
+  wire [4:0] rs2 = inst[24:20];
+  wire [4:0] shamt = rs2;
+  wire [6:0] funct7 = inst[31:25];
+  wire [11:0] funct12 = inst[31:20];
+
+
+  //----------运算逻辑单元----------//
+  // 运算单元
+  // 加法器允许进位输入且不消耗额外资源，我们可以利用这来实现一个加/减法器，更节省资源
+  // 减法实际上是op1 + ~op2 + 1'b1
+  // 大多数器件的原语都支持加减法器同时实现(消耗少量资源)
+  logic add_sub;
+  wire [31:0] alu_add = add_sub ? operand1 + operand2 : operand1 - operand2;
+  wire [31:0] alu_xor = operand1 ^ operand2;
+  wire [31:0] alu_or = operand1 | operand2;
+  wire [31:0] alu_and = operand1 & operand2;
+  wire [31:0] alu_shift_left = operand1 << operand2[4:0];
+  wire [31:0] alu_shift_right_l = operand1 >> operand2[4:0];
+  wire [31:0] alu_shift_right_a = $signed(operand1) >>> operand2[4:0];
+  // 基地址偏移可以搞一个加法器
+  wire [31:0] alu_base_addr_offset = instruction_addr_id_ex + imm_b;
+  // Load指令访存数据的高位扩展
+  logic extension_bit;
+  always_comb begin
+    unique case (funct3)
+      `INST_LB: extension_bit = ram_load_data[7];
+      `INST_LH: extension_bit = ram_load_data[15];
+      default:  extension_bit = 0;
+    endcase
+  end
+  wire [31:0] sign_zero_extension_byte = {{24{extension_bit}}, ram_load_data[7:0]};
+  wire [31:0] sign_zero_extension_halfword = {{16{extension_bit}}, ram_load_data[15:0]};
+
+  // 逻辑单元
+  wire alu_equal = operand1 == operand2;
+  wire alu_less_signed = $signed(operand1) < $signed(operand2);
+  wire alu_less_unsigned = operand1 < operand2;
+
+  // 源寄存器1的数据reg_src1_data一定和操作数1 operand1_id绑定
+  // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
+  // 立即数imm一定与操作数2 operand2_id绑定
+  always_comb begin
+    ram_load_en = ram_load_access_id_ex;
+    ram_load_addr = ram_load_addr_id_ex;
+    ram_store_width = funct3[1:0];
+    ram_store_addr = operand1;
+    ram_store_data = operand2;
+    add_sub = 1;
+
+    reg_wen_out = reg_wen_id_ex;
+    reg_waddr = rd;
+    reg_wdata = 0;
+    jump_addr_ex = 0;
+    jump_en_ex = 0;
+    ram_store_en = 0;
+
+    exception_returned = 0;
+    csr_r_en = 0;
+    csr_w_en = 0;
+    csr_rwaddr = inst[31:20];
+    csr_wdata = 0;
+
+    wait_for_interrupt = 0;
+    unique case (opcode)
+      `INST_OP_LUI:   reg_wdata = alu_add;
+      `INST_OP_AUIPC: reg_wdata = alu_add;
+      `INST_OP_JAL, `INST_OP_JALR: begin
+        reg_wdata = next_pc;
+        jump_addr_ex = alu_add;
+        jump_en_ex = 1;
+      end
+      `INST_OP_B: begin
+        jump_addr_ex = alu_base_addr_offset;
+        // 有jump_en_ex防止误操作，jump_addr_ex大胆赋值即可
+        unique case (funct3)
+          `INST_BEQ:  jump_en_ex = alu_equal;
+          `INST_BNE:  jump_en_ex = !alu_equal;
+          `INST_BLT:  jump_en_ex = alu_less_signed;
+          `INST_BGE:  jump_en_ex = !alu_less_signed;
+          `INST_BLTU: jump_en_ex = alu_less_unsigned;
+          `INST_BGEU: jump_en_ex = !alu_less_unsigned;
+        endcase
+      end
+      `INST_OP_L: begin
+        unique case (funct3)
+          `INST_LB, `INST_LBU: reg_wdata = sign_zero_extension_byte;
+          `INST_LH, `INST_LHU: reg_wdata = sign_zero_extension_halfword;
+          `INST_LW: reg_wdata = ram_load_data;
+        endcase
+      end
+      `INST_OP_S: begin
+        unique case (funct3)
+          `INST_SB, `INST_SH, `INST_SW: begin
+            ram_store_en = 1;
+          end
+        endcase
+      end
+      `INST_OP_I: begin
+        unique case (funct3)
+          `INST_ADDI:  reg_wdata = alu_add;
+          `INST_SLTI:  reg_wdata = {31'b0, alu_less_signed};
+          `INST_SLTIU: reg_wdata = {31'b0, alu_less_unsigned};
+          `INST_XORI:  reg_wdata = alu_xor;
+          `INST_ORI:   reg_wdata = alu_or;
+          `INST_ANDI:  reg_wdata = alu_and;
+          `INST_SLLI:  reg_wdata = alu_shift_left;
+          `INST_SRLI_SRAI: begin
+            if (funct7[5] == 1'b1) begin
+              //SRAI
+              reg_wdata = alu_shift_right_a;
+            end else begin
+              //SRLI
+              reg_wdata = alu_shift_right_l;
+            end
+          end
+        endcase
+      end
+      `INST_OP_R_M: begin
+        unique case (funct3)
+          `INST_ADD_SUB: begin
+            if (funct7[5] == 1'b1) begin
+              add_sub = 0;
+            end
+            reg_wdata = alu_add;
+          end
+          `INST_SLL:  reg_wdata = alu_shift_left;
+          `INST_SLT:  reg_wdata = {31'b0, alu_less_signed};
+          `INST_SLTU: reg_wdata = {31'b0, alu_less_unsigned};
+          `INST_XOR:  reg_wdata = alu_xor;
+          `INST_OR:   reg_wdata = alu_or;
+          `INST_AND:  reg_wdata = alu_and;
+          `INST_SRL_SRA: begin
+            if (funct7[5] == 1'b1) begin
+              //SRA
+              reg_wdata = alu_shift_right_a;
+            end else begin
+              //SRL
+              reg_wdata = alu_shift_right_l;
+            end
+          end
+        endcase
+      end
+      `INST_OP_SYSTEM: begin
+        // CSR指令都是原子指令
+        reg_wdata = csr_rdata;
+        unique case (funct3)
+          `INST_PRIVILEGED: begin
+            unique case (funct12)
+              `INST_FUNCT12_ECALL, `INST_FUNCT12_EBREAK: ;  //等效于NOP指令
+              `INST_FUNCT12_MRET: begin
+                jump_en_ex = 1;
+                jump_addr_ex = csr_mepc;
+                exception_returned = 1;
+              end
+              `INST_FUNCT12_WFI: wait_for_interrupt = 1;  // WFI(告知内核控制器请求等待)
+            endcase
+          end
+          `INST_CSRRW, `INST_CSRRWI: begin
+            csr_r_en  = rd != 5'd0;
+            csr_w_en  = 1;
+            csr_wdata = operand1;
+          end
+          `INST_CSRRS, `INST_CSRRSI: begin
+            csr_r_en  = 1;
+            csr_w_en  = rs1 != 5'd0;
+            csr_wdata = operand1 | csr_rdata;
+          end
+          `INST_CSRRC, `INST_CSRRCI: begin
+            csr_r_en  = 1;
+            csr_w_en  = rs1 != 5'd0;
+            csr_wdata = ~operand1 & csr_rdata;
+          end
+        endcase
+      end
+      // 不执行，等效于NOP指令
+      `INST_OP_FENCE: ;
+    endcase
+
+  end
+
+endmodule

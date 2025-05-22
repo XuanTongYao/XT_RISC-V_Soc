@@ -1,0 +1,53 @@
+[Device]
+Family=machxo2
+PartType=LCMXO2-4000HC
+PartName=LCMXO2-4000HC-4MG132C
+SpeedGrade=4
+Package=CSBGA132
+OperatingCondition=COM
+Status=S
+
+[IP]
+VendorName=Lattice Semiconductor Corporation
+CoreType=LPM
+CoreStatus=Demo
+CoreName=RAM_DP
+CoreRevision=6.5
+ModuleName=SystemDataRAM
+SourceFormat=Verilog HDL
+ParameterFileVersion=1.0
+Date=01/07/2025
+Time=01:32:27
+
+[Parameters]
+Verilog=1
+VHDL=0
+EDIF=1
+Destination=Synplicity
+Expression=BusA(0 to 7)
+Order=[MSB:LSB]
+IO=0
+RAddress=512
+RData=32
+WAddress=512
+WData=32
+enByte=1
+ByteSize=8
+OutputEn=0
+ClockEn=0
+Optimization=Area
+Reset=Sync
+Reset1=Sync
+Init=0
+MemFile=d:/projects/electronics/systemverilog/mxo2/modsd/test/test_commands/rv32ui-p-lw-data.txt
+MemFormat=hex
+EnECC=0
+Pipeline=0
+init_data=0
+no_init=0
+
+[FilesGenerated]
+d:/projects/electronics/systemverilog/mxo2/modsd/test/test_commands/rv32ui-p-lw-data.txt=mem
+
+[Command]
+cmd_line= -w -n SystemDataRAM -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -type ramdps -device LCMXO2-4000HC -raddr_width 9 -rwidth 32 -waddr_width 9 -wwidth 32 -rnum_words 512 -wnum_words 512 -byte 8 -cascade 11 -mem_init0

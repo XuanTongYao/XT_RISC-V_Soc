@@ -1,0 +1,30 @@
+SCUBA, Version Diamond (64-bit) 3.13.0.56.2
+Mon May 19 13:51:06 2025
+  
+Copyright (c) 1991-1994 by NeoCAD Inc. All rights reserved.
+Copyright (c) 1995 AT&T Corp.   All rights reserved.
+Copyright (c) 1995-2001 Lucent Technologies Inc.  All rights reserved.
+Copyright (c) 2001 Agere Systems   All rights reserved.
+Copyright (c) 2002-2023 Lattice Semiconductor Corporation,  All rights reserved.
+  
+BEGIN SCUBA Module Synthesis
+  
+    Issued command   : D:\ProgramFiles\Develop\lscc\diamond\3.13\ispfpga\bin\nt64\scuba.exe -w -n efb -lang verilog -synth synplify -bus_exp 7 -bb -type efb -arch xo2c00 -freq 12 -i2c1 -i2c1_freq 100 -i2c1_sa 1001101 -i2c1_addr 7 -tc -tc_mode FASTPWM -tc_o WAVE_GENERATOR -tc_div 8 -tc_top 300 -tc_ocr 50 -tc_ctr -ufm -ufm_ebr 766 -mem_size 1 -ufm_0 -wb -dev 4000 
+    Circuit name     : efb
+    Module type      : efb
+    Module Version   : 1.2
+    Ports            : 
+    Inputs       : wb_clk_i, wb_rst_i, wb_cyc_i, wb_stb_i, wb_we_i, wb_adr_i[7:0], wb_dat_i[7:0], tc_clki, tc_rstn, tc_ic
+    Outputs      : wb_dat_o[7:0], wb_ack_o, i2c1_irqo, tc_int, tc_oc, wbc_ufm_irq
+    Inouts       : i2c1_scl, i2c1_sda
+    I/O buffer       : not inserted
+    EDIF output      : efb.edn
+    Verilog output   : efb.v
+    Verilog template : efb_tmpl.v
+    Verilog purpose  : for synthesis and simulation
+    Bus notation     : big endian
+    Report output    : efb.srp
+    Estimated Resource Usage:
+  
+END   SCUBA Module Synthesis
+

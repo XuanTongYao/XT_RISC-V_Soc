@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DiamondModule name="rom_boot" module="rom_boot" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 05 22 16:40:02.293" version="2.8" type="Module" synthesis="synplify" source_format="Verilog HDL">
+  <Package>
+		<File name="" type="" modified="2025 05 22 16:40:02.216"/>
+		<File name="d:/projects/programs/risc-v_c/flatbinarytxt/bootstrap-os.txt" type="mem" modified="2025 05 22 16:39:50.096"/>
+		<File name="rom_boot.lpc" type="lpc" modified="2025 05 22 16:40:01.126"/>
+		<File name="rom_boot.v" type="top_level_verilog" modified="2025 05 22 16:40:01.162"/>
+		<File name="rom_boot_tmpl.v" type="template_verilog" modified="2025 05 22 16:40:01.162"/>
+		<File name="tb_rom_boot_tmpl.v" type="testbench_verilog" modified="2025 05 22 16:40:01.163"/>
+  </Package>
+</DiamondModule>

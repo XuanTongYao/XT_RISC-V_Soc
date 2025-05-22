@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DiamondModule name="SystemPLL" module="SystemPLL" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 02 18 17:26:11.674" version="5.8" type="Module" synthesis="synplify" source_format="Verilog HDL">
+  <Package>
+		<File name="SystemPLL.lpc" type="lpc" modified="2025 02 18 17:26:10.909"/>
+		<File name="SystemPLL.v" type="top_level_verilog" modified="2025 02 18 17:26:10.948"/>
+		<File name="SystemPLL_tmpl.v" type="template_verilog" modified="2025 02 18 17:26:10.948"/>
+  </Package>
+</DiamondModule>

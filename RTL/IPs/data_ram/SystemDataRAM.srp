@@ -1,0 +1,29 @@
+SCUBA, Version Diamond (64-bit) 3.13.0.56.2
+Tue Jan 07 01:32:27 2025
+
+Copyright (c) 1991-1994 by NeoCAD Inc. All rights reserved.
+Copyright (c) 1995 AT&T Corp.   All rights reserved.
+Copyright (c) 1995-2001 Lucent Technologies Inc.  All rights reserved.
+Copyright (c) 2001 Agere Systems   All rights reserved.
+Copyright (c) 2002-2023 Lattice Semiconductor Corporation,  All rights reserved.
+
+    Issued command   : D:\ProgramFiles\Develop\lscc\diamond\3.13\ispfpga\bin\nt64\scuba.exe -w -n SystemDataRAM -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -type ramdps -device LCMXO2-4000HC -raddr_width 9 -rwidth 32 -waddr_width 9 -wwidth 32 -rnum_words 512 -wnum_words 512 -byte 8 -cascade 11 -mem_init0 
+    Circuit name     : SystemDataRAM
+    Module type      : RAM_DP
+    Module Version   : 6.5
+    Ports            : 
+	Inputs       : WrAddress[8:0], RdAddress[8:0], Data[31:0], ByteEn[3:0], WE, RdClock, RdClockEn, Reset, WrClock, WrClockEn
+	Outputs      : Q[31:0]
+    I/O buffer       : not inserted
+    Memory file      : INIT_ALL_0s
+    EDIF output      : SystemDataRAM.edn
+    Verilog output   : SystemDataRAM.v
+    Verilog template : SystemDataRAM_tmpl.v
+    Verilog testbench: tb_SystemDataRAM_tmpl.v
+    Verilog purpose  : for synthesis and simulation
+    Bus notation     : big endian
+    Report output    : SystemDataRAM.srp
+    Element Usage    :
+        PDPW8KC : 2
+    Estimated Resource Usage:
+            EBR : 2

@@ -1,0 +1,40 @@
+[Device]
+Family=machxo2
+PartType=LCMXO2-4000HC
+PartName=LCMXO2-4000HC-4MG132C
+SpeedGrade=4
+Package=CSBGA132
+OperatingCondition=COM
+Status=S
+
+[IP]
+VendorName=Lattice Semiconductor Corporation
+CoreType=LPM
+CoreStatus=Demo
+CoreName=Distributed_ROM
+CoreRevision=2.8
+ModuleName=rom_str
+SourceFormat=Verilog HDL
+ParameterFileVersion=1.0
+Date=01/31/2025
+Time=20:19:19
+
+[Parameters]
+Verilog=1
+VHDL=0
+EDIF=1
+Destination=Synplicity
+Expression=BusA(0 to 7)
+Order=[MSB:LSB]
+IO=0
+Addresses=64
+Data=8
+LUT=0
+MemFile=d:/projects/programs/risc-v_c/xt_risc_v/preload_str.txt
+MemFormat=hex
+
+[FilesGenerated]
+d:/projects/programs/risc-v_c/xt_risc_v/preload_str.txt=mem
+
+[Command]
+cmd_line= -w -n rom_str -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 6 -num_words 64 -data_width 8 -outdata UNREGISTERED -memfile d:/projects/programs/risc-v_c/xt_risc_v/preload_str.txt -memformat hex

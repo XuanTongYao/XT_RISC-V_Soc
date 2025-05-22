@@ -1,0 +1,185 @@
+(edif rom_str
+  (edifVersion 2 0 0)
+  (edifLevel 0)
+  (keywordMap (keywordLevel 0))
+  (status
+    (written
+      (timestamp 2025 1 31 20 19 19)
+      (program "SCUBA" (version "Diamond (64-bit) 3.13.0.56.2"))))
+      (comment "D:\ProgramFiles\Develop\lscc\diamond\3.13\ispfpga\bin\nt64\scuba.exe -w -n rom_str -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -type rom -addr_width 6 -num_rows 64 -data_width 8 -outdata UNREGISTERED -memfile d:/projects/programs/risc-v_c/xt_risc_v/preload_str.txt -memformat hex ")
+  (library ORCLIB
+    (edifLevel 0)
+    (technology
+      (numberDefinition))
+    (cell ROM64X1A
+      (cellType GENERIC)
+      (view view1
+        (viewType NETLIST)
+        (interface
+          (port AD5
+            (direction INPUT))
+          (port AD4
+            (direction INPUT))
+          (port AD3
+            (direction INPUT))
+          (port AD2
+            (direction INPUT))
+          (port AD1
+            (direction INPUT))
+          (port AD0
+            (direction INPUT))
+          (port DO0
+            (direction OUTPUT)))))
+    (cell rom_str
+      (cellType GENERIC)
+      (view view1
+        (viewType NETLIST)
+        (interface
+          (port (array (rename Address "Address(5:0)") 6)
+            (direction INPUT))
+          (port (array (rename Q "Q(7:0)") 8)
+            (direction OUTPUT)))
+        (property NGD_DRC_MASK (integer 1))
+        (contents
+          (instance mem_0_7
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x00007E07E003F03F")))
+          (instance mem_0_6
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x03E2122127309109")))
+          (instance mem_0_5
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x000F96FB6E5EDFFB")))
+          (instance mem_0_4
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x02CFC0F8485C27F2")))
+          (instance mem_0_3
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x0512ADAC5D97497E")))
+          (instance mem_0_2
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x012C1E436F20DE31")))
+          (instance mem_0_1
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x07D8954E14A54444")))
+          (instance mem_0_0
+            (viewRef view1 
+              (cellRef ROM64X1A))
+            (property initval
+              (string "0x012C02472A40D234")))
+          (net qdataout7
+            (joined
+              (portRef (member Q 0))
+              (portRef DO0 (instanceRef mem_0_7))))
+          (net qdataout6
+            (joined
+              (portRef (member Q 1))
+              (portRef DO0 (instanceRef mem_0_6))))
+          (net qdataout5
+            (joined
+              (portRef (member Q 2))
+              (portRef DO0 (instanceRef mem_0_5))))
+          (net qdataout4
+            (joined
+              (portRef (member Q 3))
+              (portRef DO0 (instanceRef mem_0_4))))
+          (net qdataout3
+            (joined
+              (portRef (member Q 4))
+              (portRef DO0 (instanceRef mem_0_3))))
+          (net qdataout2
+            (joined
+              (portRef (member Q 5))
+              (portRef DO0 (instanceRef mem_0_2))))
+          (net qdataout1
+            (joined
+              (portRef (member Q 6))
+              (portRef DO0 (instanceRef mem_0_1))))
+          (net qdataout0
+            (joined
+              (portRef (member Q 7))
+              (portRef DO0 (instanceRef mem_0_0))))
+          (net addr5
+            (joined
+              (portRef (member Address 0))
+              (portRef AD5 (instanceRef mem_0_7))
+              (portRef AD5 (instanceRef mem_0_6))
+              (portRef AD5 (instanceRef mem_0_5))
+              (portRef AD5 (instanceRef mem_0_4))
+              (portRef AD5 (instanceRef mem_0_3))
+              (portRef AD5 (instanceRef mem_0_2))
+              (portRef AD5 (instanceRef mem_0_1))
+              (portRef AD5 (instanceRef mem_0_0))))
+          (net addr4
+            (joined
+              (portRef (member Address 1))
+              (portRef AD4 (instanceRef mem_0_7))
+              (portRef AD4 (instanceRef mem_0_6))
+              (portRef AD4 (instanceRef mem_0_5))
+              (portRef AD4 (instanceRef mem_0_4))
+              (portRef AD4 (instanceRef mem_0_3))
+              (portRef AD4 (instanceRef mem_0_2))
+              (portRef AD4 (instanceRef mem_0_1))
+              (portRef AD4 (instanceRef mem_0_0))))
+          (net addr3
+            (joined
+              (portRef (member Address 2))
+              (portRef AD3 (instanceRef mem_0_7))
+              (portRef AD3 (instanceRef mem_0_6))
+              (portRef AD3 (instanceRef mem_0_5))
+              (portRef AD3 (instanceRef mem_0_4))
+              (portRef AD3 (instanceRef mem_0_3))
+              (portRef AD3 (instanceRef mem_0_2))
+              (portRef AD3 (instanceRef mem_0_1))
+              (portRef AD3 (instanceRef mem_0_0))))
+          (net addr2
+            (joined
+              (portRef (member Address 3))
+              (portRef AD2 (instanceRef mem_0_7))
+              (portRef AD2 (instanceRef mem_0_6))
+              (portRef AD2 (instanceRef mem_0_5))
+              (portRef AD2 (instanceRef mem_0_4))
+              (portRef AD2 (instanceRef mem_0_3))
+              (portRef AD2 (instanceRef mem_0_2))
+              (portRef AD2 (instanceRef mem_0_1))
+              (portRef AD2 (instanceRef mem_0_0))))
+          (net addr1
+            (joined
+              (portRef (member Address 4))
+              (portRef AD1 (instanceRef mem_0_7))
+              (portRef AD1 (instanceRef mem_0_6))
+              (portRef AD1 (instanceRef mem_0_5))
+              (portRef AD1 (instanceRef mem_0_4))
+              (portRef AD1 (instanceRef mem_0_3))
+              (portRef AD1 (instanceRef mem_0_2))
+              (portRef AD1 (instanceRef mem_0_1))
+              (portRef AD1 (instanceRef mem_0_0))))
+          (net addr0
+            (joined
+              (portRef (member Address 5))
+              (portRef AD0 (instanceRef mem_0_7))
+              (portRef AD0 (instanceRef mem_0_6))
+              (portRef AD0 (instanceRef mem_0_5))
+              (portRef AD0 (instanceRef mem_0_4))
+              (portRef AD0 (instanceRef mem_0_3))
+              (portRef AD0 (instanceRef mem_0_2))
+              (portRef AD0 (instanceRef mem_0_1))
+              (portRef AD0 (instanceRef mem_0_0))))))))
+  (design rom_str
+    (cellRef rom_str
+      (libraryRef ORCLIB)))
+)

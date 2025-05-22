@@ -1,0 +1,98 @@
+#ifndef ADDR_DEFINE_H
+#define ADDR_DEFINE_H
+
+#define HB_BASE(Peripheral) (PERIPHERALS_BASE+Peripheral##_OFFSET)
+#define LB_BASE(Peripheral) (XT_LB_BASE+Peripheral##_OFFSET)
+
+
+//----------内存RAM地址定义----------//
+#define INST_RAM_LEN 2048
+#define DATA_RAM_LEN 2048
+#define INST_RAM_BASE 0
+#define DATA_RAM_BASE (INST_RAM_BASE+INST_RAM_LEN)
+#define STACK_TOP_ADDR (DATA_RAM_BASE+DATA_RAM_LEN)
+// 可执行段与数据段最大长度
+#define MAX_TEXT_DATA_LEN (INST_RAM_LEN + DATA_RAM_LEN - 512)
+
+
+
+//----------XT_HB总线----------//
+
+// 外设占用地址长度
+#define DEBUG_LEN 4
+#define EINT_CTRL_LEN 8
+#define SYSTEM_TIMER_LEN 16
+#define UART_LEN 4
+#define WISHBONE_LEN 256
+#define XT_LB_LEN 256
+
+// 外设地址偏移定义
+#define DEBUG_OFFSET 0
+#define EINT_CTRL_OFFSET (DEBUG_OFFSET+DEBUG_LEN)
+#define SYSTEM_TIMER_OFFSET (EINT_CTRL_OFFSET+EINT_CTRL_LEN)
+#define UART_OFFSET (SYSTEM_TIMER_OFFSET+SYSTEM_TIMER_LEN)
+#define WISHBONE_OFFSET (UART_OFFSET+UART_LEN)
+#define XT_LB_OFFSET (WISHBONE_OFFSET+WISHBONE_LEN)
+
+// 外设基地址定义
+#define PERIPHERALS_BASE    (DATA_RAM_BASE+DATA_RAM_LEN)
+#define DEBUG_BASE          HB_BASE(DEBUG)
+#define EINT_CTRL_BASE      HB_BASE(EINT_CTRL)
+#define SYSTEM_TIMER_BASE   HB_BASE(SYSTEM_TIMER)
+#define UART_BASE           HB_BASE(UART)
+#define WISHBONE_BASE       HB_BASE(WISHBONE)
+#define XT_LB_BASE          HB_BASE(XT_LB)
+
+
+//----------WISHBONE总线----------//
+// 外设占用地址长度
+#define PLL0_LEN 32
+#define PLL1_LEN 32
+#define I2C_PRIMARY_LEN 10
+#define I2C_SECONDARY_LEN 10
+#define SPI_LEN 10
+#define TIMER_LEN 18
+#define FLASH_LEN 6
+
+// 外设地址偏移定义
+#define PLL0_OFFSET 0x00
+#define PLL1_OFFSET 0x20
+#define I2C_PRIMARY_OFFSET 0x40
+#define I2C_SECONDARY_OFFSET 0x4A
+#define SPI_OFFSET 0x54
+#define TIMER_OFFSET 0x5E
+#define FLASH_OFFSET 0x70
+#define EFB_INT_SOURCE_OFFSET 0x76
+
+// 外设基地址定义
+#define PLL0_BASE (WISHBONE_BASE+PLL0_OFFSET)
+#define PLL1_BASE (WISHBONE_BASE+PLL1_OFFSET)
+#define I2C_PRIMARY_BASE (WISHBONE_BASE+I2C_PRIMARY_OFFSET)
+#define I2C_SECONDARY_BASE (WISHBONE_BASE+I2C_SECONDARY_OFFSET)
+#define SPI_BASE (WISHBONE_BASE+SPI_OFFSET)
+#define TIMER_BASE (WISHBONE_BASE+TIMER_OFFSET)
+#define FLASH_BASE (WISHBONE_BASE+FLASH_OFFSET)
+
+
+
+//----------XT_LB总线----------//
+#define KEY_SW_LEN 4
+#define GPIO_LEN 8
+#define RGB_LEN 8
+#define LED_LEN 1
+#define LEDSD_LEN 3
+
+#define KEY_SW_OFFSET 0
+#define GPIO_OFFSET (KEY_SW_OFFSET+KEY_SW_LEN)
+#define RGB_OFFSET (GPIO_OFFSET+GPIO_LEN)
+#define LED_OFFSET (RGB_OFFSET+RGB_LEN)
+#define LEDSD_OFFSET (LED_OFFSET+LED_LEN)
+
+#define KEY_SW_BASE     LB_BASE(KEY_SW)
+#define GPIO_BASE       LB_BASE(GPIO)
+#define RGB_BASE        LB_BASE(RGB)
+#define LED_BASE        LB_BASE(LED)
+#define LEDSD_BASE      LB_BASE(LEDSD)
+
+
+#endif

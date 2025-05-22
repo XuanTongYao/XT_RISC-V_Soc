@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DiamondModule name="SystemInstructionRAM" module="SystemInstructionRAM" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 01 07 01:19:48.826" version="6.5" type="Module" synthesis="synplify" source_format="Verilog HDL">
+  <Package>
+		<File name="" type="" modified="2025 01 07 01:19:48.738"/>
+		<File name="SystemInstructionRAM.lpc" type="lpc" modified="2025 01 07 01:19:47.808"/>
+		<File name="SystemInstructionRAM.v" type="top_level_verilog" modified="2025 01 07 01:19:47.848"/>
+		<File name="SystemInstructionRAM_tmpl.v" type="template_verilog" modified="2025 01 07 01:19:47.848"/>
+		<File name="d:/projects/electronics/systemverilog/mxo2/modsd/test/test_commands/rv32ui-p-lw-inst.txt" type="mem" modified="2025 01 07 01:14:10.831"/>
+		<File name="tb_SystemInstructionRAM_tmpl.v" type="testbench_verilog" modified="2025 01 07 01:19:47.849"/>
+  </Package>
+</DiamondModule>
