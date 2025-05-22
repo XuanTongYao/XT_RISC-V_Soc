@@ -15,10 +15,10 @@ module External_INT_Ctrl #(
 
 );
 
-  logic [INT_NUM-1:0] INT_delay_reg;
-  always_ff @(posedge hb_clk) begin
-    INT_delay_reg <= irq_source;
-  end
+  // logic [INT_NUM-1:0] INT_delay_reg;
+  // always_ff @(posedge hb_clk) begin
+  //   INT_delay_reg <= irq_source;
+  // end
 
 
   logic [INT_NUM-1:0] INT_enable_reg;
@@ -47,7 +47,7 @@ module External_INT_Ctrl #(
       INT_pending_reg <= 0;
       mextern_int <= 0;
     end else begin
-      INT_pending_reg <= INT_delay_reg & INT_enable_reg;
+      INT_pending_reg <= irq_source & INT_enable_reg;
       mextern_int <= |INT_pending_reg;
     end
     mextern_int_id <= 6'd16 + int_id;
