@@ -11,7 +11,7 @@
 
 顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
 
-PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件。
+PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成。
 外设也基本是围绕[该FPGA](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
 
 架构图

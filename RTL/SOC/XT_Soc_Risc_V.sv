@@ -18,7 +18,11 @@ module XT_Soc_Risc_V
     input                       uart_rx,
     output logic                uart_tx,
     inout                       i2c1_scl,
-    inout                       i2c1_sda
+    inout                       i2c1_sda,
+    output logic [         0:0] spi_csn,
+    inout                       spi_clk,
+    inout                       spi_miso,
+    inout                       spi_mosi
 );
   assign rgb2[1] = rgb2[0];
   assign rgb2[2] = rgb2[0];
@@ -192,8 +196,15 @@ module XT_Soc_Risc_V
 
 
   // 外部中断控制器
-  localparam int EXTERNAL_INT_NUM = 1;
+  localparam int EXTERNAL_INT_NUM = 13;
   wire [EXTERNAL_INT_NUM-1:0] irq_source;
+  assign irq_source[1] = 0;
+  assign irq_source[2] = 0;
+  assign irq_source[3] = 0;
+  assign irq_source[4] = 0;
+  assign irq_source[5] = 0;
+  assign irq_source[6] = 0;
+  assign irq_source[7] = 0;
   External_INT_Ctrl #(
       .INT_NUM(EXTERNAL_INT_NUM)
   ) u_External_INT_Ctrl (
@@ -249,14 +260,18 @@ module XT_Soc_Risc_V
   wire ufm_sn = 1;
   wire tc_rstn = 1;
   wire tc_ic = 0;
-  wire wbc_ufm_irq;
-  wire i2c1_irqo;
-  wire tc_int;
+  //   wire i2c1_irqo;
+  //   wire i2c2_irqo;
+  //   wire tc_int;
+  //   wire wbc_ufm_irq;
+  assign irq_source[9] = 0;  // 保留给i2c2_irqo
   efb u_efb (
       .*,
       .tc_clki(clk_osc),
-      .wbc_ufm_irq(),
-      .tc_int(),
+      .i2c1_irqo(irq_source[8]),
+      .spi_irq(irq_source[10]),
+      .tc_int(irq_source[11]),
+      .wbc_ufm_irq(irq_source[12]),
       .tc_oc(rgb2[0])
   );
 

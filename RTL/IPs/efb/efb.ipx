@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DiamondModule name="efb" module="efb" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 05 19 13:51:07.222" version="1.2" type="Module" synthesis="synplify" source_format="Verilog HDL">
+<DiamondModule name="efb" module="efb" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 05 25 19:58:56.769" version="1.2" type="Module" synthesis="synplify" source_format="Verilog HDL">
   <Package>
-		<File name="efb.lpc" type="lpc" modified="2025 05 19 13:51:06.330"/>
-		<File name="efb.v" type="top_level_verilog" modified="2025 05 19 13:51:06.361"/>
-		<File name="efb_tmpl.v" type="template_verilog" modified="2025 05 19 13:51:06.361"/>
+		<File name="efb.lpc" type="lpc" modified="2025 05 25 19:58:55.602"/>
+		<File name="efb.v" type="top_level_verilog" modified="2025 05 25 19:58:55.636"/>
+		<File name="efb_tmpl.v" type="template_verilog" modified="2025 05 25 19:58:55.636"/>
   </Package>
 </DiamondModule>

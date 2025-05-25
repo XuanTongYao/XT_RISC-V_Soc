@@ -38,11 +38,15 @@ typedef union
 #define I2C_1_CMD_REG ((volatile I2C_Command*)(I2C_PRIMARY_BASE + 1))
 #define I2C_2_CMD_REG ((volatile I2C_Command*)(I2C_SECONDARY_BASE + 1))
 
+// 写操作会使I2C复位
 #define I2C_1_BR0_REG ((byte_reg_ptr)(I2C_PRIMARY_BASE + 2))
+// 写操作会使I2C复位
 #define I2C_2_BR0_REG ((byte_reg_ptr)(I2C_SECONDARY_BASE + 2))
 // BR1的高6位不能读写
+// 写操作会使I2C复位
 #define I2C_1_BR1_REG ((byte_reg_ptr)(I2C_PRIMARY_BASE + 3))
 // BR1的高6位不能读写
+// 写操作会使I2C复位
 #define I2C_2_BR1_REG ((byte_reg_ptr)(I2C_SECONDARY_BASE + 3))
 
 #define I2C_1_TX_DATA_REG ((byte_reg_ptr)(I2C_PRIMARY_BASE + 4))
@@ -84,6 +88,7 @@ typedef union
         uint8_t : 4;
     };
 }I2C_InterruptStatus;
+// 写1清零
 #define I2C_1_INT_STATUS_REG ((volatile I2C_InterruptStatus*)(I2C_PRIMARY_BASE + 8))
 #define I2C_2_INT_STATUS_REG ((volatile I2C_InterruptStatus*)(I2C_SECONDARY_BASE + 8))
 
@@ -92,9 +97,13 @@ typedef union
     uint8_t reg;
     struct
     {
+        // 收到通用广播
         uint8_t IRQHGCEN : 1;
+        // 发送/接收溢出或受到NACK
         uint8_t IRQTROEEN : 1;
+        // 发送/接收已准备好
         uint8_t IRQTRRDYEN : 1;
+        // 仲裁丢失
         uint8_t IRQARBLEN : 1;
         uint8_t : 4;
     };
@@ -122,12 +131,28 @@ typedef struct
 
 //----------函数定义----------//
 
+/// @brief 设置预分频
+/// @warning 重设预分频会使I2C复位
+/// @param div 分频公式:SCL = BUS_CLK/(div*4)
+/// @param div [1,1023]
+void set_i2c_prescale(I2C* i2c, uint16_t div);
 
-void i2c_tx_addr_only_block(I2C* i2c, const uint8_t addr);
+uint16_t get_i2c_prescale(I2C* i2c);
 
-void i2c_tx_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num);
+void reset_i2c(I2C* i2c);
 
-void i2c_rx_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num, const size_t read_num);
+// FIXME 函数里面的delay只适用于100KHz的I2C速率
+// 逆天的技术手册里要求延迟时间与速率周期有关
+
+/// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。
+void master_i2c_write_addr_only_block(I2C* i2c, const uint8_t addr);
+
+/// @note 未知原因逻辑分析仪得到错误的数据，但是与实物连接又能正常工作，大概率逻辑分析仪的问题。
+/// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。
+void master_i2c_write_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num);
+
+/// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。
+void master_i2c_read_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num, const size_t read_num);
 
 
 

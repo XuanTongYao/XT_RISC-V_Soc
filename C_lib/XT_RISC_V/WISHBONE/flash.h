@@ -28,6 +28,7 @@ typedef struct
     uint8_t TXFF : 1;
     uint8_t TXFE : 1;
     uint8_t : 1;
+    // WB总线到配置(FPGA配置)接口激活(慎用！！！)
     uint8_t WBCACT : 1;
 }FlashStatus;
 #define FLASH_STATE_REG ((const volatile FlashStatus*)(FLASH_BASE + 2))
@@ -48,23 +49,30 @@ typedef union
         uint8_t : 2;
     };
 }FlashInterruptStatus;
-#define FLASH_IRQ_REG ((volatile FlashInterruptStatus*)(FLASH_BASE + 4))
+// 写1清零
+#define FLASH_INT_STATUS_REG ((volatile FlashInterruptStatus*)(FLASH_BASE + 4))
 
 typedef union
 {
     uint8_t reg;
     struct
     {
+        // I2C激活
         uint8_t IRQ_I2CACT_EN : 1;
+        // SPI激活
         uint8_t IRQ_SSPIACT_EN : 1;
+        // 接收FIFO已满
         uint8_t IRQ_RXFF_EN : 1;
+        // 接收FIFO已空
         uint8_t IRQ_RXFE_EN : 1;
+        // 发送FIFO已满
         uint8_t IRQ_TXFF_EN : 1;
+        // 发送FIFO已空
         uint8_t IRQ_TXFE_EN : 1;
         uint8_t : 2;
     };
 }FlashInterruptEnable;
-#define FLASH_IRQ_EN_REG ((volatile FlashInterruptEnable*)(FLASH_BASE + 5))
+#define FLASH_INT_EN_REG ((volatile FlashInterruptEnable*)(FLASH_BASE + 5))
 
 
 

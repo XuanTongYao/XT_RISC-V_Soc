@@ -16,8 +16,8 @@ CoreRevision=1.2
 ModuleName=efb
 SourceFormat=Verilog HDL
 ParameterFileVersion=1.0
-Date=05/19/2025
-Time=13:51:06
+Date=05/25/2025
+Time=19:58:55
 
 [Parameters]
 Verilog=1
@@ -45,10 +45,10 @@ ufm_addr=7-Bit Addressing
 ufm_sa=10011
 pll=0
 pll_cnt=1
-spi=0
+spi=1
 spi_clkinv=0
 spi_cs=1
-spi_en=0
+spi_en=1
 spi_freq=1
 spi_lsb=0
 spi_mode=Both
@@ -138,4 +138,4 @@ t_wbport=0
 t_portlock=0
 
 [Command]
-cmd_line= -w -n efb -lang verilog -synth synplify -bus_exp 7 -bb -type efb -arch xo2c00 -freq 12 -i2c1 -i2c1_freq 100 -i2c1_sa 1001101 -i2c1_addr 7 -tc -tc_mode FASTPWM -tc_o WAVE_GENERATOR -tc_div 8 -tc_top 300 -tc_ocr 50 -tc_ctr -ufm -ufm_ebr 766 -mem_size 1 -ufm_0 -wb -dev 4000
+cmd_line= -w -n efb -lang verilog -synth synplify -bus_exp 7 -bb -type efb -arch xo2c00 -freq 12 -i2c1 -i2c1_freq 100 -i2c1_sa 1001101 -i2c1_addr 7 -spi -spi_mode Both -spi_en -spi_freq 1 -spi_cs 1 -tc -tc_mode FASTPWM -tc_o WAVE_GENERATOR -tc_div 8 -tc_top 300 -tc_ocr 50 -tc_ctr -ufm -ufm_ebr 766 -mem_size 1 -ufm_0 -wb -dev 4000

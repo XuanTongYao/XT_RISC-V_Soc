@@ -39,9 +39,21 @@ _extern_int: # 外部中断由外部中断控制器重定向到自定义中断
     nop
     nop
     nop
-# 自定义中断中断号16开始
+# 自定义中断中断号16开始，对应外部中断的0号中断
 _custom_int:
     j UART_RX_IRQ_Handler
+    mret # 保留
+    mret
+    mret
+    mret
+    mret
+    mret
+    mret
+    j I2C1_IRQ_Handler
+    j I2C2_IRQ_Handler
+    j SPI_IRQ_Handler
+    j Timer_IRQ_Handler
+    j WBC_UFM_IRQ_Handler
 
 # 致命错误死循环
 UnhandledFault:
@@ -76,4 +88,10 @@ Exception_Handler:
 # 自定义中断处理程序
 .weak   UART_RX_IRQ_Handler
 .weak   UART_TX_IRQ_Handler
+
+.weak   I2C1_IRQ_Handler
+.weak   I2C2_IRQ_Handler
+.weak   SPI_IRQ_Handler
+.weak   Timer_IRQ_Handler
+.weak   WBC_UFM_IRQ_Handler
 
