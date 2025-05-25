@@ -6,7 +6,7 @@ void main(void) {
     // *UART_DEBUG_REG = 0x01;
     // ENABLE_MTI;
     ENABLE_ALL_MINT;
-    *EINT_CTRL_ENABLE_REG = 0xFFFFFFFF;
+    *EINT_CTRL_ENABLE_REG = UART_IRQ_MASK;
     ENABLE_GLOBAL_MINT;
     while (1) {
         NOP;
@@ -19,8 +19,8 @@ IRQ UART_RX_IRQ_Handler(void) {
 }
 
 IRQ mtimer_IRQ_Handler(void) {
-    uint64_t systime = *MTIME_REG;
-    *MTIMECMP_REG = systime + (1 * SYSTEM_TIMER_FREQ);
+    uint64_t systime = get_mtime();
+    set_mtimecmp(systime + (1 * SYSTEM_TIMER_FREQ));
     TIME++;
     *LEDSD_REG = (uint8_t)TIME;
     *LED_REG = ~(uint8_t)TIME;
