@@ -19,13 +19,13 @@ module SW_KEY_LBUS
   //----------按键----------//
   logic [3:0] key_reg;
   always_ff @(posedge lb_clk) begin
-    key_reg <= ~key_raw;
+    key_reg <= key_raw;
   end
 
   //----------读取----------//
   always_comb begin
     if (MatchRLB(xt_lb, 8'd0)) begin
-      rdata = {12'b0, key_reg};
+      rdata = {12'b0, ~key_reg};
     end else if (MatchRLB(xt_lb, 8'd2)) begin
       rdata = {13'b0, switch_reg};
     end else begin

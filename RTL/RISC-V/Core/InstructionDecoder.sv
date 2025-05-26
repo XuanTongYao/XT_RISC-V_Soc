@@ -144,7 +144,7 @@ module InstructionDecoder (
                 exception_cause_id = funct12[0] ? `EXCEPTION_EBREAK : `EXCEPTION_MECALL;
               end
               `INST_FUNCT12_MRET: ;  // 不需要额外处理
-              `INST_FUNCT12_WFI:  ;  // WFI(暂时不实现)
+              `INST_FUNCT12_WFI:  ;  // WFI(在执行阶段处理)
               default: begin
                 exception_id = 1;
                 exception_cause_id = `EXCEPTION_INVALID_INST;

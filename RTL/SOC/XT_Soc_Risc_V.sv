@@ -10,6 +10,8 @@ module XT_Soc_Risc_V
     input                       download_mode,
     output logic [         2:0] rgb,
     output logic [         2:0] rgb2,
+    // inout        [         2:0] rgb,
+    // inout        [         2:0] rgb2,
     inout        [GPIO_NUM-1:0] gpio,
     input        [         3:0] key_raw,
     input        [         1:0] sw_raw,
@@ -80,7 +82,7 @@ module XT_Soc_Risc_V
 
   //----------XT_HB高速总线互联定义----------//
   localparam int HB_MASTER_NUM = 1;  // 内核
-  // 指令RAM,数据RAM,DEBUG,外部中断控制器,系统计时器,UART,WISHBONE,XT_LB
+  // 指令RAM,数据RAM,DEBUG,外部中断控制器,机器计时器,UART,WISHBONE,XT_LB
   localparam int HB_SLAVE_NUM = 8;
   // 地址映射分割
   localparam int ADDR_SPLIT[HB_SLAVE_NUM-1] = {
@@ -214,7 +216,7 @@ module XT_Soc_Risc_V
   );
 
 
-  // 系统计时器
+  // mtime和mtimecmp
   SystemTimer u_SystemTimer (
       // 计时时钟一定比高速总线时钟慢
       .*,
@@ -258,8 +260,10 @@ module XT_Soc_Risc_V
 
   wire spi_scsn = 1;
   wire ufm_sn = 1;
-  wire tc_rstn = 1;
+  wire tc_rst = 0;
+  wire tc_rstn = !tc_rst;
   wire tc_ic = 0;
+  //   wire tc_oc;
   //   wire i2c1_irqo;
   //   wire i2c2_irqo;
   //   wire tc_int;

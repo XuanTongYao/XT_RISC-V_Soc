@@ -98,8 +98,7 @@ module UART_BUS
       end
       RECEIVING: begin
         if (adjudicating) begin
-          rx[7]   <= adjudicate_result;
-          rx[6:0] <= rx[7:1];
+          rx <= {adjudicate_result, rx[7:1]};
           bit_num <= bit_num + 1'b1;
           if (bit_num == 3'd7) rx_state <= CHECK_STOP;
         end
@@ -165,18 +164,41 @@ module UART_BUS
     end
   end
 
-  logic [3:0] tx_ptr = 0;
-  wire send_stop_bit = tx_ptr == 4'd9;
+  // 使用移位寄存器代替计数器实现LUT优化
+  logic [9:0] shift_reg;
+  logic copy_done;
+  logic [9:0] tx_copy;
+  wire send_stop_bit = shift_reg[9];
   always_ff @(posedge band_clk) begin
+    if (!copy_done) begin
+      shift_reg <= 10'b000000000_1;
+    end
     if (!state.tx_ready) begin
-      if (send_stop_bit) begin
-        tx_ptr <= 0;
+      if (copy_done) begin
+        shift_reg <= {shift_reg[8:0], shift_reg[9]};
+        tx_copy   <= {1'b1, tx_copy[9:1]};
+        uart_tx   <= tx_copy[0];
+        copy_done <= !send_stop_bit;
       end else begin
-        tx_ptr <= tx_ptr + 1'b1;
+        tx_copy   <= tx;
+        copy_done <= 1'b1;
       end
-      uart_tx <= tx[tx_ptr];
     end
   end
+
+  // 旧的实现
+  // logic [3:0] tx_ptr = 0;
+  // wire send_stop_bit = tx_ptr == 4'd9;
+  // always_ff @(posedge band_clk) begin
+  //   if (!state.tx_ready) begin
+  //     if (send_stop_bit) begin
+  //       tx_ptr <= 0;
+  //     end else begin
+  //       tx_ptr <= tx_ptr + 1'b1;
+  //     end
+  //     uart_tx <= tx[tx_ptr];
+  //   end
+  // end
 
   wire tx_ready_pulse;
   OncePulse #(

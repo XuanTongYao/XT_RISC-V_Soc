@@ -17,23 +17,23 @@ module GPIO_LBUS
     end
   end
 
-  //数据寄存器
-  logic [NUM-1:0] gpio_data_reg;
+  // 数据寄存器
+  // NOTE 在输出模式时，写入数据寄存器后马上读取数据寄存器，会有一个周期延迟
+  // NOTE 但是对软件访问无影响，因为需要经过跨时钟域
+  logic [NUM-1:0] gpio_in_data_reg;
+  logic [NUM-1:0] gpio_out_data_reg;
   always_ff @(posedge lb_clk) begin
-    for (int i = 0; i < NUM; ++i) begin
-      if (gpio_dir_reg[i] && MatchWLB(xt_lb, 8'd8)) begin
-        gpio_data_reg[i] <= xt_lb.wdata[i];
-      end else if (!gpio_dir_reg[i]) begin
-        gpio_data_reg[i] <= gpio[i];
-      end
+    if (MatchWLB(xt_lb, 8'd8)) begin
+      gpio_out_data_reg <= xt_lb.wdata;
     end
+    gpio_in_data_reg <= gpio;
   end
 
   // GPIO控制
   genvar i;
   generate
     for (i = 0; i < NUM; ++i) begin : gen_assign_gpio
-      assign gpio[i] = gpio_dir_reg[i] ? gpio_data_reg[i] : 1'bz;
+      assign gpio[i] = gpio_dir_reg[i] ? gpio_out_data_reg[i] : 1'bz;
     end
   endgenerate
 
@@ -42,7 +42,7 @@ module GPIO_LBUS
     if (MatchRLB(xt_lb, 8'd4)) begin
       rdata = gpio_dir_reg;
     end else if (MatchRLB(xt_lb, 8'd8)) begin
-      rdata = gpio_data_reg;
+      rdata = gpio_in_data_reg;
     end else begin
       rdata = 0;
     end
