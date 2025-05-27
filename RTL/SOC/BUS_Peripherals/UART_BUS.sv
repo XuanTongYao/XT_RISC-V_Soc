@@ -165,20 +165,17 @@ module UART_BUS
   end
 
   // 使用移位寄存器代替计数器实现LUT优化
-  logic [9:0] shift_reg;
-  logic copy_done;
+  logic [9:0] shift_reg = 10'b000000000_1;
+  logic copy_done = 0;
   logic [9:0] tx_copy;
   wire send_stop_bit = shift_reg[9];
   always_ff @(posedge band_clk) begin
-    if (!copy_done) begin
-      shift_reg <= 10'b000000000_1;
-    end
     if (!state.tx_ready) begin
       if (copy_done) begin
         shift_reg <= {shift_reg[8:0], shift_reg[9]};
         tx_copy   <= {1'b1, tx_copy[9:1]};
         uart_tx   <= tx_copy[0];
-        copy_done <= !send_stop_bit;
+        if (send_stop_bit) copy_done <= 0;
       end else begin
         tx_copy   <= tx;
         copy_done <= 1'b1;
