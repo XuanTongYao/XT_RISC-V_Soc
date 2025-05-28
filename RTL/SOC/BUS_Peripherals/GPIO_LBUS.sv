@@ -30,9 +30,8 @@ module GPIO_LBUS
   end
 
   // GPIO控制
-  genvar i;
   generate
-    for (i = 0; i < NUM; ++i) begin : gen_assign_gpio
+    for (genvar i = 0; i < NUM; ++i) begin : gen_assign_gpio
       assign gpio[i] = gpio_dir_reg[i] ? gpio_out_data_reg[i] : 1'bz;
     end
   endgenerate

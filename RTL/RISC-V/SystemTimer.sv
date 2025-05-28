@@ -75,14 +75,16 @@ module SystemTimer
 
 
   always_ff @(posedge hb_clk) begin
-    unique case ({
-      read_cmp, read_high
-    })
-      2'b00: rdata <= mtime_l;
-      2'b01: rdata <= mtime_h;
-      2'b10: rdata <= mtimecmp_l;
-      2'b11: rdata <= mtimecmp_h;
-    endcase
+    if (sel.ren) begin
+      unique case ({
+        read_cmp, read_high
+      })
+        2'b00: rdata <= mtime_l;
+        2'b01: rdata <= mtime_h;
+        2'b10: rdata <= mtimecmp_l;
+        2'b11: rdata <= mtimecmp_h;
+      endcase
+    end
   end
 
 endmodule

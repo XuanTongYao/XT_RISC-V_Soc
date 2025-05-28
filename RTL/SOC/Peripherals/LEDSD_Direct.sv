@@ -29,9 +29,8 @@ module LEDSD_Direct #(
 
   //生成数码管信号连线
   logic [6:0] code[NUM];
-  genvar i;
   generate
-    for (i = 0; i < NUM; i = i + 1) begin : gen_multi_LEDSD
+    for (genvar i = 0; i < NUM; i = i + 1) begin : gen_multi_LEDSD
       always_comb begin
         unique case (data_in[i])
           5'd0: code[i] = {7{COM}} ^ {7'h3F};  //0

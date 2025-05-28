@@ -13,7 +13,6 @@ module AddressMapping #(
     output logic [SLICE_NUM-1:0] sel[ADDR_NUM]
 );
 
-  genvar i;
   generate
     if (SLICE_NUM == 1) begin : gen_direct
       assign mapped_addr = addr[MAPPED_ADDR_WIDTH-1:0];
@@ -23,7 +22,7 @@ module AddressMapping #(
         end
       end
     end else begin : gen_mapping
-      for (i = 0; i < ADDR_NUM; ++i) begin : gen_multi_addr_mapping
+      for (genvar i = 0; i < ADDR_NUM; ++i) begin : gen_multi_addr_mapping
         logic [ADDR_WIDTH-1:0] SLICE_ADDR_START;
         always_comb begin
           sel[i] = 0;

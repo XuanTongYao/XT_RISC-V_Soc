@@ -157,33 +157,34 @@ module UART_BUS
 
 
   //----------发送----------//
-  logic [9:0] tx;
+  logic [7:0] tx;
   always_ff @(posedge hb_clk) begin
     if (sel.wen && !xt_hb.waddr[0]) begin
-      tx <= {1'b1, xt_hb.wdata[7:0], 1'b0};  // 插入起始位与结束位
+      tx <= xt_hb.wdata[7:0];
     end
   end
 
   // 使用移位寄存器代替计数器实现LUT优化
   logic [9:0] shift_reg = 10'b000000000_1;
   logic copy_done = 0;
-  logic [9:0] tx_copy;
+  logic [8:0] tx_copy;
   wire send_stop_bit = shift_reg[9];
   always_ff @(posedge band_clk) begin
     if (!state.tx_ready) begin
       if (copy_done) begin
         shift_reg <= {shift_reg[8:0], shift_reg[9]};
-        tx_copy   <= {1'b1, tx_copy[9:1]};
+        tx_copy   <= {1'b1, tx_copy[8:1]};  // 从后面填充结束位
         uart_tx   <= tx_copy[0];
         if (send_stop_bit) copy_done <= 0;
       end else begin
-        tx_copy   <= tx;
+        tx_copy   <= {tx, 1'b0};
         copy_done <= 1'b1;
       end
     end
   end
 
   // 旧的实现
+  // wire [9:0] tx_vec = {1'b1, tx, 1'b0};// 插入起始位与结束位
   // logic [3:0] tx_ptr = 0;
   // wire send_stop_bit = tx_ptr == 4'd9;
   // always_ff @(posedge band_clk) begin
@@ -193,9 +194,10 @@ module UART_BUS
   //     end else begin
   //       tx_ptr <= tx_ptr + 1'b1;
   //     end
-  //     uart_tx <= tx[tx_ptr];
+  //     uart_tx <= tx_vec[tx_ptr];
   //   end
   // end
+
 
   wire tx_ready_pulse;
   OncePulse #(
