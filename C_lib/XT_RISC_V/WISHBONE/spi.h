@@ -113,7 +113,7 @@ typedef union
     uint8_t reg;
     struct
     {
-        // 模式错误
+        // 模式错误，在主机模式时自身片选被拉低
         uint8_t IRQMDFEN : 1;
         // 接收溢出
         uint8_t IRQROEEN : 1;

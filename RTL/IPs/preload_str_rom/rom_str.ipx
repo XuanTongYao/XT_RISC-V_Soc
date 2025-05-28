@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DiamondModule name="rom_str" module="rom_str" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 01 31 20:19:20.062" version="2.8" type="Module" synthesis="synplify" source_format="Verilog HDL">
+<DiamondModule name="rom_str" module="rom_str" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 05 27 15:43:13.527" version="2.8" type="Module" synthesis="synplify" source_format="Verilog HDL">
   <Package>
-		<File name="" type="" modified="2025 01 31 20:19:19.977"/>
-		<File name="d:/projects/programs/risc-v_c/xt_risc_v/preload_str.txt" type="mem" modified="2025 01 31 10:25:40.594"/>
-		<File name="rom_str.lpc" type="lpc" modified="2025 01 31 20:19:19.177"/>
-		<File name="rom_str.v" type="top_level_verilog" modified="2025 01 31 20:19:19.213"/>
-		<File name="rom_str_tmpl.v" type="template_verilog" modified="2025 01 31 20:19:19.213"/>
-		<File name="tb_rom_str_tmpl.v" type="testbench_verilog" modified="2025 01 31 20:19:19.214"/>
+		<File name="" type="" modified="2025 05 27 15:43:13.455"/>
+		<File name="d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_str.txt" type="mem" modified="2025 01 31 10:25:40.594"/>
+		<File name="rom_str.lpc" type="lpc" modified="2025 05 27 15:43:12.646"/>
+		<File name="rom_str.v" type="top_level_verilog" modified="2025 05 27 15:43:12.687"/>
+		<File name="rom_str_tmpl.v" type="template_verilog" modified="2025 05 27 15:43:12.687"/>
+		<File name="tb_rom_str_tmpl.v" type="testbench_verilog" modified="2025 05 27 15:43:12.688"/>
   </Package>
 </DiamondModule>

@@ -1,17 +1,15 @@
 `include "./../Defines/AddressDefines.sv"
 
+// 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
   import XT_BUS::*;
 #(
-    parameter int GPIO_NUM = 30
+    parameter int GPIO_NUM = 32,
+    parameter int CSN_NUM  = 2    // 专用SPI片选引脚
 ) (
     input                       clk_osc,
     input                       rst_sw,
     input                       download_mode,
-    output logic [         2:0] rgb,
-    output logic [         2:0] rgb2,
-    // inout        [         2:0] rgb,
-    // inout        [         2:0] rgb2,
     inout        [GPIO_NUM-1:0] gpio,
     input        [         3:0] key_raw,
     input        [         1:0] sw_raw,
@@ -21,14 +19,14 @@ module XT_Soc_Risc_V
     output logic                uart_tx,
     inout                       i2c1_scl,
     inout                       i2c1_sda,
-    output logic [         0:0] spi_csn,
+    inout                       i2c2_scl,
+    inout                       i2c2_sda,
+    input                       spi_scsn,
+    output logic [ CSN_NUM-1:0] spi_csn,
     inout                       spi_clk,
     inout                       spi_miso,
     inout                       spi_mosi
 );
-  assign rgb2[1] = rgb2[0];
-  assign rgb2[2] = rgb2[0];
-  assign rgb = {3{rgb2[0]}};
 
 
   //----------时钟树----------//
@@ -52,7 +50,7 @@ module XT_Soc_Risc_V
 
   wire clk;
   wire systemtimer_clk;  // 1MHz
-  wire sampling_clk;  // 153_600，生成19200波特率误差0.16%
+  wire sampling_clk;  // 153_846，生成19200波特率误差0.16%
   wire lb_clk;  // 100K
   wire rst_sync = ~pll_lock;
   SystemPLL u_SystmePLL (
@@ -258,25 +256,22 @@ module XT_Soc_Risc_V
       .rdata      (slave_data_in[ID_WISHBONE])
   );
 
-  wire spi_scsn = 1;
+  localparam int ALL_CSN_NUM = 3;
   wire ufm_sn = 1;
-  wire tc_rst = 0;
+  wire tc_rst, tc_ic, tc_oc;  // 定时器的功能复用
   wire tc_rstn = !tc_rst;
-  wire tc_ic = 0;
-  //   wire tc_oc;
-  //   wire i2c1_irqo;
-  //   wire i2c2_irqo;
-  //   wire tc_int;
-  //   wire wbc_ufm_irq;
-  assign irq_source[9] = 0;  // 保留给i2c2_irqo
+  wire [ALL_CSN_NUM-1:0] all_spi_csn;
+  assign spi_csn = all_spi_csn[CSN_NUM-1:0];
+  wire [ALL_CSN_NUM-CSN_NUM-1:0] af_spi_csn = all_spi_csn[ALL_CSN_NUM-1:CSN_NUM];
   efb u_efb (
       .*,
       .tc_clki(clk_osc),
       .i2c1_irqo(irq_source[8]),
+      .i2c2_irqo(irq_source[9]),
       .spi_irq(irq_source[10]),
       .tc_int(irq_source[11]),
       .wbc_ufm_irq(irq_source[12]),
-      .tc_oc(rgb2[0])
+      .spi_csn(all_spi_csn)
   );
 
 
@@ -302,13 +297,14 @@ module XT_Soc_Risc_V
       .sw_raw({sw_raw, download_mode})
   );
 
-  GPIO_LBUS #(
-      .NUM(GPIO_NUM)
-  ) u_GPIO_LBUS (
-      .*,
-      .rdata(lb_data_in[1][GPIO_NUM-1:0]),
-      .gpio (gpio)
-  );
+
+  //   GPIO_LBUS #(
+  //       .NUM(GPIO_NUM)
+  //   ) u_GPIO_LBUS (
+  //       .*,
+  //       .rdata(lb_data_in[1][GPIO_NUM-1:0]),
+  //       .gpio (gpio)
+  //   );
 
   LED_LBUS #(
       .LED_NUM(8)
@@ -324,6 +320,21 @@ module XT_Soc_Risc_V
       .ledsd(ledsd)
   );
 
+  AF_GPIO_LBUS #(
+      .NUM           (GPIO_NUM),
+      .FUNCT_IN_NUM  (2),
+      .FUNCT_IN_MASK ({32'h0000_00FF, 32'h0000_00FF}),
+      .FUNCT_OUT_NUM (2),
+      .FUNCT_OUT_MASK({32'h1FE0_0000, 32'h1FE0_0000}),
+      .BASE_ADDR     (8'd24)
+  ) u_AF_GPIO_LBUS (
+      .*,
+      .gpio_clk (clk),
+      .rdata    (lb_data_in[1]),
+      .funct_in ({tc_rst, tc_ic}),
+      .funct_out({tc_oc, af_spi_csn}),
+      .gpio     (gpio)
+  );
 
 
   //----------外设----------//

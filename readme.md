@@ -11,6 +11,27 @@
 
 PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。外设基本是围绕[该核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
 
+## 目录
+
+- [XT\_RISC-V 微控制器](#xt_risc-v-微控制器)
+  - [目录](#目录)
+  - [MCU特性](#mcu特性)
+    - [RV32I内核](#rv32i内核)
+      - [异常/中断控制器](#异常中断控制器)
+    - [时钟树](#时钟树)
+    - [其他核心模块](#其他核心模块)
+      - [外部中断控制器](#外部中断控制器)
+      - [MTime和Mtimecmp(机器计时器)](#mtime和mtimecmp机器计时器)
+  - [XT高速总线](#xt高速总线)
+    - [内核等待机制](#内核等待机制)
+  - [XT低速总线](#xt低速总线)
+  - [地址映射或选择](#地址映射或选择)
+  - [BOOTLOADER](#bootloader)
+  - [引脚与GPIO](#引脚与gpio)
+  - [TODO\_LIST](#todo_list)
+
+## MCU特性
+
 架构图
 
 ![alt text](img/image.png)
@@ -18,8 +39,6 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 内存地址映射
 
 ![alt text](img/image-8.png)
-
-## MCU特性
 
 ### RV32I内核
 
@@ -38,6 +57,9 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 时钟频率可根据实际情况修改。
 
+- 内部振荡器频率**2.15MHz**，作为时钟监视器的独立时钟源
+- 时钟监视器监控PLL状态，若出现脱锁将自动重置PLL并发出全局`RST`信号
+- 时钟监视器可设置上电等待时间、PLL锁定等待时间，拥有一个外部重置源，通过按钮可重置系统
 - PLL输入时钟频率**12MHz**
 - 核心、高速总线、WISHBONE总线位于同一时钟域，基准频率**12MHz**
 - 机器计时器固定频率**1MHz**
@@ -99,6 +121,20 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 2. 把FLASH中的数据逐个拷贝到指令存储器RAM中
 3. 指令地址跳转到0
 4. 触发脉冲将MUX切换到指令存储器RAM
+
+## 引脚与GPIO
+
+引脚图来源于[该核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)
+
+![alt text](img/pin_diagram.png)
+
+每个功能可以选中某一个GPIO进行功能复用
+
+| GPIO        | 输入复用功能          | 输出复用功能       |
+| ----------- | --------------------- | ------------------ |
+| GPIO[7:0]   | 定时器重置/定时器输入 | -                  |
+| GPIO[28:21] | -                     | SPI CS2/定时器输出 |
+| 其他        | -                     | -                  |
 
 ## TODO_LIST
 

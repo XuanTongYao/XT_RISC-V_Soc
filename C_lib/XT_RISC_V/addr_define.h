@@ -82,18 +82,20 @@
 #define RGB_LEN 8
 #define LED_LEN 1
 #define LEDSD_LEN 3
+#define AF_GPIO_LEN 16
 
 #define KEY_SW_OFFSET 0
 #define GPIO_OFFSET (KEY_SW_OFFSET+KEY_SW_LEN)
 #define RGB_OFFSET (GPIO_OFFSET+GPIO_LEN)
 #define LED_OFFSET (RGB_OFFSET+RGB_LEN)
 #define LEDSD_OFFSET (LED_OFFSET+LED_LEN)
+#define AF_GPIO_OFFSET (LEDSD_OFFSET+LEDSD_LEN)
 
 #define KEY_SW_BASE     LB_BASE(KEY_SW)
 #define GPIO_BASE       LB_BASE(GPIO)
 #define RGB_BASE        LB_BASE(RGB)
 #define LED_BASE        LB_BASE(LED)
 #define LEDSD_BASE      LB_BASE(LEDSD)
-
+#define AF_GPIO_BASE    LB_BASE(AF_GPIO)
 
 #endif

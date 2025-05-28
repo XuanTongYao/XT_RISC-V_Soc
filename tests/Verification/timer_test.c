@@ -1,6 +1,7 @@
 #include "XT_RISC_V_Base.h"
 #include "timer.h"
 #include "uart.h"
+#include "af_gpio.h"
 
 uint8_t COMPARE = 0;
 uint8_t ADD = 0;
@@ -10,6 +11,8 @@ void main(void) {
     // ENABLE_ALL_MINT;
     *EINT_CTRL_ENABLE_REG = UART_IRQ_MASK | Timer_IRQ_MASK;
     ENABLE_GLOBAL_MINT;
+    AF_GPIO->DIRECTION_REG = 0xFC000000;
+    AF_GPIO->DATA_REG = 0xFC000000;
     while (1) {
         NOP;
     }
@@ -33,6 +36,8 @@ void pwm_test(void) {
 }
 
 void breathing_light_test(void) {
+    OUT_AF_SEL(AF_ID_TIMER_OUTPUT) = 7;
+    OUT_AF_EN(AF_ID_TIMER_OUTPUT) = 1;
     set_prescale(DIV_256);
     set_counter_mode(FastPWM);
     set_output_mode(Set_Clear);
@@ -79,7 +84,18 @@ IRQ UART_RX_IRQ_Handler(void) {
     } else if (val == 0x06) {
         exit_breathing_light_test();
     } else if (val == 0x07) {
-        TIMER_INT_EN_REG->IRQOVFEN = 1;
+        OUT_AF_EN(AF_ID_TIMER_OUTPUT) = 0;
+    } else if (val == 0x08) {
+        OUT_AF_EN(AF_ID_TIMER_OUTPUT) = 1;
+    } else if (val == 0x09) {
+        OUT_AF_SEL(AF_ID_TIMER_OUTPUT) = 7; // 红色
+    } else if (val == 0x0a) {
+        OUT_AF_SEL(AF_ID_TIMER_OUTPUT) = 6; // 绿色
+    } else if (val == 0x0b) {
+        OUT_AF_SEL(AF_ID_SPI_CS2) = 6;
+        OUT_AF_EN(AF_ID_SPI_CS2) = 1;
+    } else if (val == 0x0c) {
+        OUT_AF_EN(AF_ID_SPI_CS2) = 0;
     }
 }
 
