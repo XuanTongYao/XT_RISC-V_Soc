@@ -87,8 +87,6 @@ module HarvardBootloader
       end else begin
         rdata <= {24'b0, rom_data};
       end
-    end else begin
-      rdata <= 0;
     end
   end
 

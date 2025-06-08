@@ -320,9 +320,13 @@ module XT_Soc_Risc_V
       .ledsd(ledsd)
   );
 
+  localparam int AF_FUNCT_IN_NUM = 2;
+  wire funct_in[AF_FUNCT_IN_NUM];
+  assign tc_rst = funct_in[0];
+  assign tc_ic  = funct_in[1];
   AF_GPIO_LBUS #(
       .NUM           (GPIO_NUM),
-      .FUNCT_IN_NUM  (2),
+      .FUNCT_IN_NUM  (AF_FUNCT_IN_NUM),
       .FUNCT_IN_MASK ({32'h0000_00FF, 32'h0000_00FF}),
       .FUNCT_OUT_NUM (2),
       .FUNCT_OUT_MASK({32'h1FE0_0000, 32'h1FE0_0000}),
@@ -331,7 +335,7 @@ module XT_Soc_Risc_V
       .*,
       .gpio_clk (clk),
       .rdata    (lb_data_in[1]),
-      .funct_in ({tc_rst, tc_ic}),
+      .funct_in (funct_in),
       .funct_out({tc_oc, af_spi_csn}),
       .gpio     (gpio)
   );
