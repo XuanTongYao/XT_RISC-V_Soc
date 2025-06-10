@@ -26,12 +26,14 @@ module SystemTimer
 
 
   // mtime在低位，mtimecmp在高位
-  wire read_cmp = xt_hb.raddr[3];
-  wire read_time = ~xt_hb.raddr[3];
-  wire write_cmp = xt_hb.waddr[3];
-  wire write_time = ~xt_hb.waddr[3];
-  wire read_high = xt_hb.raddr[2];
-  wire write_high = xt_hb.waddr[2];
+  // 5'd20  5'd24
+  wire read_cmp = xt_hb.raddr[4:2] == 3'b101 || xt_hb.raddr[4:2] == 3'b110;
+  // 5'd12  5'd16
+  wire read_time = xt_hb.raddr[4:2] == 3'b011 || xt_hb.raddr[4:2] == 3'b100;
+  wire write_cmp = xt_hb.waddr[4:2] == 3'b101 || xt_hb.waddr[4:2] == 3'b110;
+  wire write_time = xt_hb.waddr[4:2] == 3'b011 || xt_hb.waddr[4:2] == 3'b100;
+  wire read_high = xt_hb.raddr[4:2] == 3'b100 || xt_hb.raddr[4:2] == 3'b110;
+  wire write_high = xt_hb.waddr[4:2] == 3'b100 || xt_hb.waddr[4:2] == 3'b110;
 
   logic [31:0] mtime_l = 0;
   logic [31:0] mtime_h = 0;

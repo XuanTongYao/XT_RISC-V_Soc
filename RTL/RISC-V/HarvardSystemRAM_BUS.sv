@@ -26,10 +26,12 @@ module HarvardSystemRAM_BUS
     input sel_t ram_inst,
     // 数据RAM
     output logic [31:0] ram_r_data,
+    output logic ram_wait_finish,
 
     // 指令RAM
     input [$clog2(INST_RAM_DEPTH*4)-1:0] ram_instruction_r_addr,
-    output logic [31:0] ram_instruction_r_data
+    output logic [31:0] ram_instruction_r_data,
+    output logic ram_instruction_wait_finish
 
 );
   // 数据RAM
@@ -40,12 +42,22 @@ module HarvardSystemRAM_BUS
   wire [$clog2(DATA_RAM_DEPTH*4)-1:0] ram_w_addr = xt_hb.waddr[$clog2(DATA_RAM_DEPTH*4)-1:0];
   wire [$clog2(DATA_RAM_DEPTH*4)-1:0] ram_r_addr = xt_hb.raddr[$clog2(DATA_RAM_DEPTH*4)-1:0];
   wire [31:0] ram_w_data = xt_hb.wdata;
+  logic read_finish = 0;
+  always_ff @(posedge hb_clk) begin
+    if (read_finish) begin
+      read_finish <= 0;
+    end else if (ram_sel.ren) begin
+      read_finish <= 1;
+    end
+  end
+  assign ram_wait_finish = ram_sel.ren ? read_finish : 1;
+
 
   // 指令RAM
   wire ram_instruction_wen = ram_inst.wen;
   wire [$clog2(INST_RAM_DEPTH*4)-1:0] ram_instruction_w_addr = xt_hb.waddr[$clog2(INST_RAM_DEPTH*4)-1:0];
   wire [31:0] ram_instruction_w_data = xt_hb.wdata;
-
+  assign ram_instruction_wait_finish = 1;
 
   // 除以4计算 字的地址(对齐)
   wire [$clog2(DATA_RAM_DEPTH*4)-1-2:0] w_word_addr = ram_w_addr >> 2;

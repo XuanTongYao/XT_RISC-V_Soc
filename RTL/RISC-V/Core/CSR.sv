@@ -102,10 +102,31 @@ module CSR
       mcycleh <= 0;
       minstreth <= 0;
     end else begin
-      mcycle <= (atomic_counter_rw_en && short_addr == 8'h00) ? csr_wdata : mcycle_plus1[31:0];
-      mcycleh <= (atomic_counter_rw_en && short_addr == 8'h80) ? csr_wdata : mcycleh + mcycle_carry;
-      minstret <= (atomic_counter_rw_en && short_addr == 8'h02) ? csr_wdata : minstret_plus1[31:0];
-      minstreth <= (atomic_counter_rw_en && short_addr == 8'h82) ? csr_wdata : minstreth + minstret_carry;
+      // 可以优化资源？
+      if (atomic_counter_rw_en && short_addr == 8'h00) begin
+        mcycle <= csr_wdata;
+      end else begin
+        mcycle <= mcycle_plus1[31:0];
+      end
+      if (atomic_counter_rw_en && short_addr == 8'h80) begin
+        mcycleh <= csr_wdata;
+      end else begin
+        mcycleh <= mcycleh + mcycle_carry;
+      end
+      if (atomic_counter_rw_en && short_addr == 8'h02) begin
+        minstret <= csr_wdata;
+      end else begin
+        minstret <= minstret_plus1[31:0];
+      end
+      if (atomic_counter_rw_en && short_addr == 8'h82) begin
+        minstreth <= csr_wdata;
+      end else begin
+        minstreth <= minstreth + minstret_carry;
+      end
+      // mcycle <= (atomic_counter_rw_en && short_addr == 8'h00) ? csr_wdata : mcycle_plus1[31:0];
+      // mcycleh <= (atomic_counter_rw_en && short_addr == 8'h80) ? csr_wdata : mcycleh + mcycle_carry;
+      // minstret <= (atomic_counter_rw_en && short_addr == 8'h02) ? csr_wdata : minstret_plus1[31:0];
+      // minstreth <= (atomic_counter_rw_en && short_addr == 8'h82) ? csr_wdata : minstreth + minstret_carry;
     end
   end
   // 计数器配置(计数器永远计数，不实现)
@@ -159,9 +180,10 @@ module CSR
       mstatus <= 0;
       mie <= 0;
       mtvec <= 0;
-      mscratch <= 0;
-      mepc <= 0;
-      mcause <= 0;
+      // 下面的寄存器初始值不影响硬件控制流
+      // mscratch <= 0;
+      // mepc <= 0;
+      // mcause <= 0;
       // mtval <= 0;
     end else begin
       if (atomic_rw_en) begin

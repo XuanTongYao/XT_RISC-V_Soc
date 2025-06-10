@@ -109,7 +109,6 @@ void download(void) {
         }
         *PRELOAD_STR_INIT_ADDR_REG = user_stage;
         __tx_bytes_block_auto_increment(str_len);
-        // FIXME 由于这里有阻塞发送，此时如果接收到多字节数据，会漏掉
     }
 }
 

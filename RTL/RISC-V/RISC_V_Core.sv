@@ -140,6 +140,7 @@ module RISC_V_Core #(
 
   assign instruction_addr_id_ex_debug = instruction_addr_id_ex;
 
+  // 目前译码和执行不平衡（执行高占用），某些信号可以在Decode中提前提取
   wire [31:0] jump_addr_ex;
   wire jump_en_ex;
   InstructionExecute u_InstructionExecute (

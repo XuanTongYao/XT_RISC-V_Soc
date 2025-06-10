@@ -25,7 +25,7 @@ module External_INT_Ctrl #(
   always_ff @(posedge hb_clk) begin
     if (rst_sync) begin
       INT_enable_reg <= 0;
-    end else if (sel.wen && xt_hb.waddr[2:0] == 3'd0) begin
+    end else if (sel.wen && xt_hb.waddr[2] == 1'b1) begin
       INT_enable_reg <= xt_hb.wdata[INT_NUM-1:0];
     end
   end
@@ -60,7 +60,7 @@ module External_INT_Ctrl #(
     if (!sel.ren) begin
       rdata <= 0;
     end else begin
-      if (xt_hb.raddr[2:0] == 3'd0) begin
+      if (xt_hb.raddr[2] == 1'b1) begin
         rdata <= INT_enable_reg;
       end else begin
         rdata <= INT_pending_reg;
