@@ -14,7 +14,7 @@
 // "开始:0x78"
 #define STR_3 28
 #define STR_3_LEN 12
-// "完成:0x56"
+// "完成:0x57"
 #define STR_4 40
 #define STR_4_LEN 12
 #define STR_ERR 52
