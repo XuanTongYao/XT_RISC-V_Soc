@@ -57,9 +57,7 @@ module External_INT_Ctrl #(
 
   // 总线读
   always_ff @(posedge hb_clk) begin
-    if (!sel.ren) begin
-      rdata <= 0;
-    end else begin
+    if (sel.ren) begin
       if (xt_hb.raddr[2] == 1'b1) begin
         rdata <= INT_enable_reg;
       end else begin

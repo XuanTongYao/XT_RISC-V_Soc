@@ -86,43 +86,44 @@ module CSR
   // 配置（不实现）
   // 内存保护（不实现）
   // 定时器和计数器(事件计数器只读0)
-  logic [31:0] mcycle;
-  logic [31:0] mcycleh;
-  wire [32:0] mcycle_plus1 = mcycle + 1'b1;
-  wire mcycle_carry = mcycle_plus1[32];
+  bit  [63:0] mcycle_all;  //运行周期数(只读实现)
+  wire [31:0] mcycle = mcycle_all[31:0];  //运行周期数
+  wire [31:0] mcycleh = mcycle_all[63:32];  // 运行周期数
+  // wire [32:0] mcycle_plus1 = mcycle + 1'b1;
+  // wire mcycle_carry = mcycle_plus1[32];
 
-  logic [31:0] minstret;
-  logic [31:0] minstreth;
-  wire [32:0] minstret_plus1 = minstret + instruction_retire;
-  wire minstret_carry = minstret_plus1[32];
+  wire [31:0] minstret = 0;  // 指令退役数(只读0实现)
+  wire [31:0] minstreth = 0;  // 指令退役数(只读0实现)
+  // wire [32:0] minstret_plus1 = minstret + instruction_retire;
+  // wire minstret_carry = minstret_plus1[32];
   always_ff @(posedge clk) begin
     if (rst_sync) begin
-      mcycle <= 0;
-      minstret <= 0;
-      mcycleh <= 0;
-      minstreth <= 0;
+      mcycle_all <= 0;
     end else begin
-      // 可以优化资源？
-      if (atomic_counter_rw_en && short_addr == 8'h00) begin
-        mcycle <= csr_wdata;
-      end else begin
-        mcycle <= mcycle_plus1[31:0];
-      end
-      if (atomic_counter_rw_en && short_addr == 8'h80) begin
-        mcycleh <= csr_wdata;
-      end else begin
-        mcycleh <= mcycleh + mcycle_carry;
-      end
-      if (atomic_counter_rw_en && short_addr == 8'h02) begin
-        minstret <= csr_wdata;
-      end else begin
-        minstret <= minstret_plus1[31:0];
-      end
-      if (atomic_counter_rw_en && short_addr == 8'h82) begin
-        minstreth <= csr_wdata;
-      end else begin
-        minstreth <= minstreth + minstret_carry;
-      end
+      mcycle_all <= mcycle_all + 1'b1;
+      // mcycle  <= mcycle_plus1[31:0];
+      // mcycleh <= mcycleh + mcycle_carry;
+      // 这种写法可以优化资源？
+      // if (atomic_counter_rw_en && short_addr == 8'h00) begin
+      //   mcycle <= csr_wdata;
+      // end else begin
+      //   mcycle <= mcycle_plus1[31:0];
+      // end
+      // if (atomic_counter_rw_en && short_addr == 8'h80) begin
+      //   mcycleh <= csr_wdata;
+      // end else begin
+      //   mcycleh <= mcycleh + mcycle_carry;
+      // end
+      // if (atomic_counter_rw_en && short_addr == 8'h02) begin
+      //   minstret <= csr_wdata;
+      // end else begin
+      //   minstret <= minstret_plus1[31:0];
+      // end
+      // if (atomic_counter_rw_en && short_addr == 8'h82) begin
+      //   minstreth <= csr_wdata;
+      // end else begin
+      //   minstreth <= minstreth + minstret_carry;
+      // end
       // mcycle <= (atomic_counter_rw_en && short_addr == 8'h00) ? csr_wdata : mcycle_plus1[31:0];
       // mcycleh <= (atomic_counter_rw_en && short_addr == 8'h80) ? csr_wdata : mcycleh + mcycle_carry;
       // minstret <= (atomic_counter_rw_en && short_addr == 8'h02) ? csr_wdata : minstret_plus1[31:0];

@@ -15,7 +15,10 @@ module InstructionDecoder (
 
     // 传递给ID_EX
     output logic ram_load_access_id,
+    output logic ram_store_access_id,
     output logic [31:0] ram_load_addr_id,
+    output logic [31:0] ram_store_addr_id,
+    output logic [31:0] ram_store_data_id,
     output logic [31:0] instruction_addr_id,
     output logic [31:0] instruction_id,
     output logic [31:0] operand1_id,
@@ -63,7 +66,10 @@ module InstructionDecoder (
 
     // ram_load_addr有ram_load_access控制，大胆赋值即可
     ram_load_access_id = 0;
+    ram_store_access_id = 0;
     ram_load_addr_id = reg_src1_data + imm_i;
+    ram_store_addr_id = reg_src1_data + imm_s;
+    ram_store_data_id = reg_src2_data;
 
     exception_id = 0;
     exception_cause_id = `EXCEPTION_INVALID_INST;
@@ -107,8 +113,7 @@ module InstructionDecoder (
       `INST_OP_S: begin
         unique case (funct3)
           `INST_SB, `INST_SH, `INST_SW: begin
-            operand1_id = reg_src1_data + imm_s;
-            operand2_id = reg_src2_data;
+            ram_store_access_id = 1;
           end
         endcase
       end

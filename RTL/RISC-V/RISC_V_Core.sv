@@ -108,15 +108,15 @@ module RISC_V_Core #(
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
 
+  wire ram_store_access_id, ram_load_access_id;
+  wire [31:0] ram_load_addr_id, ram_store_addr_id;
+  wire [31:0] ram_store_data_id;
   wire [31:0] instruction_addr_id;
   wire [31:0] instruction_id;
-  wire [31:0] operand1_id;
-  wire [31:0] operand2_id;
+  wire [31:0] operand1_id, operand2_id;
   wire reg_wen_id;
   wire exception_id;
   wire [3:0] exception_cause_id;
-  wire ram_load_access_id;
-  wire [31:0] ram_load_addr_id;
   assign next_pc = instruction_addr_id;
   InstructionDecoder u_InstructionDecoder (
       // 来自IF_ID
@@ -129,13 +129,13 @@ module RISC_V_Core #(
       // 传递给ID_EX
   );
 
-  wire        ram_load_access_id_ex;
-  wire [31:0] ram_load_addr_id_ex;
+  wire ram_store_access_id_ex, ram_load_access_id_ex;
+  wire [31:0] ram_load_addr_id_ex, ram_store_addr_id_ex;
+  wire [31:0] ram_store_data_id_ex;
   wire [31:0] instruction_addr_id_ex;
   wire [31:0] instruction_id_ex;
-  wire [31:0] operand1;
-  wire [31:0] operand2;
-  wire        reg_wen_id_ex;
+  wire [31:0] operand1, operand2;
+  wire reg_wen_id_ex;
   ID_EX u_ID_EX (.*);
 
   assign instruction_addr_id_ex_debug = instruction_addr_id_ex;

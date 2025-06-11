@@ -4,7 +4,10 @@
 module InstructionExecute (
     // 来自ID_EX
     input        ram_load_access_id_ex,
+    input        ram_store_access_id_ex,
     input [31:0] ram_load_addr_id_ex,
+    input [31:0] ram_store_addr_id_ex,
+    input [31:0] ram_store_data_id_ex,
     input [31:0] instruction_addr_id_ex,
     input [31:0] next_pc,                 // 下一个PC其实就存在IF_ID里面，不需要单独寄存
     input [31:0] instruction_id_ex,
@@ -27,13 +30,13 @@ module InstructionExecute (
     input [31:0] csr_mepc,
 
     // 访存
-    input [31:0] ram_load_data,
     output logic ram_load_en,
-    output logic [31:0] ram_load_addr,
     output logic ram_store_en,
-    output logic [1:0] ram_store_width,
+    output logic [31:0] ram_load_addr,
     output logic [31:0] ram_store_addr,
+    input [31:0] ram_load_data,
     output logic [31:0] ram_store_data,
+    output logic [1:0] ram_store_width,
 
     // 传递给核心控制器
     output logic [31:0] jump_addr_ex,
@@ -77,8 +80,21 @@ module InstructionExecute (
   wire [31:0] alu_shift_left = operand1 << operand2[4:0];
   wire [31:0] alu_shift_right_l = operand1 >> operand2[4:0];
   wire [31:0] alu_shift_right_a = $signed(operand1) >>> operand2[4:0];
-  // 基地址偏移可以搞一个加法器
   wire [31:0] alu_base_addr_offset = instruction_addr_id_ex + imm_b;
+  // 逻辑单元
+  wire alu_equal = operand1 == operand2;
+  wire alu_less_signed = $signed(operand1) < $signed(operand2);
+  wire alu_less_unsigned = operand1 < operand2;
+  logic alu_less;
+  always_comb begin
+    unique case (funct3)
+      `INST_SLT, `INST_SLTI: begin
+        alu_less = alu_less_signed;
+      end
+      default: alu_less = alu_less_unsigned;
+    endcase
+  end
+
   // Load指令访存数据的高位扩展
   logic extension_bit;
   always_comb begin
@@ -91,20 +107,16 @@ module InstructionExecute (
   wire [31:0] sign_zero_extension_byte = {{24{extension_bit}}, ram_load_data[7:0]};
   wire [31:0] sign_zero_extension_halfword = {{16{extension_bit}}, ram_load_data[15:0]};
 
-  // 逻辑单元
-  wire alu_equal = operand1 == operand2;
-  wire alu_less_signed = $signed(operand1) < $signed(operand2);
-  wire alu_less_unsigned = operand1 < operand2;
-
   // 源寄存器1的数据reg_src1_data一定和操作数1 operand1_id绑定
   // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
   // 立即数imm一定与操作数2 operand2_id绑定
   always_comb begin
     ram_load_en = ram_load_access_id_ex;
+    ram_store_en = ram_store_access_id_ex;
     ram_load_addr = ram_load_addr_id_ex;
+    ram_store_addr = ram_store_addr_id_ex;
+    ram_store_data = ram_store_data_id_ex;
     ram_store_width = funct3[1:0];
-    ram_store_addr = operand1;
-    ram_store_data = operand2;
     add_sub = 1;
 
     reg_wen_out = reg_wen_id_ex;
@@ -112,7 +124,6 @@ module InstructionExecute (
     reg_wdata = 0;
     jump_addr_ex = 0;
     jump_en_ex = 0;
-    ram_store_en = 0;
 
     exception_returned = 0;
     csr_r_en = 0;
@@ -148,22 +159,15 @@ module InstructionExecute (
           `INST_LW: reg_wdata = ram_load_data;
         endcase
       end
-      `INST_OP_S: begin
-        unique case (funct3)
-          `INST_SB, `INST_SH, `INST_SW: begin
-            ram_store_en = 1;
-          end
-        endcase
-      end
+      `INST_OP_S:     ;  // 已经在译码阶段完成处理
       `INST_OP_I: begin
         unique case (funct3)
-          `INST_ADDI:  reg_wdata = alu_add;
-          `INST_SLTI:  reg_wdata = {31'b0, alu_less_signed};
-          `INST_SLTIU: reg_wdata = {31'b0, alu_less_unsigned};
-          `INST_XORI:  reg_wdata = alu_xor;
-          `INST_ORI:   reg_wdata = alu_or;
-          `INST_ANDI:  reg_wdata = alu_and;
-          `INST_SLLI:  reg_wdata = alu_shift_left;
+          `INST_ADDI:              reg_wdata = alu_add;
+          `INST_SLTI, `INST_SLTIU: reg_wdata = {31'b0, alu_less};
+          `INST_XORI:              reg_wdata = alu_xor;
+          `INST_ORI:               reg_wdata = alu_or;
+          `INST_ANDI:              reg_wdata = alu_and;
+          `INST_SLLI:              reg_wdata = alu_shift_left;
           `INST_SRLI_SRAI: begin
             if (funct7[5] == 1'b1) begin
               //SRAI
@@ -183,12 +187,11 @@ module InstructionExecute (
             end
             reg_wdata = alu_add;
           end
-          `INST_SLL:  reg_wdata = alu_shift_left;
-          `INST_SLT:  reg_wdata = {31'b0, alu_less_signed};
-          `INST_SLTU: reg_wdata = {31'b0, alu_less_unsigned};
-          `INST_XOR:  reg_wdata = alu_xor;
-          `INST_OR:   reg_wdata = alu_or;
-          `INST_AND:  reg_wdata = alu_and;
+          `INST_SLT, `INST_SLTU: reg_wdata = {31'b0, alu_less};
+          `INST_XOR:             reg_wdata = alu_xor;
+          `INST_OR:              reg_wdata = alu_or;
+          `INST_AND:             reg_wdata = alu_and;
+          `INST_SLL:             reg_wdata = alu_shift_left;
           `INST_SRL_SRA: begin
             if (funct7[5] == 1'b1) begin
               //SRA
