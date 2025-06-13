@@ -1,17 +1,23 @@
 ﻿# 请确保你已经安装好编译器并设置环境变量
 # riscv64-unknown-elf-gcc --version
+# riscv-none-elf-gcc --version
 Write-Output ""
 $parentDir = (Get-Item $PSScriptRoot).Parent.FullName
 Set-Location -Path $parentDir
 . "$PSScriptRoot/inc.ps1"
 #  -fstrict-volatile-bitfields
 # 对具有volatile修饰的位域或结构体的成员，严格按照其大小执行单次访问，而不是使用lw这种更高效的访问方式
-$rv32必要参数 = "-march=rv32i -mabi=ilp32 -nostdlib -fstrict-volatile-bitfields -static-libgcc -lm" -split ' '
+$架构与扩展 = "-march=rv32i_zicsr -mabi=ilp32"
+$库参数 = "-nostdlib"
+$其他参数 = "-fstrict-volatile-bitfields"
+$riscv编译参数 = "$架构与扩展 $库参数 $其他参数" -split ' '
 $优化等级 = "-Os"
 $链接优化 = "-flto"
 # 修改$全局变量区记得修改启动文件
 $全局变量区 = "0x844"
 $链接器参数 = "-Wl,-Ttext-segment=0x0,-Tdata=$全局变量区,--section-start=.init=0x0"
+$编译器 = "riscv-none-elf-gcc"
+$目标文件处理工具 = "riscv-none-elf-objcopy"
 
 $start_file = ".\C_lib\Startup\start.s"
 # $start_file = ".\C_lib\Startup\simple_start.s"
@@ -36,14 +42,14 @@ $输出文件 = $main_file_name.TrimEnd(".c") + $优化等级
 
 # 编译链接生成ELF
 $elf_output = "$输出目录\ELFs\" + $输出文件
-riscv64-unknown-elf-gcc $链接器参数 $rv32必要参数 $优化等级 $链接优化 `
+&$编译器 $链接器参数 $riscv编译参数 $优化等级 $链接优化 `
     $include_list $start_file -x c $main_file $compile_list `
     -e _start -o $elf_output
 
 
 # 生成纯指令二进制文件
 $flat_output = "$输出目录\FlatBinary\" + $输出文件 + ".bin"
-riscv64-unknown-elf-objcopy -O binary $elf_output $flat_output
+&$目标文件处理工具 -O binary $elf_output $flat_output
 
 
 ##### 生成16进制文本文件

@@ -28,6 +28,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
     - [读的副效应问题](#读的副效应问题)
   - [XT低速总线](#xt低速总线)
   - [BOOTLOADER](#bootloader)
+    - [编译工具链](#编译工具链)
     - [程序下载](#程序下载)
   - [引脚与GPIO](#引脚与gpio)
   - [TODO\_LIST](#todo_list)
@@ -135,6 +136,12 @@ XT_HB是内核访问外部数据必经的通道，承担地址映射、互联其
 2. 把FLASH中的数据逐个拷贝到指令存储器RAM中
 3. 指令地址跳转到0
 4. 触发脉冲将MUX切换到指令存储器RAM
+
+### 编译工具链
+
+[SiFive riscv64-unknown-elf-gcc-8.3.0](https://github.com/sifive/freedom-tools/releases/tag/v2020.04.0-Toolchain.Only)已停止更新但**程序尺寸最小**，自举启动由此编译
+
+[riscv-none-elf-gcc-xpack](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack)标准最新，默认情况下**推荐使用**
 
 ### 程序下载
 

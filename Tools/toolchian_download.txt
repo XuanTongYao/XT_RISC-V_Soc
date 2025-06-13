@@ -1,3 +1,0 @@
-请使用裸机编译器
-https://github.com/sifive/freedom-tools/releases/tag/v2020.04.0-Toolchain.Only
-https://github.com/sifive/freedom-tools/tree/v2020.04.0-Toolchain.Only

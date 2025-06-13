@@ -112,7 +112,7 @@ typedef union
 #define LSC_READ_FEABITS 0xFB
 #define PROG_TAG 0xF8
 
-// 命令与操作数数量
+// 命令与操作数总数量
 #define IS_3OP_CMD(CMD)  (\
     (CMD)==ISC_DISABLE||\
     (CMD)==LSC_REFRESH||\
@@ -232,6 +232,10 @@ void disable_transparent_UFM(void);
 /// @param addr 地址
 /// @warning 必须先启用UFM透明传输
 void set_UFM_addr(const uint16_t addr);
+
+/// @brief 重设页地址为0
+/// @warning 必须先启用UFM透明传输
+void reset_UFM_addr(void);
 
 /// @brief 指定地址读取一页数据
 /// @param addr 地址

@@ -113,6 +113,11 @@ void set_UFM_addr(const uint16_t addr) {
     command_frame(CMD_PARAM(LSC_WRITE_ADDRESS));
 }
 
+void reset_UFM_addr(void) {
+    SET_CMD_OPERANDS_BE(LSC_INIT_ADDR_UFM, 0);
+    command_frame(CMD_PARAM(LSC_INIT_ADDR_UFM));
+}
+
 void read_one_UFM_page(uint16_t addr) {
     if (addr == 0) {
         SET_CMD_OPERANDS_BE(LSC_INIT_ADDR_UFM, 0);

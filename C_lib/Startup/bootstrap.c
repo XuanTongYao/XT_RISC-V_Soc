@@ -37,14 +37,14 @@ __attribute__((noreturn)) void main(void) {
 void boot(void) {
     // 必须使用最高内存区的栈
     // 防止全局变量被覆盖
-    __set_UFM_addr(0);
+    __reset_UFM_addr();
     for (size_t i = 0, ram_32addr = 0; i < (MAX_TEXT_DATA_LEN >> 4); i++) {
         __continue_read_one_UFM_page();
         for (size_t i = 0; i < 4; i++, ram_32addr++) {
             INST_BASE_ADDR[ram_32addr] = __DATA_BUFF_32[i];
         }
     }
-    // TODO还需要手动清空全局区的内容
+    // TODO 还需要手动清空全局区的内容(目前直接使用高位地址存放临时数据，暂时不需要)
     __disable_transparent_UFM();
     *DEBUG_REG = 0xF0;
     asm("j 0x0");
@@ -61,60 +61,51 @@ void boot(void) {
 // 4. 计算是否需要擦除和页面地址
 // 5. 完成确认
 void download(void) {
-    // 状态机状态就是字符串起始地址(简化)
-    uint8_t user_stage = WAIT_CMD;
-    uint8_t str_len = STR_1_LEN;
     PROG_INFO prog_info_tmp = { 0,0 };
     while (1) {
         UART_STATE state = *UART_STATE_REG;
-        if (state.rx_end) {
-            uint8_t uart_cmd = *UART_DATA_REG;
-            if (user_stage == WAIT_CMD) {
-                if (uart_cmd == 0x56) {
-                    // 进入下载模式
-                    user_stage = WAIT_LEN;
-                    str_len = STR_2_LEN;
-                } else if (uart_cmd == 0xF1) {
-                    break;
-                }
-            } else if (user_stage == WAIT_LEN) {
-                // 接收两字节的页面长度(MSB)
-                uint16_t page_num = 0;
-                page_num |= (uart_cmd << 8);
-                page_num |= rx_block();
-                // 检查是否有足够的空间存放
-                if (page_num > MAX_PAGE || page_num == 0) {
-                    *PRELOAD_STR_INIT_ADDR_REG = STR_ERR;
-                    __tx_bytes_block_auto_increment(STR_ERR_LEN);
-                } else {
-                    prog_info_tmp.page_len = page_num;
-                    user_stage = WAIT_START_FLAG;
-                    str_len = STR_3_LEN;
-                }
-            } else if (user_stage == WAIT_START_FLAG) {
-                if (uart_cmd == 0x78) {
-                    // 一定会擦除
-                    *__PROG_INFO = prog_info_tmp;
-                    __erase_UFM();
-                    from_uart_download();
-                    user_stage = WAIT_CONFIRM;
-                    str_len = STR_4_LEN;
-                }
-            } else if (user_stage == WAIT_CONFIRM) {
-                if (uart_cmd == 0x57) {
-                    user_stage = WAIT_CMD;
-                    str_len = STR_1_LEN;
-                }
-            }
+        if (!state.rx_end) {
+            *PRELOAD_STR_INIT_ADDR_REG = WAIT_CMD;
+            __tx_bytes_block_auto_increment(STR_1_LEN);
+            continue;
         }
-        *PRELOAD_STR_INIT_ADDR_REG = user_stage;
-        __tx_bytes_block_auto_increment(str_len);
+        uint8_t uart_cmd = *UART_DATA_REG;
+        if (uart_cmd == 0xF1)  break;
+        if (uart_cmd != 0x56) continue;
+
+        // 进入下载模式
+        while (1) {
+            *PRELOAD_STR_INIT_ADDR_REG = WAIT_LEN;
+            __tx_bytes_block_auto_increment(STR_2_LEN);
+            // 接收两字节的页面长度(MSB)
+            uint16_t page_num = (rx_block() << 8);
+            page_num |= rx_block();
+            // 检查是否有足够的空间存放
+            if (page_num > MAX_PAGE || page_num == 0) {
+                continue;
+            }
+            prog_info_tmp.page_len = page_num;
+            break;
+        }
+        *PRELOAD_STR_INIT_ADDR_REG = WAIT_START_FLAG;
+        __tx_bytes_block_auto_increment(STR_3_LEN);
+        // 确认
+        while (0x78 != rx_block()) {}
+        // 擦除
+        *__PROG_INFO = prog_info_tmp;
+        __erase_UFM();
+        from_uart_download();
+        *PRELOAD_STR_INIT_ADDR_REG = WAIT_CONFIRM;
+        __tx_bytes_block_auto_increment(STR_4_LEN);
+
+        // 完成确认
+        while (0x57 != rx_block()) {}
     }
 }
 
 
 void from_uart_download(void) {
-    __set_UFM_addr(0);
+    __reset_UFM_addr();
     for (size_t page = 0; page < __PROG_INFO->page_len; page++) {
         for (size_t j = 0; j < PAGE_BYTES; j++) {
             __DATA_BUFF_8[j] = rx_block();
@@ -125,9 +116,10 @@ void from_uart_download(void) {
 
 
 void check_UFM(void) {
-    __read_one_UFM_page(0);
+    __reset_UFM_addr();
+    __continue_read_one_UFM_page();
     // 第0个字为全0，则为无效程序代码或ELF
-    // TODO需要简单解析ELF
+    // TODO 需要简单解析ELF
     __PROG_INFO->fail = __DATA_BUFF_32[0] == 0;
     __PROG_INFO->page_len = 0;
 }
@@ -181,20 +173,9 @@ void __disable_transparent_UFM(void) {
     FLASH_NOP;
 }
 
-void __set_UFM_addr(const uint16_t addr) {
-    __DATA_BUFF_16[0] = 0x0040;
-    // 这里地址还是要先传输高位
-    __DATA_BUFF_8[2] = (addr & 0x3FFF) >> 8;__DATA_BUFF_8[3] = addr & 0x3FFF;
-    __SET_CMD_OPERANDS_BE(LSC_WRITE_ADDRESS, 0);
-    __command_frame(CMD_PARAM(LSC_WRITE_ADDRESS));
-}
-
-void __read_one_UFM_page(const uint16_t addr) {
-    // 设置页地址
-    __set_UFM_addr(addr);
-    // 读取到1页数据
-    __SET_CMD_OPERANDS_BE(LSC_READ_TAG, 0x100001);
-    __command_frame(CMD_PARAM(LSC_READ_TAG));
+void __reset_UFM_addr(void) {
+    __SET_CMD_OPERANDS_BE(LSC_INIT_ADDR_UFM, 0);
+    __command_frame(CMD_PARAM(LSC_INIT_ADDR_UFM));
 }
 
 void __continue_read_one_UFM_page(void) {

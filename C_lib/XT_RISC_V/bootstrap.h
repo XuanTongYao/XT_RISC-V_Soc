@@ -17,6 +17,7 @@
 // "完成:0x57"
 #define STR_4 40
 #define STR_4_LEN 12
+// "ERROR"
 #define STR_ERR 52
 #define STR_ERR_LEN 6
 // 不能用字符串字面量(需要memcpy调用)，全局变量应该可以，但是有一点问题
@@ -47,9 +48,9 @@ void check_UFM(void);
 //----------专为自举的特殊简化函数----------//
 
 // 对齐放在高位地址，防止被指令覆盖
-// RISC-V调用约定栈地址为16字节对齐，规避4个调用栈
+// RISC-V调用约定栈地址为16字节对齐，规避5个调用栈
 #define __DATA_BUFF_LEN 16
-#define __DATA_BUFF_ADDR (STACK_TOP_ADDR-16-64)
+#define __DATA_BUFF_ADDR (STACK_TOP_ADDR-16-80)
 #define __DATA_BUFF_8 ((uint8_t*)__DATA_BUFF_ADDR)
 #define __DATA_BUFF_16 ((uint16_t*)__DATA_BUFF_ADDR)
 #define __DATA_BUFF_32 ((uint32_t*)__DATA_BUFF_ADDR)
@@ -85,7 +86,8 @@ void __enable_transparent_UFM(void);
 /// @brief 关闭UFM透明传输
 void __disable_transparent_UFM(void);
 
-void __set_UFM_addr(const uint16_t addr);
+/// @brief 重置地址到1
+void __reset_UFM_addr(void);
 
 /// @brief 读取一页数据
 /// @param addr 地址
