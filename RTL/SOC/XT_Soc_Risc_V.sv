@@ -84,7 +84,8 @@ module XT_Soc_Risc_V
   // 高速总线
   wire hb_master_in_t master_in[HB_MASTER_NUM];  // 主机输入
   wire [31:0] domain_data_in[HB_DOMAIN_NUM];
-  wire [HB_DOMAIN_NUM-1:0] wait_finish;
+  wire [HB_DOMAIN_NUM-1:0] read_finish;
+  wire [HB_DOMAIN_NUM-1:0] write_finish;
   // 总线扇出
   wire hb_clk = clk;
   wire hb_slave_t xt_hb;
@@ -144,7 +145,8 @@ module XT_Soc_Risc_V
   ) u_XT_HB_Domain (
       .*,
       .sel(domain_sel[ID_XT_HB]),
-      .wait_finish(wait_finish[ID_XT_HB]),
+      .read_finish(read_finish[ID_XT_HB]),
+      .write_finish(write_finish[ID_XT_HB]),
       .rdata(domain_data_in[ID_XT_HB])
   );
 
@@ -174,24 +176,25 @@ module XT_Soc_Risc_V
 
 
   // 系统RAM
-  wire clk_en = core_stall_n;
   HarvardSystemRAM_BUS #(
       // 字深度(最大为2^30对应4GB字节)
       .DATA_RAM_DEPTH(`RAM_DEPTH),
       .INST_RAM_DEPTH(`INST_RAM_DEPTH)
   ) u_HarvardSystemRAM (
       .*,
-      .clk_en                     (clk_en),
+      .ram_inst_clk_en       (core_stall_n),
       // 与高速总线
       // 数据RAM
-      .ram_sel                    (domain_sel[ID_RAM]),
-      .ram_r_data                 (domain_data_in[ID_RAM]),
-      .ram_wait_finish            (wait_finish[ID_RAM]),
+      .ram_sel               (domain_sel[ID_RAM]),
+      .ram_r_data            (domain_data_in[ID_RAM]),
+      .ram_read_finish       (read_finish[ID_RAM]),
+      .ram_write_finish      (write_finish[ID_RAM]),
       // 指令RAM
-      .ram_inst                   (domain_sel[ID_INST_RAM]),
-      .ram_instruction_r_addr     (instruction_addr[`INST_RAM_ADDR_WIDTH-1:0]),
-      .ram_instruction_r_data     (user_instruction),
-      .ram_instruction_wait_finish(wait_finish[ID_INST_RAM])
+      .ram_inst              (domain_sel[ID_INST_RAM]),
+      .ram_instruction_r_addr(instruction_addr[`INST_RAM_ADDR_WIDTH-1:0]),
+      .ram_instruction_r_data(user_instruction),
+      .ram_inst_read_finish  (read_finish[ID_INST_RAM]),
+      .ram_inst_write_finish (write_finish[ID_INST_RAM])
   );
 
 
@@ -218,8 +221,7 @@ module XT_Soc_Risc_V
 
 
   //----------WISHBONE总线外设----------//
-  wire wb_clk_i;
-  wire wb_rst_i;
+  wire wb_rst_i, wb_clk_i;
   WISHBONE_SYSCON u_WISHBONE_SYSCON (
       .*,
       .wb_clk_o(wb_clk_i),
@@ -235,17 +237,18 @@ module XT_Soc_Risc_V
   ) u_WISHBONE_MASTER (
       .*,
       // 与从设备
-      .wb_ack_i   (wb_ack_o),
-      .wb_dat_i   (wb_dat_o),
-      .wb_dat_o   (wb_dat_i),
-      .wb_cyc_o   (wb_cyc_i),
-      .wb_stb_o   (wb_stb_i),
-      .wb_we_o    (wb_we_i),
-      .wb_adr_o   (wb_adr_i),
+      .wb_ack_i    (wb_ack_o),
+      .wb_dat_i    (wb_dat_o),
+      .wb_dat_o    (wb_dat_i),
+      .wb_cyc_o    (wb_cyc_i),
+      .wb_stb_o    (wb_stb_i),
+      .wb_we_o     (wb_we_i),
+      .wb_adr_o    (wb_adr_i),
       // 与XT_HB总线
-      .sel        (domain_sel[ID_WISHBONE]),
-      .wait_finish(wait_finish[ID_WISHBONE]),
-      .rdata      (domain_data_in[ID_WISHBONE])
+      .sel         (domain_sel[ID_WISHBONE]),
+      .read_finish (read_finish[ID_WISHBONE]),
+      .write_finish(write_finish[ID_WISHBONE]),
+      .rdata       (domain_data_in[ID_WISHBONE])
   );
 
   localparam int ALL_CSN_NUM = 3;
@@ -275,11 +278,12 @@ module XT_Soc_Risc_V
       .SLAVE_NUM(LB_SLAVE_NUM)
   ) u_XT_LB (
       .*,
-      .sel        (domain_sel[ID_XT_LB]),
-      .wait_finish(wait_finish[ID_XT_LB]),
-      .rdata      (domain_data_in[ID_XT_LB]),
+      .sel         (domain_sel[ID_XT_LB]),
+      .read_finish (read_finish[ID_XT_LB]),
+      .write_finish(write_finish[ID_XT_LB]),
+      .rdata       (domain_data_in[ID_XT_LB]),
       // 低速总线部分
-      .bus        (xt_lb)
+      .bus         (xt_lb)
   );
 
   SW_KEY_LBUS u_SW_KEY_LBUS (

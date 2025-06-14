@@ -13,7 +13,8 @@ module XT_LB
     input lb_clk,
     input [31:0] lb_data_in[SLAVE_NUM],
     output lb_slave_t bus = 0,
-    output logic wait_finish
+    output logic read_finish,
+    output logic write_finish
 );
 
   logic [31:0] rdata_mux;
@@ -46,7 +47,8 @@ module XT_LB
       .data_valid         (hb_ready),
       .waiting_slow_domain(waiting_slow_domain)
   );
-  assign wait_finish = !waiting_slow_domain;
+  assign read_finish  = !waiting_slow_domain;
+  assign write_finish = !waiting_slow_domain;
 
 
   //----------状态机----------//
@@ -57,39 +59,44 @@ module XT_LB
   } lb_state_e;
   lb_state_e lb_state;
 
-
+  // 这里可以简化逻辑，wdata和write_width可以不需要门控
+  logic read_before_write;
   always_ff @(posedge lb_clk) begin
     unique case (lb_state)
       IDLE: begin
-        // 先写入再读取
-        if (hb_ready && wen) begin
+        // 先读取后写入
+        if (hb_ready && ren) begin
+          lb_state <= READ;
+          bus.ren  <= 1;
+          bus.addr <= raddr;
+          if (wen) read_before_write <= 1;
+          else read_before_write <= 0;
+        end else if (hb_ready && wen) begin
           lb_state        <= WRITE;
           bus.wen         <= 1;
           bus.addr        <= waddr;
           bus.wdata       <= wdata;
           bus.write_width <= write_width;
-        end else if (hb_ready && ren) begin
-          lb_state <= READ;
-          bus.ren  <= 1;
-          bus.addr <= raddr;
         end
       end
       WRITE: begin
-        bus.wen <= 0;
-        if (ren) begin
-          lb_state <= READ;
-          bus.ren  <= 1;
-          bus.addr <= raddr;
+        lb_state <= IDLE;
+        lb_ack   <= ~lb_ack;
+        bus.wen  <= 0;
+      end
+      READ: begin
+        rdata   <= rdata_mux;
+        bus.ren <= 0;
+        if (read_before_write) begin
+          lb_state        <= WRITE;
+          bus.wen         <= 1;
+          bus.addr        <= waddr;
+          bus.wdata       <= wdata;
+          bus.write_width <= write_width;
         end else begin
           lb_state <= IDLE;
           lb_ack   <= ~lb_ack;
         end
-      end
-      READ: begin
-        lb_state <= IDLE;
-        lb_ack <= ~lb_ack;
-        rdata <= rdata_mux;
-        bus.ren <= 0;
       end
     endcase
   end

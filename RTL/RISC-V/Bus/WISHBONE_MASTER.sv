@@ -1,6 +1,6 @@
 // XT_HB的时钟速度hb_clk必须大于等于wb_clk_i
-// 若读写同时发生则先读取再写入
-// 只支持单次多写
+// 若读写同时发生则进行RMW
+// 只支持单次读写与RMW
 // 读写周期可能已经优化到极限
 module WISHBONE_MASTER
   import XT_BUS::*;
@@ -26,23 +26,28 @@ module WISHBONE_MASTER
     input sel_t sel,
     output logic [31:0] rdata,
     // 停止等待
-    output logic wait_finish
+    output logic read_finish,
+    output logic write_finish
 );
 
   //----------状态机----------//
   typedef enum bit [1:0] {
     IDLE  = 2'd0,
     READ  = 2'd1,
-    WRITE = 2'd2
+    WRITE = 2'd2,
+    RWM   = 2'd3
   } wishbone_state_e;
   wishbone_state_e wishbone_state;
 
+  logic ready_ack, rw_finish;
+  assign read_finish  = rw_finish;
+  assign write_finish = rw_finish;
   OncePulse #(
       .TRIGGER(2'b01)
   ) u_wc_OncePulse (
       .clk  (hb_clk),
-      .ctrl (wb_ack_i),
-      .pulse(wait_finish)
+      .ctrl (wb_ack_i && ready_ack),
+      .pulse(rw_finish)
   );
   // 启动读写控制
   // 把这里的信号换成一个设备准备信号
@@ -60,21 +65,37 @@ module WISHBONE_MASTER
     unique case (wishbone_state)
       IDLE: begin
         // 先读取再写入
-        if (hb_ready && sel.ren) begin
-          wishbone_state <= READ;
-        end else if (hb_ready && sel.wen) begin
-          wishbone_state <= WRITE;
+        if (hb_ready) begin
+          if (sel.ren && sel.wen) begin
+            ready_ack <= 0;
+            wishbone_state <= READ;
+          end else if (sel.ren) begin
+            ready_ack <= 1;
+            wishbone_state <= READ;
+          end else if (sel.wen) begin
+            ready_ack <= 1;
+            wishbone_state <= WRITE;
+          end
         end
       end
       READ: begin
         if (wb_ack_i) begin
-          wishbone_state <= IDLE;
+          rdata <= {24'b0, wb_dat_i};
+          if (ready_ack) begin
+            wishbone_state <= IDLE;
+          end else begin
+            wishbone_state <= RWM;
+          end
         end
       end
       WRITE: begin
         if (wb_ack_i) begin
           wishbone_state <= IDLE;
         end
+      end
+      RWM: begin
+        ready_ack <= 1;
+        wishbone_state <= WRITE;
       end
       default: ;
     endcase
@@ -99,16 +120,11 @@ module WISHBONE_MASTER
         wb_stb_o = 1;
         wb_cyc_o = 1;
       end
+      RWM: begin
+        wb_cyc_o = 1;
+      end
     endcase
   end
-
-  always_ff @(posedge wb_clk_i) begin
-    if (wishbone_state == READ && wb_ack_i) begin
-      rdata <= {24'b0, wb_dat_i};
-    end
-  end
-
-
 
 
 endmodule

@@ -8,11 +8,11 @@ module XT_HB_Domain
     input sel_t sel,
     input [31:0] hb_data_in[SLAVE_NUM],
 
-    output logic wait_finish,
+    output logic read_finish,
+    output logic write_finish,
     output logic [31:0] rdata,
     output sel_t hb_sel[SLAVE_NUM]
 );
-  logic read_finish = 0;
   always_ff @(posedge hb_clk) begin
     if (read_finish) begin
       read_finish <= 0;
@@ -20,7 +20,7 @@ module XT_HB_Domain
       read_finish <= 1;
     end
   end
-  assign wait_finish = sel.ren ? read_finish : 1;
+  assign write_finish = 1;
 
 
   `define AW `ADDR_WIDTH

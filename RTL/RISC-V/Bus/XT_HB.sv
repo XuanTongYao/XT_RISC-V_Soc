@@ -21,7 +21,8 @@ module XT_HB
     // 高速总线读写
     input hb_master_in_t master_in[MASTER_NUM],
     input [31:0] domain_data_in[DOMAIN_NUM],
-    input [DOMAIN_NUM-1:0] wait_finish,
+    input [DOMAIN_NUM-1:0] read_finish,
+    input [DOMAIN_NUM-1:0] write_finish,
 
     output logic [31:0] hb_rdata,
     output hb_slave_t bus,
@@ -50,11 +51,11 @@ module XT_HB
       if (!read_req[i] && !write_req[i]) begin
         stall_req[i] = 0;
       end else if (read_req[i]) begin
-        stall_req[i] = arbiter_stall | read_stall;
+        stall_req[i] = arbiter_stall[i] || read_stall;
       end else if (write_req[i]) begin
-        stall_req[i] = arbiter_stall | write_stall;
+        stall_req[i] = arbiter_stall[i] || write_stall;
       end else begin
-        stall_req[i] = arbiter_stall | write_stall | read_stall;
+        stall_req[i] = arbiter_stall[i] || write_stall || read_stall;
       end
     end
   end
@@ -128,8 +129,8 @@ module XT_HB
   endgenerate
 
   // 读写等待控制
-  wire read_wait_finish = (wait_finish & slave_rsel) != 0 || !hb_ren;
-  wire write_wait_finish = (wait_finish & slave_wsel) != 0 || !hb_wen;
+  wire read_wait_finish = (read_finish & slave_rsel) != 0 || !hb_ren;  // || !hb_ren好像可以去掉
+  wire write_wait_finish = (write_finish & slave_wsel) != 0 || !hb_wen;
   assign read_stall  = !read_wait_finish;
   assign write_stall = !write_wait_finish;
 
