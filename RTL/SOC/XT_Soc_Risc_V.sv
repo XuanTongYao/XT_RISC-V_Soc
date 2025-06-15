@@ -41,7 +41,7 @@ module XT_Soc_Risc_V
   wire pll_rst;
   ClockMonitor #(
       .MAX_LOCK_PERIOD((2_150_000 / 1_000) * 40),
-      .POWERUP_PERIOD ((2_150_000 / 1_000) * 100)
+      .POWERUP_PERIOD (0)
   ) u_ClockMonitor (
       .*,
       .independent_clk(clk_inner_osc),
