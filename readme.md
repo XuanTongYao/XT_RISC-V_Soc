@@ -22,6 +22,10 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
     - [其他核心模块](#其他核心模块)
       - [外部中断控制器](#外部中断控制器)
       - [MTime和Mtimecmp(机器计时器)](#mtime和mtimecmp机器计时器)
+  - [外设列表](#外设列表)
+    - [XT\_HB外设](#xt_hb外设)
+    - [XT\_LB外设](#xt_lb外设)
+    - [WISHBONE总线外设](#wishbone总线外设)
   - [XT高速总线](#xt高速总线)
     - [地址映射](#地址映射)
     - [内核等待机制](#内核等待机制)
@@ -38,7 +42,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 架构图
 
-![alt text](img/image.png)
+![alt text](img/image-10.png)
 
 内存地址映射
 
@@ -82,6 +86,34 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 - 无跨时钟域时序惩罚
 - 硬件不处理非原子读取一致性问题，通过软件处理
+
+## 外设列表
+
+### XT_HB外设
+
+1. Bootloader控制器
+2. 外部中断控制器
+3. 64bit机器计时器
+4. UART通信接口
+
+### XT_LB外设
+
+1. 开关(3)与按钮(4)
+2. 8位LED灯
+3. 硬件解码7段LED数码管X2
+4. 32个功能复用GPIO
+
+### WISHBONE总线外设
+
+该总线的外设为EFB硬核
+
+1. 左PLL动态配置 **未实现**
+2. 右PLL动态配置 **未实现**
+3. 1号I2C接口
+4. 2号I2C接口
+5. SPI接口
+6. 16bit定时器/计数器
+7. 程序存储Flash
 
 ## XT高速总线
 

@@ -53,13 +53,6 @@
 // FENCE指令
 `define INST_OP_FENCE 7'b0001111
 
-// CSR
-`define INST_CSRRW 3'b001
-`define INST_CSRRS 3'b010
-`define INST_CSRRC 3'b011
-`define INST_CSRRWI 3'b101
-`define INST_CSRRSI 3'b110
-`define INST_CSRRCI 3'b111
 
 
 //----------S 型指令----------//
@@ -91,17 +84,25 @@
 `define INST_OP_JAL 7'b1101111
 
 
-//----------特权指令----------//
+//----------系统指令----------//
 // 特权指令
 `define INST_OP_SYSTEM 7'b1110011
 `define INST_PRIVILEGED 3'b000
 // 环境调用
 `define INST_FUNCT12_ECALL 12'b0000000_00000
 `define INST_FUNCT12_EBREAK 12'b0000000_00001
+// 其他特权指令
 `define INST_FUNCT12_SRET 12'b0001000_00010
 `define INST_FUNCT12_MRET 12'b0011000_00010
 `define INST_FUNCT12_WFI 12'b0001000_00101
 `define INST_FUNCT12_VMA 12'b0001001_00000
+// CSR扩展
+`define INST_CSRRW 3'b001
+`define INST_CSRRS 3'b010
+`define INST_CSRRC 3'b011
+`define INST_CSRRWI 3'b101
+`define INST_CSRRSI 3'b110
+`define INST_CSRRCI 3'b111
 
 
 //----------常用指令定义----------//

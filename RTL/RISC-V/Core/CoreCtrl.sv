@@ -29,7 +29,7 @@ module CoreCtrl #(
 
 
   //----------跳转指令控制----------//
-  // TODO 核心停止和跳转的优先级谁更高？
+  // 核心停止和跳转的优先级谁更高？(目前不会出现这种情况)
   always_comb begin
     if (exception_occurred) begin
       jump_addr = exception_jump_addr;
