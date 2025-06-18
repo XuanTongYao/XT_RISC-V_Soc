@@ -5,7 +5,7 @@ module IF_ID #(
 ) (
     input clk,
     input rst_sync,
-    input hold_flag,
+    input flush,
     input stall_n,
 
     // 中间传递
@@ -28,7 +28,7 @@ module IF_ID #(
   generate
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
       always_ff @(posedge clk) begin
-        if (rst_sync || hold_flag || exception_if) begin
+        if (rst_sync || flush || exception_if) begin
           instruction_if_id <= `INST_NOP;
         end else if (stall_n) begin
           instruction_if_id <= instruction_if;
@@ -37,7 +37,7 @@ module IF_ID #(
     end else begin : gen_none_delay
       logic clear;
       always_ff @(posedge clk) begin
-        clear <= rst_sync || hold_flag || exception_if;
+        clear <= rst_sync || flush || exception_if;
       end
       assign instruction_if_id = clear ? `INST_NOP : instruction_if;
     end

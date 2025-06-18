@@ -3,7 +3,7 @@
 module ID_EX (
     input        clk,
     input        rst_sync,
-    input        hold_flag,
+    input        flush,
     input        stall_n,
     // 来自ID
     input        ram_load_access_id,
@@ -38,7 +38,7 @@ module ID_EX (
       instruction_addr_id_ex <= instruction_addr_id;
     end
     // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
-    if (rst_sync || hold_flag || (exception_id && stall_n)) begin
+    if (rst_sync || flush || (exception_id && stall_n)) begin
       ram_load_access_id_ex <= 0;
       ram_store_access_id_ex <= 0;
       instruction_id_ex <= `INST_NOP;

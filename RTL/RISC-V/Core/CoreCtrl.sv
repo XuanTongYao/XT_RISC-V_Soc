@@ -20,10 +20,10 @@ module CoreCtrl #(
 
     // 输出
     output logic [31:0] jump_addr,
-    output logic jump_en,
-    output logic hold_flag,
+    output logic jump,
+    output logic flush,
     output logic stall_n,
-    output logic clearing_pipeline,
+    output logic flushing_pipeline,
     output logic instruction_retire
 );
 
@@ -37,24 +37,24 @@ module CoreCtrl #(
       jump_addr = jump_addr_ex;
     end
 
-    jump_en   = jump_en_ex || exception_occurred;
-    hold_flag = jump_en || valid_interrupt_request;
+    jump  = jump_en_ex || exception_occurred;
+    flush = jump || valid_interrupt_request;
   end
 
   //----------指令执行控制----------//
   // 指令退役: 指令正常被执行
   // 肯定不算异常跳转和冲刷流水线的NOP
   // 核心暂停且没跳转时也不算
-  assign instruction_retire = !(clearing_pipeline || exception_occurred) && (jump_en || stall_n);
+  assign instruction_retire = !(flushing_pipeline || exception_occurred) && (jump || stall_n);
   logic [1:0] nop_cnt;
-  assign clearing_pipeline = nop_cnt != 0;
+  assign flushing_pipeline = nop_cnt != 0;
   always_ff @(posedge clk) begin
     if (rst_sync) begin
       nop_cnt <= 0;
-    end else if (hold_flag) begin
-      nop_cnt <= 2'b10;
+    end else if (flush) begin
+      nop_cnt <= 2'b11;
     end else if (nop_cnt != 0) begin
-      nop_cnt <= nop_cnt - 1'b1;
+      nop_cnt <= {nop_cnt[0], 1'b0};
     end
   end
 

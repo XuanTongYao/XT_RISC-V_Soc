@@ -51,10 +51,10 @@ module RISC_V_Core #(
 
   //----------核心控制器----------//
   wire [31:0] jump_addr;
-  wire jump_en;
-  wire hold_flag;
+  wire jump;
+  wire flush;
   wire stall_n;
-  wire clearing_pipeline;
+  wire flushing_pipeline;
   wire instruction_retire;
   assign core_stall_n = stall_n;
 

@@ -3,7 +3,7 @@ import CSR_Typedefs::*;
 module ExceptionCtrl (
     input clk,
     input rst_sync,
-    input hold_flag,
+    input flush,
     input stall_n,
 
 
@@ -43,7 +43,7 @@ module ExceptionCtrl (
   exception_cause_t exc_cause_if_id = {1'b0, 4'b0};
   exception_cause_t exc_cause_id_ex = {1'b0, 4'b0};
   always_ff @(posedge clk) begin
-    if (rst_sync || hold_flag) begin
+    if (rst_sync || flush) begin
       exc_cause_if_id <= 0;
       exc_cause_id_ex <= 0;
     end else if (stall_n) begin
