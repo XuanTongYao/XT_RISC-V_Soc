@@ -32,7 +32,7 @@ module ID_EX (
     output logic        reg_wen_id_ex
 );
 
-  // 都是NOP指令了，指令地址 不需要清零，对处理异常也有好处
+  // 都是NOP指令了，指令地址 不需要清零，对处理异常也有好处(中断处理)
   always_ff @(posedge clk) begin
     if (stall_n) begin
       instruction_addr_id_ex <= instruction_addr_id;

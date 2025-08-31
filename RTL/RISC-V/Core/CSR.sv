@@ -7,8 +7,8 @@ module CSR
     input stall_n,
     input instruction_retire,
 
-    input csr_r_en,
-    input csr_w_en,
+    input csr_ren,
+    input csr_wen,
     input [11:0] csr_rwaddr,
     input [31:0] csr_wdata,
     output logic [31:0] csr_rdata,
@@ -42,8 +42,8 @@ module CSR
   `define MACHINE 2'b11
   wire [1:0] privilege_level = csr_rwaddr[9:8];
   wire [7:0] short_addr = csr_rwaddr[7:0];
-  wire atomic_rw_en = csr_w_en && stall_n && privilege_level == `MACHINE && rw_mode == `NORMAL;
-  wire atomic_counter_rw_en = csr_w_en && stall_n && privilege_level == `MACHINE && rw_mode == `COUNTER;
+  wire atomic_rw_en = csr_wen && stall_n && privilege_level == `MACHINE && rw_mode == `NORMAL;
+  wire atomic_counter_rw_en = csr_wen && stall_n && privilege_level == `MACHINE && rw_mode == `COUNTER;
 
 
   //----------机器模式CSR----------//

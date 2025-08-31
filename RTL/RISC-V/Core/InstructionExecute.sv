@@ -18,12 +18,12 @@ module InstructionExecute (
     // 传递给寄存器
     output logic [ 4:0] reg_waddr,
     output logic [31:0] reg_wdata,
-    output logic        reg_wen_out,
+    output logic        reg_wen,
 
     // 访问控制与状态寄存器
     output logic exception_returned,
-    output logic csr_r_en,
-    output logic csr_w_en,
+    output logic csr_ren,
+    output logic csr_wen,
     output logic [11:0] csr_rwaddr,
     output logic [31:0] csr_wdata,
     input [31:0] csr_rdata,
@@ -104,8 +104,8 @@ module InstructionExecute (
       default:  extension_bit = 0;
     endcase
   end
-  wire [31:0] sign_zero_extension_byte = {{24{extension_bit}}, ram_load_data[7:0]};
-  wire [31:0] sign_zero_extension_halfword = {{16{extension_bit}}, ram_load_data[15:0]};
+  wire [31:0] extension_byte = {{24{extension_bit}}, ram_load_data[7:0]};
+  wire [31:0] extension_halfword = {{16{extension_bit}}, ram_load_data[15:0]};
 
   // 源寄存器1的数据reg_src1_data一定和操作数1 operand1_id绑定
   // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
@@ -119,15 +119,15 @@ module InstructionExecute (
     ram_store_width = funct3[1:0];
     add_sub = 1;
 
-    reg_wen_out = reg_wen_id_ex;
+    reg_wen = reg_wen_id_ex;
     reg_waddr = rd;
     reg_wdata = 0;
     jump_addr_ex = 0;
     jump_en_ex = 0;
 
     exception_returned = 0;
-    csr_r_en = 0;
-    csr_w_en = 0;
+    csr_ren = 0;
+    csr_wen = 0;
     csr_rwaddr = inst[31:20];
     csr_wdata = 0;
 
@@ -137,7 +137,7 @@ module InstructionExecute (
       `INST_OP_AUIPC: reg_wdata = alu_add;
       `INST_OP_JAL, `INST_OP_JALR: begin
         reg_wdata = next_pc;
-        jump_addr_ex = alu_add;
+        jump_addr_ex = {alu_add[31:1], 1'b0};
         jump_en_ex = 1;
       end
       `INST_OP_B: begin
@@ -154,8 +154,8 @@ module InstructionExecute (
       end
       `INST_OP_L: begin
         unique case (funct3)
-          `INST_LB, `INST_LBU: reg_wdata = sign_zero_extension_byte;
-          `INST_LH, `INST_LHU: reg_wdata = sign_zero_extension_halfword;
+          `INST_LB, `INST_LBU: reg_wdata = extension_byte;
+          `INST_LH, `INST_LHU: reg_wdata = extension_halfword;
           `INST_LW: reg_wdata = ram_load_data;
         endcase
       end
@@ -219,18 +219,18 @@ module InstructionExecute (
             endcase
           end
           `INST_CSRRW, `INST_CSRRWI: begin
-            csr_r_en  = rd != 5'd0;
-            csr_w_en  = 1;
+            csr_ren   = rd != 5'd0;
+            csr_wen   = 1;
             csr_wdata = operand1;
           end
           `INST_CSRRS, `INST_CSRRSI: begin
-            csr_r_en  = 1;
-            csr_w_en  = rs1 != 5'd0;
+            csr_ren   = 1;
+            csr_wen   = rs1 != 5'd0;
             csr_wdata = operand1 | csr_rdata;
           end
           `INST_CSRRC, `INST_CSRRCI: begin
-            csr_r_en  = 1;
-            csr_w_en  = rs1 != 5'd0;
+            csr_ren   = 1;
+            csr_wen   = rs1 != 5'd0;
             csr_wdata = ~operand1 & csr_rdata;
           end
         endcase

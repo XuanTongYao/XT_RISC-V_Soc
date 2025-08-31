@@ -72,6 +72,7 @@ module RISC_V_Core #(
   wire reg_wen;
   wire [4:0] reg_waddr;
   wire [31:0] reg_wdata;
+  CoreReg u_CoreReg (.*);
 
   // PC寄存器
   wire [31:0] pc;
@@ -80,8 +81,8 @@ module RISC_V_Core #(
 
   // 控制状态寄存器
   wire exception_returned;
-  wire csr_r_en;
-  wire csr_w_en;
+  wire csr_ren;
+  wire csr_wen;
   wire [11:0] csr_rwaddr;
   wire [31:0] csr_wdata;
 
@@ -118,16 +119,7 @@ module RISC_V_Core #(
   wire exception_id;
   wire [3:0] exception_cause_id;
   assign next_pc = instruction_addr_id;
-  InstructionDecoder u_InstructionDecoder (
-      // 来自IF_ID
-      .*,
-      // 与寄存器
-      .reg_src1_addr(reg1_raddr),
-      .reg_src2_addr(reg2_raddr),
-      .reg_src1_data(reg1_rdata),
-      .reg_src2_data(reg2_rdata)
-      // 传递给ID_EX
-  );
+  InstructionDecode u_InstructionDecode (.*);
 
   wire ram_store_access_id_ex, ram_load_access_id_ex;
   wire [31:0] ram_load_addr_id_ex, ram_store_addr_id_ex;
@@ -144,10 +136,7 @@ module RISC_V_Core #(
   wire [31:0] jump_addr_ex;
   wire jump_en_ex;
   InstructionExecute u_InstructionExecute (
-      // 来自ID_EX
       .*,
-      // 传递给寄存器
-      .reg_wen_out    (reg_wen),
       // 访存
       .ram_load_en    (access_ram_read),
       .ram_load_addr  (access_ram_raddr),
@@ -168,10 +157,6 @@ module RISC_V_Core #(
   wire [31:0] exception_jump_addr;
   ExceptionCtrl u_ExceptionCtrl (.*);
   CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
-
-
-  //----------寄存器单元----------//
-  CoreReg u_CoreReg (.*);
-  CSR u_CSR (.*);
+  CSR u_CSR (.*);  // 控制与状态寄存器
 
 endmodule

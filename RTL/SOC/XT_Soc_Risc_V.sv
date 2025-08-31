@@ -76,7 +76,7 @@ module XT_Soc_Risc_V
     `DATA_RAM_BASE, `DOMAIN_XT_HB_BASE, `DOMAIN_WISHBONE_BASE, `DOMAIN_XT_LB_BASE
   };
   // 地址域ID分配
-  localparam int ID_XT_LB = 4, ID_WISHBONE = 3, ID_XT_HB = 2, ID_RAM = 1, ID_INST_RAM = 0;
+  localparam int ID_XT_LB = 4, ID_WISHBONE = 3, ID_XT_HB = 2, ID_DATA_RAM = 1, ID_INST_RAM = 0;
   // HB从设备ID分配
   localparam int HB_ID_UART = 3, HB_ID_SYSTEMTIMER = 2, HB_ID_EINT_CTRL = 1, HB_ID_BOOTLOADER = 0;
 
@@ -182,19 +182,18 @@ module XT_Soc_Risc_V
       .INST_RAM_DEPTH(`INST_RAM_DEPTH)
   ) u_HarvardSystemRAM (
       .*,
-      .ram_inst_clk_en       (core_stall_n),
-      // 与高速总线
+      .inst_fetch_clk_en    (core_stall_n),
       // 数据RAM
-      .ram_sel               (domain_sel[ID_RAM]),
-      .ram_r_data            (domain_data_in[ID_RAM]),
-      .ram_read_finish       (read_finish[ID_RAM]),
-      .ram_write_finish      (write_finish[ID_RAM]),
+      .ram_data_sel         (domain_sel[ID_DATA_RAM]),
+      .ram_data_rdata       (domain_data_in[ID_DATA_RAM]),
+      .ram_data_read_finish (read_finish[ID_DATA_RAM]),
+      .ram_data_write_finish(write_finish[ID_DATA_RAM]),
       // 指令RAM
-      .ram_inst              (domain_sel[ID_INST_RAM]),
-      .ram_instruction_r_addr(instruction_addr[`INST_RAM_ADDR_WIDTH-1:0]),
-      .ram_instruction_r_data(user_instruction),
-      .ram_inst_read_finish  (read_finish[ID_INST_RAM]),
-      .ram_inst_write_finish (write_finish[ID_INST_RAM])
+      .ram_inst_sel         (domain_sel[ID_INST_RAM]),
+      .inst_fetch_addr      (instruction_addr),
+      .inst_fetch           (user_instruction),
+      .ram_inst_read_finish (read_finish[ID_INST_RAM]),
+      .ram_inst_write_finish(write_finish[ID_INST_RAM])
   );
 
 
