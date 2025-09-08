@@ -16,7 +16,7 @@ module PC_Reg #(
     end else if (jump) begin
       pc <= jump_addr;
     end else if (stall_n) begin
-      pc <= pc + 3'd4;
+      pc <= pc + 32'd4;
     end
   end
 

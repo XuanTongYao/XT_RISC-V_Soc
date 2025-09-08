@@ -1,0 +1,13 @@
+hart_ids: [0]
+hart0:
+  ISA: RV32I
+  User_Spec_Version: '2.3'
+  hw_data_misaligned_support: false
+  supported_xlen: [32]
+  physical_addr_sz: 32
+
+  PMP:
+    implemented: False
+    pmp-grain: 0
+    pmp-count: 0
+    pmp-writable: 0

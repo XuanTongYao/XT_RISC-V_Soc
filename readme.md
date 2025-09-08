@@ -11,6 +11,8 @@
 
 PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。外设基本是围绕[该核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
 
+[一致性测试](compliance_test/dev/Readme.md)
+
 ## 目录
 
 - [XT\_RISC-V 微控制器](#xt_risc-v-微控制器)
