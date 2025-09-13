@@ -37,11 +37,9 @@ class xt_rv32i(pluginTemplate):
         # test-bench produced by a simulator (like verilator, vcs, incisive, etc). In case of an iss or
         # emulator, this variable could point to where the iss binary is located. If 'PATH variable
         # is missing in the config.ini we can hardcode the alternate here.
+        # 读取DUT绝对路径
         self.dut_exe = os.path.abspath(
-            os.path.join(
-                config["PATH"] if "PATH" in config else "",
-                config["dut"] if "dut" in config else "xt_rv32i",
-            )
+            config["PATH"] if "PATH" in config else "xt_rv32i"
         )
 
         # Number of parallel jobs that can be spawned off by RISCOF
@@ -75,7 +73,7 @@ class xt_rv32i(pluginTemplate):
         # capture the architectural test-suite directory.
         self.suite_dir = suite
 
-        # Capture the environment.
+        # 编译命令延后
         self.archtest_env = archtest_env
 
     def build(self, isa_yaml, platform_yaml):
@@ -104,7 +102,6 @@ class xt_rv32i(pluginTemplate):
 
     def runTests(self, testList):
 
-        # TUDO: figure out why there is an extra character in the name.
         name = self.name[:-1]
 
         # Delete Makefile if it already exists.
@@ -158,17 +155,16 @@ class xt_rv32i(pluginTemplate):
                 f" {test} -o {elf} {compile_macros}"
             )
 
-            # Command for converting elf file into a binary/hex file for loading into HDL testbench memory.
-            # Uncomment either the binary or hex version, depending on your.
+            # 生成纯二进制文件
             objcopy_cmd = self.objcopy_exe + f" -O binary {elf} {elf}.bin"
-            # objcopy_cmd = self.objcopy_exe + f' -O binary {elf} {elf}.hex'
+            firmware = os.path.join(test_dir, elf) + ".bin"
 
-            # Disassemble the ELF file for debugging purposes
+            # 反汇编用于调试
             objdump_cmd = self.objdump_exe + (
                 f" -M no-aliases -M numeric" f" -D {elf} > {elf}.disass"
             )
 
-            # extract listed symbols
+            # 要提取的符号
             symbols_list = [
                 "rvtest_entry_point",
                 "begin_signature",
@@ -176,30 +172,22 @@ class xt_rv32i(pluginTemplate):
                 "tohost",
                 "fromhost",
             ]
-            # construct dictionary of listed symbols
-            symbols_cmd = []
-            # get symbol list from elf file
-            symbols_cmd.append(self.symbols_exe + f" {elf} > dut.symbols")
+            symbols_dict = {symbol: f"$${symbol}" for symbol in symbols_list}
+            symbols_cmds = []
+            # 提取符号
+            symbols_cmds.append(self.symbols_exe + f" {elf} > dut.symbols")
             for symbol in symbols_list:
-                # get symbols from symbol list file
-                symbols_cmd.append(
+                # 拿到符号地址
+                symbols_cmds.append(
                     f"{symbol}=$$(grep -w {symbol} dut.symbols | cut -c 1-8)"
                 )
 
-            # Construct Verilog plusargs dictionary containing file paths.
-            firmware = os.path.join(test_dir, elf) + ".bin"
+            # 参数转换为plusargs的形式
             simulate_plusargs_dict = {
                 "firmware": firmware,
                 "signature": sig_file,
+                **symbols_dict,
             }
-
-            # provide ELF symbols as plusargs
-            for symbol in symbols_list:
-                simulate_plusargs_dict.update({symbol: f"$${symbol}"})
-
-            # Other DUT testbench specific Verilog plusargs can be added here.
-            # simulate_plusargs_dict.update({})
-
             simulate_plusargs = " ".join(
                 [f"+{key}={val}" for key, val in simulate_plusargs_dict.items()]
             )
@@ -219,12 +207,11 @@ class xt_rv32i(pluginTemplate):
             execute.append(compile_cmd)
             execute.append(objcopy_cmd)
             execute.append(objdump_cmd)
-            execute += symbols_cmd
+            execute += symbols_cmds
             execute.append(simcmd)
 
             # create a target. The makeutil will create a target with the name "TARGET<num>" where num
             # starts from 0 and increments automatically for each new target that is added
-            # make.add_target(execute)
             make.add_target("@" + ";\\\n".join(execute))
 
         # if you would like to exit the framework once the makefile generation is complete uncomment the

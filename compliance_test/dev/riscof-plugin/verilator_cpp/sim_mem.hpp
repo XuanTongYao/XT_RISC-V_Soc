@@ -43,16 +43,16 @@ inline void sim_mem::write_data(uint64_t addr, T data) {
 }
 
 inline uint64_t sim_mem::addr_align(const uint64_t raw_addr, const Align align) {
-    if (align == Align::DWORD) return raw_addr & ~(uint64_t)0b111;
-    if (align == Align::WORD) return raw_addr & ~(uint64_t)0b011;
-    if (align == Align::HALFWORD) return raw_addr & ~(uint64_t)0b001;
+    if (align == Align::DWORD) return raw_addr & ~uint64_t(0b111);
+    if (align == Align::WORD) return raw_addr & ~uint64_t(0b011);
+    if (align == Align::HALFWORD) return raw_addr & ~uint64_t(0b001);
     return raw_addr;
 }
 
 inline uint64_t sim_mem::read_data(uint64_t addr, const size_t len) {
     uint64_t ret = 0;
     for (size_t i = 0; i < len; i++, addr++) {
-        ret |= ((uint64_t)mem.at(addr)) << (i * 8);
+        ret |= uint64_t(mem.at(addr)) << (i * 8);
     }
     return ret;
 }
