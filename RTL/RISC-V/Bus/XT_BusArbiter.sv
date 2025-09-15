@@ -1,13 +1,14 @@
-//----------总线仲裁器----------//
-// 轮询仲裁器
+// @Deprecated
+// 已弃用
+// 一个很奇怪的轮询仲裁器
 module XT_BusArbiter #(
     parameter int DEVICE_NUM = 4
 ) (
     input clk,
     input [DEVICE_NUM-1:0] read_req,
     input [DEVICE_NUM-1:0] write_req,
-    output logic [DEVICE_NUM-1:0] read_accept,
-    output logic [DEVICE_NUM-1:0] write_accept,
+    output logic [DEVICE_NUM-1:0] read_grant,
+    output logic [DEVICE_NUM-1:0] write_grant,
     output logic read_busy,
     output logic write_busy
 );
@@ -15,8 +16,8 @@ module XT_BusArbiter #(
 
   generate
     if (DEVICE_NUM == 1) begin : gen_exclusive
-      assign read_accept[0] = 1'b1;
-      assign write_accept[0] = 1'b1;
+      assign read_grant[0] = 1'b1;
+      assign write_grant[0] = 1'b1;
       assign read_busy = 1;
       assign write_busy = 1;
     end else begin : gen_polling
@@ -34,14 +35,14 @@ module XT_BusArbiter #(
       end
 
       // 死锁自动重置
-      logic dead_locked = read_busy && write_busy && (reading_index != writing_index) && read_req[writing_index] &&
+      wire dead_locked = read_busy && write_busy && (reading_index != writing_index) && read_req[writing_index] &&
           write_req[reading_index];
 
 
       always_ff @(posedge clk) begin
         if (dead_locked) begin
           read_busy <= 0;
-          read_accept <= 0;
+          read_grant <= 0;
           read_polling_index <= 0;
         end else if (read_busy) begin
           // 被占用，等待解除占用
@@ -49,11 +50,11 @@ module XT_BusArbiter #(
             if (read_req[read_polling_index]) begin
               // 立刻切换仲裁
               read_busy <= 1;
-              read_accept <= read_accept_on_index;
+              read_grant <= read_accept_on_index;
               reading_index <= read_polling_index;
             end else begin
-              read_busy   <= 0;
-              read_accept <= 0;
+              read_busy  <= 0;
+              read_grant <= 0;
               if (read_polling_index == DEVICE_NUM - 1) begin
                 read_polling_index <= 0;
               end else begin
@@ -65,7 +66,7 @@ module XT_BusArbiter #(
           // 没有被占用，轮询仲裁
           if (read_req[read_polling_index]) begin
             read_busy <= 1;
-            read_accept <= read_accept_on_index;
+            read_grant <= read_accept_on_index;
             reading_index <= read_polling_index;
           end
           if (read_polling_index == DEVICE_NUM - 1) begin
@@ -79,7 +80,7 @@ module XT_BusArbiter #(
       always_ff @(posedge clk) begin
         if (dead_locked) begin
           write_busy <= 0;
-          write_accept <= 0;
+          write_grant <= 0;
           write_polling_index <= 0;
         end else if (write_busy) begin
           // 被占用，等待解除占用
@@ -87,11 +88,11 @@ module XT_BusArbiter #(
             if (write_req[write_polling_index]) begin
               // 立刻切换仲裁
               write_busy <= 1;
-              write_accept <= write_accept_on_index;
+              write_grant <= write_accept_on_index;
               writing_index <= write_polling_index;
             end else begin
-              write_busy   <= 0;
-              write_accept <= 0;
+              write_busy  <= 0;
+              write_grant <= 0;
               if (write_polling_index == DEVICE_NUM - 1) begin
                 write_polling_index <= 0;
               end else begin
@@ -103,7 +104,7 @@ module XT_BusArbiter #(
           // 没有被占用，轮询仲裁
           if (write_req[write_polling_index]) begin
             write_busy <= 1;
-            write_accept <= write_accept_on_index;
+            write_grant <= write_accept_on_index;
             writing_index <= write_polling_index;
           end
           if (write_polling_index == DEVICE_NUM - 1) begin

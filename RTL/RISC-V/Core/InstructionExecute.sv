@@ -150,13 +150,15 @@ module InstructionExecute (
           `INST_BGE:  jump_en_ex = !alu_less_signed;
           `INST_BLTU: jump_en_ex = alu_less_unsigned;
           `INST_BGEU: jump_en_ex = !alu_less_unsigned;
+          default:    ;
         endcase
       end
       `INST_OP_L: begin
         unique case (funct3)
           `INST_LB, `INST_LBU: reg_wdata = extension_byte;
           `INST_LH, `INST_LHU: reg_wdata = extension_halfword;
-          `INST_LW: reg_wdata = ram_load_data;
+          `INST_LW:            reg_wdata = ram_load_data;
+          default:             ;
         endcase
       end
       `INST_OP_S:     ;  // 已经在译码阶段完成处理
@@ -216,6 +218,7 @@ module InstructionExecute (
                 exception_returned = 1;
               end
               `INST_FUNCT12_WFI: wait_for_interrupt = 1;  // WFI(告知内核控制器请求等待)
+              default: ;
             endcase
           end
           `INST_CSRRW, `INST_CSRRWI: begin
@@ -233,10 +236,12 @@ module InstructionExecute (
             csr_wen   = rs1 != 5'd0;
             csr_wdata = ~operand1 & csr_rdata;
           end
+          default: ;
         endcase
       end
       // 不执行，等效于NOP指令
       `INST_OP_FENCE: ;
+      default:        ;
     endcase
 
   end

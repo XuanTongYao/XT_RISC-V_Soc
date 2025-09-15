@@ -102,6 +102,7 @@ module InstructionDecode (
             operand1_id = reg1_rdata;
             operand2_id = reg2_rdata;
           end
+          default: ;
         endcase
       end
       `INST_OP_L: begin
@@ -110,6 +111,7 @@ module InstructionDecode (
             reg_wen_id = 1;
             ram_load_access_id = 1;
           end
+          default: ;
         endcase
       end
       `INST_OP_S: begin
@@ -117,6 +119,7 @@ module InstructionDecode (
           `INST_SB, `INST_SH, `INST_SW: begin
             ram_store_access_id = 1;
           end
+          default: ;
         endcase
       end
       `INST_OP_I: begin
@@ -166,6 +169,7 @@ module InstructionDecode (
             reg_wen_id  = 1;
             operand1_id = imm_sys;
           end
+          default: ;
         endcase
       end
       // 不执行，等效于NOP指令

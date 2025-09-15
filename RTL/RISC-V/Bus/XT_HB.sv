@@ -14,6 +14,7 @@ module XT_HB
     parameter int ADDR_SPLIT[DOMAIN_NUM-1]
 ) (
     input clk,
+    input rst_sync,
     input core_stall_n,
 
     // 高速总线(读写可以被不同不冲突的主设备占用，全双工)
@@ -27,35 +28,30 @@ module XT_HB
     output logic [31:0] hb_rdata,
     output hb_slave_t bus,
     output sel_t domain_sel[DOMAIN_NUM],
-    output logic [MASTER_NUM-1:0] read_accept,
-    output logic [MASTER_NUM-1:0] write_accept,
+    output logic [MASTER_NUM-1:0] read_grant,
+    output logic [MASTER_NUM-1:0] write_grant,
     output logic [MASTER_NUM-1:0] stall_req  // 仲裁失败或读写等待，停顿请求
 );
 
 
   //----------访问等待控制器----------//
   logic [MASTER_NUM-1:0] read_req, write_req;
+  logic [MASTER_NUM-1:0] access_req = read_req | write_req;
   logic read_stall, write_stall;
   logic [MASTER_NUM-1:0] arbiter_stall;
   always_comb begin
+    arbiter_stall = (write_req & ~write_grant) | (read_req & ~read_grant);
     for (int i = 0; i < MASTER_NUM; ++i) begin
-      if ((read_req[i] && !read_accept[i]) || (write_req[i] && !write_accept[i])) begin
-        arbiter_stall[i] = 1;
-      end else begin
-        arbiter_stall[i] = 0;
-      end
-    end
-  end
-  always_comb begin
-    for (int i = 0; i < MASTER_NUM; ++i) begin
-      if (!read_req[i] && !write_req[i]) begin
+      if (!access_req[i]) begin
         stall_req[i] = 0;
+      end else if (arbiter_stall[i]) begin
+        stall_req[i] = 1;
       end else if (read_req[i]) begin
-        stall_req[i] = arbiter_stall[i] || read_stall;
+        stall_req[i] = read_stall;
       end else if (write_req[i]) begin
-        stall_req[i] = arbiter_stall[i] || write_stall;
+        stall_req[i] = write_stall;
       end else begin
-        stall_req[i] = arbiter_stall[i] || write_stall || read_stall;
+        stall_req[i] = write_stall || read_stall;
       end
     end
   end
@@ -69,7 +65,7 @@ module XT_HB
     end
   end
   wire read_busy, write_busy;
-  XT_BusArbiter #(.DEVICE_NUM(MASTER_NUM)) u_XT_BusArbiter (.*);
+  XT_HB_Arbiter #(.DEVICE_NUM(MASTER_NUM)) u_XT_BusArbiter (.*);
 
   // 主设备总线复用器
   logic hb_ren, hb_wen;
@@ -83,7 +79,7 @@ module XT_HB
     bus.write_width = 0;
     // 读通道复用器
     for (int i = 0; i < MASTER_NUM; ++i) begin
-      if (read_accept[i]) begin
+      if (read_grant[i]) begin
         hb_ren = master_in[i].read;
         raddr_mux = master_in[i].raddr;
         break;
@@ -91,7 +87,7 @@ module XT_HB
     end
     // 写通道复用器
     for (int i = 0; i < MASTER_NUM; ++i) begin
-      if (write_accept[i]) begin
+      if (write_grant[i]) begin
         hb_wen = master_in[i].write;
         waddr_mux = master_in[i].waddr;
         bus.wdata = master_in[i].wdata;
@@ -129,8 +125,8 @@ module XT_HB
   endgenerate
 
   // 读写等待控制
-  wire read_wait_finish = (read_finish & slave_rsel) != 0 || !hb_ren;  // || !hb_ren好像可以去掉
-  wire write_wait_finish = (write_finish & slave_wsel) != 0 || !hb_wen;
+  wire read_wait_finish = hb_ren ? ((read_finish & slave_rsel) != 0) : 1;
+  wire write_wait_finish = hb_wen ? ((write_finish & slave_wsel) != 0) : 1;
   assign read_stall  = !read_wait_finish;
   assign write_stall = !write_wait_finish;
 
@@ -138,9 +134,6 @@ module XT_HB
 
   // 地址域总线复用器
   always_comb begin
-    // TODO 下面综合了一个类优先级选择器，想办法告诉综合器这是个独热码选择器
-    // 好像要用独热码的话必须case，而且面积貌似更大
-    // 加上break;后变成一个链式结构生成选择信号
     hb_rdata = 0;
     for (int i = 0; i < DOMAIN_NUM; ++i) begin
       if (sel[0][i]) begin
@@ -148,15 +141,6 @@ module XT_HB
         break;
       end
     end
-    // unique case (sel_last)
-    //   6'b000_001: bus.rdata = slave_data_in[0];
-    //   6'b000_010: bus.rdata = slave_data_in[1];
-    //   6'b000_100: bus.rdata = slave_data_in[2];
-    //   6'b001_000: bus.rdata = slave_data_in[3];
-    //   6'b010_000: bus.rdata = slave_data_in[4];
-    //   6'b100_000: bus.rdata = slave_data_in[5];
-    //   default: bus.rdata = 0;
-    // endcase
   end
 
 endmodule

@@ -91,7 +91,7 @@ module XT_Soc_Risc_V
   wire hb_slave_t xt_hb;
   wire [31:0] hb_rdata;
   wire sel_t domain_sel[HB_DOMAIN_NUM];
-  wire [HB_MASTER_NUM-1:0] read_accept, write_accept, stall_req;
+  wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
   // 总线地址域
   wire [31:0] hb_data_in[HB_SLAVE_NUM];
   wire sel_t hb_sel[HB_SLAVE_NUM];
