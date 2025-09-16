@@ -20,9 +20,9 @@
 
 //----------总线地址域划分----------//
 // 地址域长度
-#define DOMAIN_XT_HB_LEN 32
-#define DOMAIN_WISHBONE_LEN 256
-#define DOMAIN_XT_LB_LEN 256
+#define DOMAIN_XT_HB_LEN 2048
+#define DOMAIN_WISHBONE_LEN 2048
+#define DOMAIN_XT_LB_LEN 2048
 
 // 地址域偏移定义
 #define DOMAIN_XT_HB_OFFSET 0

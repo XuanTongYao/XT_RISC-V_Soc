@@ -68,14 +68,14 @@ module XT_Soc_Risc_V
   // 内核
   localparam int HB_MASTER_NUM = 1;
   // 指令RAM,数据RAM,XT_HB,WISHBONE,XT_LB
-  localparam int HB_DOMAIN_NUM = 5;
+  localparam int HB_DEVICE_NUM = 5;
   // DEBUG,外部中断控制器,机器计时器,UART
   localparam int HB_SLAVE_NUM = 4;
-  // 地址映射分割
-  localparam int ADDR_SPLIT[HB_DOMAIN_NUM-1] = {
+  // 设备基地址
+  localparam int DEVICE_BASE_ADDR[HB_DEVICE_NUM-1] = {
     `DATA_RAM_BASE, `DOMAIN_XT_HB_BASE, `DOMAIN_WISHBONE_BASE, `DOMAIN_XT_LB_BASE
   };
-  // 地址域ID分配
+  // IO设备ID分配
   localparam int ID_XT_LB = 4, ID_WISHBONE = 3, ID_XT_HB = 2, ID_DATA_RAM = 1, ID_INST_RAM = 0;
   // HB从设备ID分配
   localparam int HB_ID_UART = 3, HB_ID_SYSTEMTIMER = 2, HB_ID_EINT_CTRL = 1, HB_ID_BOOTLOADER = 0;
@@ -83,16 +83,16 @@ module XT_Soc_Risc_V
 
   // 高速总线
   wire hb_master_in_t master_in[HB_MASTER_NUM];  // 主机输入
-  wire [31:0] domain_data_in[HB_DOMAIN_NUM];
-  wire [HB_DOMAIN_NUM-1:0] read_finish;
-  wire [HB_DOMAIN_NUM-1:0] write_finish;
+  wire [31:0] device_data_in[HB_DEVICE_NUM];
+  wire [HB_DEVICE_NUM-1:0] read_finish;
+  wire [HB_DEVICE_NUM-1:0] write_finish;
   // 总线扇出
   wire hb_clk = clk;
   wire hb_slave_t xt_hb;
   wire [31:0] hb_rdata;
-  wire sel_t domain_sel[HB_DOMAIN_NUM];
+  wire sel_t device_sel[HB_DEVICE_NUM];
   wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
-  // 总线地址域
+  // 总线IO设备
   wire [31:0] hb_data_in[HB_SLAVE_NUM];
   wire sel_t hb_sel[HB_SLAVE_NUM];
 
@@ -129,12 +129,12 @@ module XT_Soc_Risc_V
   // 高速总线
   XT_HB #(
       .MASTER_NUM(HB_MASTER_NUM),  // 总线上主设备的数量
-      .DOMAIN_NUM(HB_DOMAIN_NUM),  // 总线上地址域的数量
-      .ADDR_SPLIT(ADDR_SPLIT)
+      .DEVICE_NUM(HB_DEVICE_NUM),  // 总线上IO设备的数量
+      .DEVICE_BASE_ADDR(DEVICE_BASE_ADDR)
   ) u_XT_HB (
       .*,
       .bus(xt_hb),
-      .domain_sel(domain_sel),
+      .device_sel(device_sel),
       .stall_req(stall_req)
   );
 
@@ -144,10 +144,10 @@ module XT_Soc_Risc_V
       .SLAVE_NUM(HB_SLAVE_NUM)
   ) u_XT_HB_Domain (
       .*,
-      .sel(domain_sel[ID_XT_HB]),
+      .sel(device_sel[ID_XT_HB]),
       .read_finish(read_finish[ID_XT_HB]),
       .write_finish(write_finish[ID_XT_HB]),
-      .rdata(domain_data_in[ID_XT_HB])
+      .rdata(device_data_in[ID_XT_HB])
   );
 
 
@@ -184,12 +184,12 @@ module XT_Soc_Risc_V
       .*,
       .inst_fetch_clk_en    (core_stall_n),
       // 数据RAM
-      .ram_data_sel         (domain_sel[ID_DATA_RAM]),
-      .ram_data_rdata       (domain_data_in[ID_DATA_RAM]),
+      .ram_data_sel         (device_sel[ID_DATA_RAM]),
+      .ram_data_rdata       (device_data_in[ID_DATA_RAM]),
       .ram_data_read_finish (read_finish[ID_DATA_RAM]),
       .ram_data_write_finish(write_finish[ID_DATA_RAM]),
       // 指令RAM
-      .ram_inst_sel         (domain_sel[ID_INST_RAM]),
+      .ram_inst_sel         (device_sel[ID_INST_RAM]),
       .inst_fetch_addr      (instruction_addr),
       .inst_fetch           (user_instruction),
       .ram_inst_read_finish (read_finish[ID_INST_RAM]),
@@ -244,10 +244,10 @@ module XT_Soc_Risc_V
       .wb_we_o     (wb_we_i),
       .wb_adr_o    (wb_adr_i),
       // 与XT_HB总线
-      .sel         (domain_sel[ID_WISHBONE]),
+      .sel         (device_sel[ID_WISHBONE]),
       .read_finish (read_finish[ID_WISHBONE]),
       .write_finish(write_finish[ID_WISHBONE]),
-      .rdata       (domain_data_in[ID_WISHBONE])
+      .rdata       (device_data_in[ID_WISHBONE])
   );
 
   localparam int ALL_CSN_NUM = 3;
@@ -277,10 +277,10 @@ module XT_Soc_Risc_V
       .SLAVE_NUM(LB_SLAVE_NUM)
   ) u_XT_LB (
       .*,
-      .sel         (domain_sel[ID_XT_LB]),
+      .sel         (device_sel[ID_XT_LB]),
       .read_finish (read_finish[ID_XT_LB]),
       .write_finish(write_finish[ID_XT_LB]),
-      .rdata       (domain_data_in[ID_XT_LB]),
+      .rdata       (device_data_in[ID_XT_LB]),
       // 低速总线部分
       .bus         (xt_lb)
   );

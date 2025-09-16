@@ -1,17 +1,18 @@
 //----------高速总线控制器----------//
-// 总线通过输入的地址来判断要选中的地址域
+// 总线通过输入的地址来判断要选中的设备
 // 主设备不发出片选信号
 // 总线请求使用轮询机制，发生死锁时重置到0，可以看作0号主机优先级较高
 // 0.1更新 移除单独的读/写使能扇出
 // 0.2更新 整合总线信号为结构体
 // 0.3更新 轮询仲裁器，完全ACK访问，读/写独立，地址域映射
+// 0.4更新 放弃旧的地址域映射，使用设备识别符+地址偏移的MMIO
 module XT_HB
   import XT_BUS::*;
 #(
     parameter int MASTER_NUM = 1,  // 总线上主设备的数量
-    parameter int DOMAIN_NUM = 2,  // 总线上地址域的数量
-    // 地址域地址分割线，从0开始切分区域，区域结束不包含分割线地址
-    parameter int ADDR_SPLIT[DOMAIN_NUM-1]
+    parameter int DEVICE_NUM = 2,  // 总线上IO设备的数量
+    // 设备基地址(包含，必须在识别符上对齐)，从0开始划分地址空间(所以0不用填)
+    parameter int DEVICE_BASE_ADDR[DEVICE_NUM-1]
 ) (
     input clk,
     input rst_sync,
@@ -21,13 +22,13 @@ module XT_HB
     // 内核的读写请求为最高优先级
     // 高速总线读写
     input hb_master_in_t master_in[MASTER_NUM],
-    input [31:0] domain_data_in[DOMAIN_NUM],
-    input [DOMAIN_NUM-1:0] read_finish,
-    input [DOMAIN_NUM-1:0] write_finish,
+    input [31:0] device_data_in[DEVICE_NUM],
+    input [DEVICE_NUM-1:0] read_finish,
+    input [DEVICE_NUM-1:0] write_finish,
 
     output logic [31:0] hb_rdata,
     output hb_slave_t bus,
-    output sel_t domain_sel[DOMAIN_NUM],
+    output sel_t device_sel[DEVICE_NUM],
     output logic [MASTER_NUM-1:0] read_grant,
     output logic [MASTER_NUM-1:0] write_grant,
     output logic [MASTER_NUM-1:0] stall_req  // 仲裁失败或读写等待，停顿请求
@@ -36,10 +37,11 @@ module XT_HB
 
   //----------访问等待控制器----------//
   logic [MASTER_NUM-1:0] read_req, write_req;
-  logic [MASTER_NUM-1:0] access_req = read_req | write_req;
+  logic [MASTER_NUM-1:0] access_req;
   logic read_stall, write_stall;
   logic [MASTER_NUM-1:0] arbiter_stall;
   always_comb begin
+    access_req = read_req | write_req;
     arbiter_stall = (write_req & ~write_grant) | (read_req & ~read_grant);
     for (int i = 0; i < MASTER_NUM; ++i) begin
       if (!access_req[i]) begin
@@ -70,6 +72,8 @@ module XT_HB
   // 主设备总线复用器
   logic hb_ren, hb_wen;
   logic [HB_ADDR_WIDTH-1:0] raddr_mux, waddr_mux;
+  assign bus.raddr = raddr_mux;
+  assign bus.waddr = waddr_mux;
   always_comb begin
     hb_ren = 0;
     hb_wen = 0;
@@ -100,27 +104,23 @@ module XT_HB
 
 
   // 地址映射与片选生成
-  logic [DOMAIN_NUM-1:0] sel[2];
-  logic [MAX_DOMAIN_ADDR_WIDTH-1:0] mapped_addr[2];
-  assign bus.raddr = mapped_addr[0];
-  assign bus.waddr = mapped_addr[1];
-  AddressMapping #(
+  logic [DEVICE_NUM-1:0] sel[2];
+  MMIO #(
       .ADDR_WIDTH(HB_ADDR_WIDTH),
-      .MAPPED_ADDR_WIDTH(MAX_DOMAIN_ADDR_WIDTH),
-      .ADDR_NUM(2),
-      .SLICE_NUM(DOMAIN_NUM),
-      .SLICE(ADDR_SPLIT)
-  ) u_WAddressMapping (
-      .addr       ({raddr_mux, waddr_mux}),
-      .mapped_addr(mapped_addr),
-      .sel        (sel)
+      .ID_WIDTH  (HB_ID_WIDTH),
+      .ADDR_NUM  (2),
+      .DEVICE_NUM(DEVICE_NUM),
+      .BASE_ADDR (DEVICE_BASE_ADDR)
+  ) u_MMIO (
+      .addr({raddr_mux, waddr_mux}),
+      .sel (sel)
   );
-  wire [DOMAIN_NUM-1:0] slave_rsel = hb_ren ? sel[0] : 0;
-  wire [DOMAIN_NUM-1:0] slave_wsel = hb_wen ? sel[1] : 0;
+  wire [DEVICE_NUM-1:0] slave_rsel = hb_ren ? sel[0] : 0;
+  wire [DEVICE_NUM-1:0] slave_wsel = hb_wen ? sel[1] : 0;
   generate
-    for (genvar i = 0; i < DOMAIN_NUM; ++i) begin : gen_slaves_sel
-      assign domain_sel[i].ren = slave_rsel[i];
-      assign domain_sel[i].wen = slave_wsel[i];
+    for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_slaves_sel
+      assign device_sel[i].ren = slave_rsel[i];
+      assign device_sel[i].wen = slave_wsel[i];
     end
   endgenerate
 
@@ -131,13 +131,12 @@ module XT_HB
   assign write_stall = !write_wait_finish;
 
 
-
-  // 地址域总线复用器
+  // IO设备总线复用器
   always_comb begin
     hb_rdata = 0;
-    for (int i = 0; i < DOMAIN_NUM; ++i) begin
+    for (int i = 0; i < DEVICE_NUM; ++i) begin
       if (sel[0][i]) begin
-        hb_rdata = domain_data_in[i];
+        hb_rdata = device_data_in[i];
         break;
       end
     end

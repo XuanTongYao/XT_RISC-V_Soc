@@ -23,7 +23,7 @@ module XT_HB_Domain
   assign write_finish = 1;
 
 
-  `define AW `ADDR_WIDTH
+  `define AW 8
   wire [7:0] raddr = xt_hb.raddr[7:0];
   wire [7:0] waddr = xt_hb.waddr[7:0];
 
@@ -32,7 +32,7 @@ module XT_HB_Domain
   logic [SLAVE_NUM-1:0] slave_wsel;
   always_comb begin
     slave_wsel = 0;
-    unique case (xt_hb.waddr)
+    unique case (waddr)
       // DEBUG
       `AW'd0, `AW'd1, `AW'd2, `AW'd3:     slave_wsel[0] = 1;
       // EINT_CTRL(对齐)
@@ -49,7 +49,7 @@ module XT_HB_Domain
   always_comb begin
     slave_rsel = 0;
     rdata = 0;
-    unique case (xt_hb.raddr)
+    unique case (raddr)
       // DEBUG
       `AW'd0, `AW'd1, `AW'd2, `AW'd3: begin
         rdata = hb_data_in[0];

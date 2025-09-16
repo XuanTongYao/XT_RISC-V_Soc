@@ -38,33 +38,33 @@ module HarvardSystemRAM_BUS
   localparam int DATA_WIDTH = $clog2(DATA_RAM_DEPTH * 4);
   localparam int INST_WIDTH = $clog2(INST_RAM_DEPTH * 4);
 
-  //----------写入字节选择----------//
+  //----------写入字节使能----------//
   // 00:写入1字节  01:写入2字节  10:写入4字节  11:写入8字节
   wire  [ 1:0] write_width = xt_hb.write_width;
   // 取模4 计算字节偏移量[0,3]
   wire  [ 1:0] write_byte_offset = xt_hb.waddr[1:0];
-  // 字节选择与写入数据
-  logic [31:0] byte_sel_wdata;
-  logic [ 3:0] byte_sel;
+  // 字节使能与写入数据
+  logic [31:0] byte_en_wdata;
+  logic [ 3:0] byte_en;
   always_comb begin
-    byte_sel = 4'b0;
-    byte_sel_wdata = xt_hb.wdata;
+    byte_en = 4'b0;
+    byte_en_wdata = xt_hb.wdata;
     if (write_width == 2'b10) begin
-      byte_sel = 4'b1111;
+      byte_en = 4'b1111;
     end else if (write_width == 2'b01) begin
-      byte_sel_wdata = {xt_hb.wdata[15:0], xt_hb.wdata[15:0]};
+      byte_en_wdata = {xt_hb.wdata[15:0], xt_hb.wdata[15:0]};
       unique case (write_byte_offset)
-        2'd0: byte_sel = 4'b0011;
-        2'd2: byte_sel = 4'b1100;
+        2'd0: byte_en = 4'b0011;
+        2'd2: byte_en = 4'b1100;
         default: ;
       endcase
     end else begin
-      byte_sel_wdata = {4{xt_hb.wdata[7:0]}};
+      byte_en_wdata = {4{xt_hb.wdata[7:0]}};
       unique case (write_byte_offset)
-        2'd0: byte_sel = 4'b0001;
-        2'd1: byte_sel = 4'b0010;
-        2'd2: byte_sel = 4'b0100;
-        2'd3: byte_sel = 4'b1000;
+        2'd0: byte_en = 4'b0001;
+        2'd1: byte_en = 4'b0010;
+        2'd2: byte_en = 4'b0100;
+        2'd3: byte_en = 4'b1000;
         default: ;
       endcase
     end
@@ -119,11 +119,11 @@ module HarvardSystemRAM_BUS
       .*,
       .WrAddress(data_word_waddr),
       .RdAddress(data_word_raddr),
-      .Data(byte_sel_wdata),
-      .ByteEn(byte_sel),
+      .Data(byte_en_wdata),
+      .ByteEn(byte_en),
       .WE(data_wen),
       .RdClockEn(data_ren),
-      .WrClockEn(1),
+      .WrClockEn(1'b1),
       .Q(byte_rdata)
   );
 

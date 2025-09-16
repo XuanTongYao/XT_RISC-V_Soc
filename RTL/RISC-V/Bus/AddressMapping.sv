@@ -1,6 +1,8 @@
-//----------地址映射表----------//
+// @Deprecated
+// 已弃用
 // 将地址按照分割点线性映射并输出独热码片选
 // 从0开始切分区域，下方区域不包括分割点的地址
+// 用比较器的方式效率太低了
 module AddressMapping #(
     parameter int ADDR_WIDTH = 16,
     parameter int MAPPED_ADDR_WIDTH = 12,

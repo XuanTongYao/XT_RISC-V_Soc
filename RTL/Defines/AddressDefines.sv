@@ -13,9 +13,9 @@
 //----------XT_HB总线----------//
 
 // 外设占用地址长度
-`define DOMAIN_XT_HB_LEN 32
-`define DOMAIN_WISHBONE_LEN 256
-`define DOMAIN_XT_LB_LEN 256
+`define DOMAIN_XT_HB_LEN 2048
+`define DOMAIN_WISHBONE_LEN 2048
+`define DOMAIN_XT_LB_LEN 2048
 
 // 外设地址偏移定义
 `define DOMAIN_XT_HB_OFFSET 0
