@@ -37,23 +37,26 @@ module XT_HB
 
   //----------访问等待控制器----------//
   logic [MASTER_NUM-1:0] read_req, write_req;
-  logic [MASTER_NUM-1:0] access_req;
+  logic [MASTER_NUM-1:0] access_req, rw_access_req;
   logic read_stall, write_stall;
   logic [MASTER_NUM-1:0] arbiter_stall;
   always_comb begin
     access_req = read_req | write_req;
+    rw_access_req = read_req & write_req;
     arbiter_stall = (write_req & ~write_grant) | (read_req & ~read_grant);
     for (int i = 0; i < MASTER_NUM; ++i) begin
       if (!access_req[i]) begin
         stall_req[i] = 0;
       end else if (arbiter_stall[i]) begin
         stall_req[i] = 1;
+      end else if (rw_access_req[i]) begin
+        stall_req[i] = write_stall || read_stall;
       end else if (read_req[i]) begin
         stall_req[i] = read_stall;
       end else if (write_req[i]) begin
         stall_req[i] = write_stall;
       end else begin
-        stall_req[i] = write_stall || read_stall;
+        stall_req[i] = 0;
       end
     end
   end
