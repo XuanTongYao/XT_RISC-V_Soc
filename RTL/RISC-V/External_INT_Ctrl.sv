@@ -10,7 +10,8 @@ module External_INT_Ctrl #(
     output logic [31:0] rdata,
 
     input [INT_NUM-1:0] irq_source,
-    output logic [30:0] mextern_int_id,
+    // 自定义中断代码，大于等于16的部分，只有27位，原来的代码最长也只有31位
+    output logic [26:0] custom_int_code,
     output logic mextern_int
 
 );
@@ -34,10 +35,13 @@ module External_INT_Ctrl #(
   logic [INT_NUM-1:0] INT_pending_reg;
   logic [5:0] int_id;
   always_comb begin
+    int id;
+    id = 0;
     int_id = 0;
     for (int i = 0; i < INT_NUM; ++i) begin
       if (INT_pending_reg[i]) begin
-        int_id = i;
+        id = i + 1;
+        int_id = id[5:0];
         break;
       end
     end
@@ -50,7 +54,7 @@ module External_INT_Ctrl #(
       INT_pending_reg <= irq_source & INT_enable_reg;
       mextern_int <= |INT_pending_reg;
     end
-    mextern_int_id <= 6'd16 + int_id;
+    custom_int_code <= {21'b0, int_id};
   end
 
 

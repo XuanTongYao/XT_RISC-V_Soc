@@ -1,6 +1,8 @@
 `include "../../Defines/InstructionDefines.sv"
 
-module ID_EX (
+module ID_EX
+  import Exception_Pkg::*;
+(
     input        clk,
     input        rst_sync,
     input        flush,
@@ -16,7 +18,7 @@ module ID_EX (
     input [31:0] operand1_id,
     input [31:0] operand2_id,
     input        reg_wen_id,
-    input        exception_id,
+    input        exception_id_raise,
     input        wait_for_interrupt,
 
     // 传递给EX
@@ -38,7 +40,7 @@ module ID_EX (
       instruction_addr_id_ex <= instruction_addr_id;
     end
     // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
-    if (rst_sync || flush || (exception_id && stall_n)) begin
+    if (rst_sync || flush || (exception_id_raise && stall_n)) begin
       ram_load_access_id_ex <= 0;
       ram_store_access_id_ex <= 0;
       instruction_id_ex <= `INST_NOP;

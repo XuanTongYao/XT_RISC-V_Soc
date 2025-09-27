@@ -1,7 +1,9 @@
 `include "../../Defines/InstructionDefines.sv"
 
 //----------纯组合逻辑----------//
-module InstructionExecute (
+module InstructionExecute
+  import CoreConfig::*;
+(
     // 来自ID_EX
     input        ram_load_access_id_ex,
     input        ram_store_access_id_ex,
@@ -21,13 +23,13 @@ module InstructionExecute (
     output logic        reg_wen,
 
     // 访问控制与状态寄存器
-    output logic exception_returned,
+    output logic trap_returned,
     output logic csr_ren,
     output logic csr_wen,
     output logic [11:0] csr_rwaddr,
     output logic [31:0] csr_wdata,
     input [31:0] csr_rdata,
-    input [31:0] csr_mepc,
+    input [PC_LEN-1:0] csr_mepc,
 
     // 访存
     output logic ram_load_en,
@@ -125,7 +127,7 @@ module InstructionExecute (
     jump_addr_ex = 0;
     jump_en_ex = 0;
 
-    exception_returned = 0;
+    trap_returned = 0;
     csr_ren = 0;
     csr_wen = 0;
     csr_rwaddr = inst[31:20];
@@ -214,8 +216,8 @@ module InstructionExecute (
               `INST_FUNCT12_ECALL, `INST_FUNCT12_EBREAK: ;  //等效于NOP指令
               `INST_FUNCT12_MRET: begin
                 jump_en_ex = 1;
-                jump_addr_ex = csr_mepc;
-                exception_returned = 1;
+                jump_addr_ex = PadPC(csr_mepc);
+                trap_returned = 1;
               end
               `INST_FUNCT12_WFI: wait_for_interrupt = 1;  // WFI(告知内核控制器请求等待)
               default: ;

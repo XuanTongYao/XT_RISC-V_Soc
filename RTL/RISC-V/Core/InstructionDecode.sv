@@ -1,8 +1,9 @@
 `include "../../Defines/InstructionDefines.sv"
-`include "../../Defines/ExceptionDefines.sv"
 
 //----------纯组合逻辑----------//
-module InstructionDecode (
+module InstructionDecode
+  import Exception_Pkg::*;
+(
     // 来自IF_ID
     input [31:0] instruction_addr_if_id,
     input [31:0] instruction_if_id,
@@ -26,8 +27,7 @@ module InstructionDecode (
     output logic        reg_wen_id,
 
     // 异常处理
-    output logic exception_id,
-    output logic [3:0] exception_cause_id
+    output exception_t exception_id
 );
 
   assign instruction_addr_id = instruction_addr_if_id;
@@ -73,8 +73,8 @@ module InstructionDecode (
     ram_store_addr_id = reg1_rdata + imm_s;
     ram_store_data_id = reg2_rdata;
 
-    exception_id = 0;
-    exception_cause_id = `EXCEPTION_INVALID_INST;
+    exception_id.raise = 0;
+    exception_id.code = ILLEGAL_INST;
     unique case (opcode)
       `INST_OP_LUI: begin
         reg_wen_id  = 1;
@@ -150,14 +150,14 @@ module InstructionDecode (
           `INST_PRIVILEGED: begin
             unique case (funct12)
               `INST_FUNCT12_ECALL, `INST_FUNCT12_EBREAK: begin
-                exception_id = 1;
-                exception_cause_id = funct12[0] ? `EXCEPTION_EBREAK : `EXCEPTION_MECALL;
+                exception_id.raise = 1;
+                exception_id.code  = funct12[0] ? BREAKPOINT : ECALL_FROM_M_MODE;
               end
               `INST_FUNCT12_MRET: ;  // 不需要额外处理
               `INST_FUNCT12_WFI:  ;  // WFI(在执行阶段处理)
               default: begin
-                exception_id = 1;
-                exception_cause_id = `EXCEPTION_INVALID_INST;
+                exception_id.raise = 1;
+                exception_id.code  = ILLEGAL_INST;
               end
             endcase
           end
@@ -175,8 +175,8 @@ module InstructionDecode (
       // 不执行，等效于NOP指令
       `INST_OP_FENCE: ;
       default: begin
-        exception_id = 1;
-        exception_cause_id = `EXCEPTION_INVALID_INST;
+        exception_id.raise = 1;
+        exception_id.code  = ILLEGAL_INST;
       end
     endcase
   end

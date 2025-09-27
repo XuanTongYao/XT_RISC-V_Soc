@@ -16,7 +16,11 @@
 
 
 // 必须要在EX阶段执行流水线暂停
-module RISC_V_Core #(
+module RISC_V_Core
+  import CSR_Pkg::*;
+  import CoreConfig::*;
+  import Exception_Pkg::*;
+#(
     parameter bit INST_FETCH_REG = 0,  // 读取指令时是否已经经过寄存器
     parameter int STALL_REQ_NUM  = 1   // 暂停请求的数量
 ) (
@@ -42,12 +46,12 @@ module RISC_V_Core #(
     input mextern_int,
     input msoftware_int,
     input mtimer_int,
-    input [30:0] mextern_int_id,
+    input [26:0] custom_int_code,
 
     // Debug
     output logic [31:0] instruction_addr_id_ex_debug
 );
-  import CSR_Typedefs::*;
+
 
   //----------核心控制器----------//
   wire [31:0] jump_addr;
@@ -80,17 +84,17 @@ module RISC_V_Core #(
   PC_Reg u_PC_Reg (.*);
 
   // 控制状态寄存器
-  wire exception_returned;
+  wire trap_returned;
   wire csr_ren;
   wire csr_wen;
   wire [11:0] csr_rwaddr;
   wire [31:0] csr_wdata;
 
   wire mstatus_t csr_mstatus;
-  wire mie_t csr_mie;
-  wire mip_t csr_mip;
-  wire [31:0] csr_mtvec;
-  wire [31:0] csr_mepc;
+  wire mie_m_only_t csr_mie;
+  wire mip_m_only_t csr_mip;
+  wire mtvec_t csr_mtvec;
+  wire [PC_LEN-1:0] csr_mepc;
   wire [31:0] csr_rdata;
 
 
@@ -98,8 +102,8 @@ module RISC_V_Core #(
 
   wire [31:0] instruction_addr_if;
   wire [31:0] instruction_if;
-  wire exception_if;
-  wire [3:0] exception_cause_if;
+  wire exception_t exception_if;
+  wire exception_if_raise = exception_if.raise;
   InstructionFetch u_InstructionFetch (.*);
 
 
@@ -116,8 +120,8 @@ module RISC_V_Core #(
   wire [31:0] instruction_id;
   wire [31:0] operand1_id, operand2_id;
   wire reg_wen_id;
-  wire exception_id;
-  wire [3:0] exception_cause_id;
+  wire exception_t exception_id;
+  wire exception_id_raise = exception_id.raise;
   assign next_pc = instruction_addr_id;
   InstructionDecode u_InstructionDecode (.*);
 
@@ -148,14 +152,21 @@ module RISC_V_Core #(
   );
 
 
-  wire [31:0] new_mepc;
-  wire [31:0] new_mcause;
-  wire [31:0] new_mtval;
+  wire exception_t exception_commit;
+  ExceptionPipeLine u_ExceptionPipeLine (.*);
+
+  wire [PC_LEN-1:0] new_mepc;
+  wire mcause_t new_mcause;
+  // wire [31:0] new_mtval;
   wire any_interrupt_come;
   wire valid_interrupt_request;
-  wire exception_occurred;
-  wire [31:0] exception_jump_addr;
-  ExceptionCtrl u_ExceptionCtrl (.*);
+  wire trap_occurred;
+  wire [31:0] trap_jump_addr;
+  ExceptionCtrl u_ExceptionCtrl (
+      .*,
+      .instruction_addr_id_ex(instruction_addr_id_ex[31:PC_ZEROS]),
+      .jump_addr_ex(jump_addr_ex[31:PC_ZEROS])
+  );
   CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
   CSR u_CSR (.*);  // 控制与状态寄存器
 

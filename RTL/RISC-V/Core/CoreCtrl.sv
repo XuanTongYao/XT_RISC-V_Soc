@@ -15,8 +15,8 @@ module CoreCtrl #(
     // 来自异常/中断控制器
     input any_interrupt_come,
     input valid_interrupt_request,
-    input exception_occurred,
-    input [31:0] exception_jump_addr,
+    input trap_occurred,
+    input [31:0] trap_jump_addr,
 
     // 输出
     output logic [31:0] jump_addr,
@@ -31,13 +31,13 @@ module CoreCtrl #(
   //----------跳转指令控制----------//
   // 核心停止和跳转的优先级谁更高？(目前不会出现这种情况)
   always_comb begin
-    if (exception_occurred) begin
-      jump_addr = exception_jump_addr;
+    if (trap_occurred) begin
+      jump_addr = trap_jump_addr;
     end else begin
       jump_addr = jump_addr_ex;
     end
 
-    jump  = jump_en_ex || exception_occurred;
+    jump  = jump_en_ex || trap_occurred;
     flush = jump || valid_interrupt_request;
   end
 
@@ -45,7 +45,7 @@ module CoreCtrl #(
   // 指令退役: 指令正常被执行
   // 肯定不算异常跳转和冲刷流水线的NOP
   // 核心暂停且没跳转时也不算
-  assign instruction_retire = !(flushing_pipeline || exception_occurred) && (jump || stall_n);
+  assign instruction_retire = !(flushing_pipeline || trap_occurred) && (jump || stall_n);
   logic [1:0] nop_cnt;
   assign flushing_pipeline = nop_cnt != 0;
   always_ff @(posedge clk) begin

@@ -1,6 +1,8 @@
 `include "../../Defines/InstructionDefines.sv"
 // 数据停一个时钟周期可选
-module IF_ID #(
+module IF_ID
+  import Exception_Pkg::*;
+#(
     parameter bit INST_DELAY_1TICK = 1
 ) (
     input clk,
@@ -11,7 +13,8 @@ module IF_ID #(
     // 中间传递
     input [31:0] instruction_addr_if,
     input [31:0] instruction_if,
-    input        exception_if,
+
+    input exception_if_raise,
 
     output logic [31:0] instruction_addr_if_id,
     output logic [31:0] instruction_if_id
@@ -28,7 +31,7 @@ module IF_ID #(
   generate
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
       always_ff @(posedge clk) begin
-        if (rst_sync || flush || exception_if) begin
+        if (rst_sync || flush || exception_if_raise) begin
           instruction_if_id <= `INST_NOP;
         end else if (stall_n) begin
           instruction_if_id <= instruction_if;
@@ -37,7 +40,7 @@ module IF_ID #(
     end else begin : gen_none_delay
       logic clear;
       always_ff @(posedge clk) begin
-        clear <= rst_sync || flush || exception_if;
+        clear <= rst_sync || flush || exception_if_raise;
       end
       assign instruction_if_id = clear ? `INST_NOP : instruction_if;
     end

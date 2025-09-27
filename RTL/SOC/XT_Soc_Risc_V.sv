@@ -111,7 +111,7 @@ module XT_Soc_Risc_V
   wire mextern_int;
   wire msoftware_int = 0;  // 单核，为0即可
   wire mtimer_int;
-  wire [30:0] mextern_int_id;
+  wire [26:0] custom_int_code;
   RISC_V_Core #(
       .INST_FETCH_REG(1)
   ) u_RISC_V_Core (
