@@ -49,7 +49,8 @@ module UART_BUS
     logic tx_ready;
   } uart_state_t;
   uart_state_t state;
-  initial state.tx_ready = 1;
+  logic tx_ready = 1;
+  assign state.tx_ready = tx_ready;
 
 
   //----------接收----------//
@@ -171,7 +172,7 @@ module UART_BUS
   logic [8:0] tx_copy;
   wire send_stop_bit = shift_reg[9];
   always_ff @(posedge band_clk) begin
-    if (!state.tx_ready) begin
+    if (!tx_ready) begin
       if (copy_done) begin
         shift_reg <= {shift_reg[8:0], shift_reg[9]};
         tx_copy   <= {1'b1, tx_copy[8:1]};  // 从后面填充结束位
@@ -210,9 +211,9 @@ module UART_BUS
   );
   always_ff @(posedge hb_clk) begin
     if (sel.wen) begin
-      state.tx_ready <= 0;
+      tx_ready <= 0;
     end else if (tx_ready_pulse) begin
-      state.tx_ready <= 1;
+      tx_ready <= 1;
     end
   end
 

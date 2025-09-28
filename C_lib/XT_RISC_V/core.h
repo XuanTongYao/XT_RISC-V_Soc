@@ -4,16 +4,16 @@
 //----------中断控制宏----------//
 // ！！！永远不应该在中断处理函数中使用 中断控制宏
 #define ENABLE_GLOBAL_MINT asm("csrsi mstatus, 0x8");
-#define DISABLE_GLOBAL_MINT asm("csrci mstatus, 0x0");
+#define DISABLE_GLOBAL_MINT asm("csrci mstatus, 0x8");
 
 // 下面执行前一定要先使用DISABLE_GLOBAL_MINT关闭全局中断
-#define __SETTING_PREFIX asm("csrrw t0,mscratch,t0"); asm("sw t1,0(t0)");
-#define __ENABLE_POSTFIX asm("csrs mie,t1"); asm("lw t1,0(t0)"); asm("csrrw t0,mscratch,t0");
-#define __DISABLE_POSTFIX asm("csrc mie,t1"); asm("lw t1,0(t0)"); asm("csrrw t0,mscratch,t0");
-#define __SETTING_MEI_IMM asm("li t1,0xFFFFF800");
-#define __SETTING_MTI_IMM asm("li t1,0x00000080");
-#define __SETTING_MSI_IMM asm("li t1,0x00000008");
-#define __SETTING_ALL_IMM asm("li t1,0xFFFFF888");
+#define __SETTING_PREFIX asm("sw t0,-4(sp)");
+#define __ENABLE_POSTFIX asm("csrs mie,t0"); asm("lw t0,-4(sp)");
+#define __DISABLE_POSTFIX asm("csrc mie,t0"); asm("lw t0,-4(sp)");
+#define __SETTING_MEI_IMM asm("li t0,0xFFFFF800");
+#define __SETTING_MTI_IMM asm("li t0,0x00000080");
+#define __SETTING_MSI_IMM asm("li t0,0x00000008");
+#define __SETTING_ALL_IMM asm("li t0,0xFFFFF888");
 
 #define ENABLE_ALL_MINT __SETTING_PREFIX; \
     __SETTING_ALL_IMM;\

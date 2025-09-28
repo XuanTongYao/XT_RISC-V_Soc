@@ -1,6 +1,8 @@
 .vscode
 build
 show.txt
+*/__pycache__
+*/test.py
 RTL/IPs/*/*.edn
 RTL/IPs/*/*.log
 RTL/IPs/*/*.naf

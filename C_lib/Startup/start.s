@@ -1,20 +1,19 @@
 .section .init
 .global _start
 _start:
-    li sp, 4096 # 初始化栈指针
-    # 全局指针gp用于优化±2KB内全局变量的访问
-    # 它的位置应该是全局区+2KB
-    li gp, 4164 # 初始化全局指针 0x1044
-    # 全局中断已在硬件初始化为0
+    .option push
+    .option norelax
+1:  la sp, _sstack # 初始化栈指针
+    auipc gp, %pcrel_hi(__global_pointer$)
+    addi gp, gp, %pcrel_lo(1b)
+    csrwi mscratch,0
+    .option pop
     # csrsi mstatus, 0x8 # 启用全局中断
     # csrsi mstatus, 0x0 # 关闭全局中断
     # 初始化 中断向量
     lla t0,_exception
     ori t0, t0, 1
     csrw mtvec, t0
-    # 初始化 mscratch保留16字空间(编译器在中断处理函数中似乎从来不使用mscratch？直接使用栈空间)
-    li t0, 2048
-    csrw mscratch, t0
     j main  # jump to main
 
 
