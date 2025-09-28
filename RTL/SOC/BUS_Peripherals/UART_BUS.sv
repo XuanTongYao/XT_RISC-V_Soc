@@ -150,7 +150,7 @@ module UART_BUS
       rx_wr_ptr <= rx_wr_ptr + 1;
       rx_fifo_count <= rx_fifo_count + 1;
       rx_irq <= 1;
-    end else if (sel.ren && xt_hb.raddr[4:0] == 5'd28 && !state.rx_fifo_empty) begin
+    end else if (sel.ren && xt_hb.raddr[5:2] == 5'd9 && !state.rx_fifo_empty) begin
       rx_rd_ptr <= rx_rd_ptr + 1;
       rx_fifo_count <= rx_fifo_count - 1;
       rx_irq <= 0;
@@ -161,7 +161,7 @@ module UART_BUS
   //----------发送----------//
   logic [7:0] tx;
   always_ff @(posedge hb_clk) begin
-    if (sel.wen && xt_hb.waddr[4:0] == 5'd28) begin
+    if (sel.wen && xt_hb.waddr[5:2] == 5'd9) begin
       tx <= xt_hb.wdata[7:0];
     end
   end
@@ -221,7 +221,7 @@ module UART_BUS
   //----------总线读----------//
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
-      if (xt_hb.raddr[4:0] == 5'd28) begin
+      if (xt_hb.raddr[5:2] == 5'd9) begin
         rdata <= {24'b0, rx_fifo[rx_rd_ptr]};
       end else begin
         rdata <= {24'b0, 4'b0, state};

@@ -17,8 +17,8 @@ objcopy = "riscv-none-elf-objcopy"
 其他参数 = "-fstrict-volatile-bitfields"
 优化等级 = "-Os"
 其他优化 = "-flto"
-# 启动文件 = ["./C_lib/Startup/start.s"]
-启动文件 = ["./C_lib/Startup/simple_start.s"]
+启动文件 = ["./C_lib/Startup/start.s"]
+# 启动文件 = ["./C_lib/Startup/simple_start.s"]
 链接脚本 = "./C_lib/Startup/link.ld"
 
 
@@ -70,11 +70,11 @@ def build(main_file: str, output_name: str):
                 hex_str = "".join(f"{b:02X}" for b in reversed(word))  # 高位字符在前
                 out.write(hex_str + "\n")
 
-    align_to_page(flat_output)
+    align_to_page(flat_output, output_name)
 
 
-def align_to_page(flat_output: str):
-    page_out = os.path.join(inc.BIN_PAGE_DIR, Path(flat_output).name)
+def align_to_page(flat_output: str, output_name: str):
+    page_out = os.path.join(inc.BIN_PAGE_DIR, output_name) + ".bin"
     with open(flat_output, "rb") as f:
         binary_data = f.read()
         with open(page_out, "wb") as out:

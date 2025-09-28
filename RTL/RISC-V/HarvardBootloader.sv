@@ -17,10 +17,10 @@ module HarvardBootloader
 
     input download_mode
 );
-  wire r_debug = xt_hb.raddr[1:0] == 2'b00;
-  wire r_str = xt_hb.raddr[1:0] == 2'b10;
-  wire w_debug = xt_hb.waddr[1:0] == 2'b00;
-  wire w_str_addr = xt_hb.waddr[1:0] == 2'b01;
+  wire r_debug = xt_hb.raddr[3:2] == 2'b00;
+  wire r_str = xt_hb.raddr[3:2] == 2'b10;
+  wire w_debug = xt_hb.waddr[3:2] == 2'b00;
+  wire w_str_addr = xt_hb.waddr[3:2] == 2'b01;
 
   // 地址读后自增
   logic [5:0] rom_addr = 0;

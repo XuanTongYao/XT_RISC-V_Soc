@@ -26,14 +26,14 @@ module SystemTimer
 
 
   // mtime在低位，mtimecmp在高位
-  // 5'd20  5'd24
-  wire read_cmp = xt_hb.raddr[4:2] == 3'b101 || xt_hb.raddr[4:2] == 3'b110;
-  // 5'd12  5'd16
-  wire read_time = xt_hb.raddr[4:2] == 3'b011 || xt_hb.raddr[4:2] == 3'b100;
-  wire write_cmp = xt_hb.waddr[4:2] == 3'b101 || xt_hb.waddr[4:2] == 3'b110;
-  wire write_time = xt_hb.waddr[4:2] == 3'b011 || xt_hb.waddr[4:2] == 3'b100;
-  wire read_high = xt_hb.raddr[4:2] == 3'b100 || xt_hb.raddr[4:2] == 3'b110;
-  wire write_high = xt_hb.waddr[4:2] == 3'b100 || xt_hb.waddr[4:2] == 3'b110;
+  // 5'd7  5'd8
+  wire read_cmp = xt_hb.raddr[5:2] == 4'd7 || xt_hb.raddr[5:2] == 4'd8;
+  // 5'd5  5'd6
+  wire read_time = xt_hb.raddr[5:2] == 4'd5 || xt_hb.raddr[5:2] == 4'd6;
+  wire write_cmp = xt_hb.waddr[5:2] == 4'd7 || xt_hb.waddr[5:2] == 4'd8;
+  wire write_time = xt_hb.waddr[5:2] == 4'd5 || xt_hb.waddr[5:2] == 4'd6;
+  wire read_high = xt_hb.raddr[5:2] == 4'd6 || xt_hb.raddr[5:2] == 4'd8;
+  wire write_high = xt_hb.waddr[5:2] == 4'd6 || xt_hb.waddr[5:2] == 4'd8;
 
   logic [31:0] mtime_l = 0;
   logic [31:0] mtime_h = 0;

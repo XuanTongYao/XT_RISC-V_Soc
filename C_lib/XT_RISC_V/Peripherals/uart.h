@@ -9,15 +9,15 @@
 
 typedef struct
 {
-    uint8_t tx_ready : 1;
-    uint8_t rx_end : 1;
-    uint8_t rx_fifo_empty : 1;
-    uint8_t rx_fifo_full : 1;
-    uint8_t : 4;
+    uint32_t tx_ready : 1;
+    uint32_t rx_end : 1;
+    uint32_t rx_fifo_empty : 1;
+    uint32_t rx_fifo_full : 1;
+    uint32_t : 28;
 }UART_STATE;
-#define UART_STATE_REG ((const volatile UART_STATE*)(UART_BASE + 1))
+#define UART_STATE_REG ((const volatile UART_STATE*)(UART_BASE + 4))
 
-#define UART_DEBUG_REG ((byte_reg_ptr)(UART_BASE + 2))
+// #define UART_DEBUG_REG ((byte_reg_ptr)(UART_BASE + 2))
 
 uint8_t rx_block(void);
 void tx_block(uint8_t data);

@@ -38,10 +38,10 @@
 
 //----------XT_HB总线本域----------//
 // 外设占用地址长度
-#define DEBUG_LEN 4
+#define DEBUG_LEN 12
 #define EINT_CTRL_LEN 8
 #define SYSTEM_TIMER_LEN 16
-#define UART_LEN 4
+#define UART_LEN 8
 
 // 外设地址偏移定义
 #define DEBUG_OFFSET 0
