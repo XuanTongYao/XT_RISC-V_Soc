@@ -46,7 +46,7 @@ void boot(void) {
     }
     // TODO 还需要手动清空全局区的内容(目前直接使用高位地址存放临时数据，暂时不需要)
     __disable_transparent_UFM();
-    *DEBUG_REG = 0xF0;
+    *DEBUG_REG = INTO_NORMAL_MODE;
     asm("j 0x0");
 }
 

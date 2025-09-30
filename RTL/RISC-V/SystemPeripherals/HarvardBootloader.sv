@@ -74,7 +74,7 @@ module HarvardBootloader
   always_ff @(posedge hb_clk) begin
     if (rst_sync) begin
       run_mode <= BOOT;
-    end else if (debug_reg == 8'hF0) begin
+    end else if (run_mode == BOOT && debug_reg == 8'hF0) begin
       run_mode <= NORMAL;
     end
   end

@@ -35,7 +35,9 @@ module SystemPeripheral
     input sampling_clk,
     output logic rx_irq,
     input uart_rx,
-    output logic uart_tx
+    output logic uart_tx,
+    // 软件中断
+    output logic msoftware_int
 
 );
   // 所有外设必须能在一个时钟周期内完成写入
@@ -62,11 +64,11 @@ module SystemPeripheral
 
   //----------设备数据选择----------//
   // 96个警告
-  localparam int SP_NUM = 4;
+  localparam int SP_NUM = 5;
   // 设备索引分配
-  localparam int IDX_BOOTLOADER = 0, IDX_EINT_CTRL = 1, IDX_SYSTEM_TIMER = 2, IDX_UART = 3;
+  localparam int IDX_BOOTLOADER = 0, IDX_EINT_CTRL = 1, IDX_SYSTEM_TIMER = 2, IDX_UART = 3, IDX_SOFTWARE_INT = 4;
   // 设备识别符
-  localparam bit [SP_ID_LEN-1:0] DEVICE_ID[SP_NUM-1] = {2'b01, 2'b10, 2'b11};
+  localparam bit [SP_ID_LEN-1:0] DEVICE_ID[SP_NUM-1] = {3'd1, 3'd2, 3'd3, 3'd4};
   // 5'b01_XXX_00
 
   // 读取
@@ -159,5 +161,26 @@ module SystemPeripheral
       .sel  (sp_sel[IDX_UART]),
       .rdata(sp_data_in[IDX_UART])
   );
+
+  // 最高位为激活中断，低15位可作为中断原因
+  wire sel_t sel_soft_int = sp_sel[IDX_SOFTWARE_INT];
+  logic [15:0] msoftware_int_reg;
+  always_ff @(posedge hb_clk) begin
+    if (rst_sync) begin
+      msoftware_int <= 0;
+      msoftware_int_reg <= 0;
+    end else if (sel_soft_int.wen && sys_share.waddr == 'd0) begin
+      msoftware_int_reg <= sys_share.wdata[15:0];
+      msoftware_int <= sys_share.wdata[15];
+    end
+  end
+  logic [15:0] soft_int_rdata;
+  assign sp_data_in[IDX_SOFTWARE_INT] = {16'b0, soft_int_rdata};
+  always_ff @(posedge hb_clk) begin
+    if (sel_soft_int.ren && sys_share.raddr == 'd0) begin
+      soft_int_rdata <= msoftware_int_reg;
+    end
+  end
+
 
 endmodule

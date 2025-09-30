@@ -18,6 +18,9 @@ SECTIONS
     .text :
     {
         KEEP (*(SORT_NONE(.init)))
+        KEEP (*(SORT_NONE(.trap.vector)))
+        KEEP (*(SORT_NONE(.trap.delete_handler)))
+        KEEP (*(SORT_NONE(.trap.error_handler)))
         *(.text)
         *(.text.*)
     } > INST_RAM

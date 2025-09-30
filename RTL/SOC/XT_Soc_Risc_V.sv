@@ -111,7 +111,7 @@ module XT_Soc_Risc_V
   assign master_in[0].waddr = access_ram_waddr[HB_ADDR_WIDTH-1:0];
   // 中断相关
   wire mextern_int;
-  wire msoftware_int = 0;  // 单核，为0即可
+  wire msoftware_int;
   wire mtimer_int;
   wire [26:0] custom_int_code;
   RISC_V_Core #(

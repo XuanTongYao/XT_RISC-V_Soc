@@ -1,10 +1,7 @@
 #include "flash.h"
 #include "Utils.h"
+#include "bootloader.h"
 
-// 使用自动增地址的硬件实现字符串输出
-#define DEBUG_REG ((byte_reg_ptr)(DEBUG_BASE))
-#define PRELOAD_STR_INIT_ADDR_REG ((wo_byte_reg_ptr)(DEBUG_BASE+4))
-#define PRELOAD_STR_AUTO_INC_REG ((ro_byte_reg_ptr)(DEBUG_BASE+8))
 // "下载:0x56,启动:0xF1"
 #define STR_1 0
 #define STR_1_LEN 24

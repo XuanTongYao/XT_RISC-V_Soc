@@ -73,14 +73,12 @@ module ExceptionCtrl
     if (is_interrupt) begin
       // 优先级: 外部->软件->定时器，这和中断号的顺序不一样
       if (csr_mie.meie && csr_mip.meip) begin
-        code = {custom_int_code, 4'b0};
-        // cause = 31'd11;
-        // 暂时不支持软件中断
-        // end else if (csr_mie.msie && csr_mip.msip) begin
-        //   valid_interrupt_request = 1;
-        //   cause = 31'd3;
+        code = {custom_int_code, 4'b0};  // 外部中断控制器重定向
+        // code = MACHINE_EXTERNAL_INT;
+      end else if (csr_mie.msie && csr_mip.msip) begin
+        code = MACHINE_SOFTWARE_INT;
       end else if (csr_mie.mtie && csr_mip.mtip) begin
-        code = 31'd7;
+        code = MACHINE_TIMER_INT;
       end
       if (csr_mtvec.mode == 2'b01) begin
         trap_jump_addr = {{csr_mtvec.base + code[29:0]}, 2'b0};

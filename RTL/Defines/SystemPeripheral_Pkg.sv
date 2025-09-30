@@ -5,7 +5,7 @@ package SystemPeripheral_Pkg;
   import XT_HBUS_Pkg::HB_OFFSET_WIDTH;
 
   localparam int SP_ADDR_LEN = 5;
-  localparam int SP_ID_LEN = 2;
+  localparam int SP_ID_LEN = 3;
   localparam int SP_OFFSET_LEN = SP_ADDR_LEN - SP_ID_LEN;
 
   typedef struct packed {

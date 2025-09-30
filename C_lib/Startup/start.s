@@ -8,8 +8,7 @@ _start:
     addi gp, gp, %pcrel_lo(1b)
     csrwi mscratch,0
     .option pop
-    # csrsi mstatus, 0x8 # 启用全局中断
-    # csrsi mstatus, 0x0 # 关闭全局中断
+    csrci mstatus, 0x8 # 关闭全局中断
     # 初始化 中断向量
     lla t0,_exception
     ori t0, t0, 1
@@ -17,6 +16,7 @@ _start:
     j main  # jump to main
 
 
+.section .trap.vector
 # 异常/中断向量表
 _exception:
     j Exception_Handler
@@ -54,6 +54,17 @@ _custom_int:
     j Timer_IRQ_Handler
     j WBC_UFM_IRQ_Handler
 
+
+.section .trap.delete_handler
+ssoftware_IRQ_Handler:
+stimer_IRQ_Handler:
+sextern_IRQ_Handler:
+mextern_IRQ_Handler:
+delete_IRQ_handler:
+    mret
+
+
+.section .trap.error_handler
 # 致命错误死循环
 UnhandledFault:
     j UnhandledFault
@@ -78,12 +89,12 @@ Exception_Handler:
 
 
 .section    .text
-.weak   ssoftware_IRQ_Handler
+# .weak   ssoftware_IRQ_Handler
+# .weak   stimer_IRQ_Handler
+# .weak   sextern_IRQ_Handler
 .weak   msoftware_IRQ_Handler
-.weak   stimer_IRQ_Handler
 .weak   mtimer_IRQ_Handler
-.weak   sextern_IRQ_Handler
-.weak   mextern_IRQ_Handler
+# .weak   mextern_IRQ_Handler
 # 自定义中断处理程序
 .weak   UART_RX_IRQ_Handler
 .weak   UART_TX_IRQ_Handler
