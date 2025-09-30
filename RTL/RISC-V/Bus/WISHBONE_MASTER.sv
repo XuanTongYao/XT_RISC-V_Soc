@@ -3,7 +3,8 @@
 // 只支持单次读写与RMW
 // 读写周期可能已经优化到极限
 module WISHBONE_MASTER
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import XT_HBUS_Pkg::*;
 #(
     parameter int PORT_SIZE = 8
 ) (

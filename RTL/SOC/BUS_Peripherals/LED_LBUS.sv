@@ -1,5 +1,5 @@
 module LED_LBUS
-  import XT_BUS::*;
+  import XT_LBUS_Pkg::*;
 #(
     parameter int LED_NUM = 8
 ) (

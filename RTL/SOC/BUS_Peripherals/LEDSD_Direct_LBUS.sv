@@ -1,5 +1,5 @@
 module LEDSD_Direct_LBUS
-  import XT_BUS::*;
+  import XT_LBUS_Pkg::*;
 #(
     parameter bit E_CODE = 0,
     parameter bit COM = 0,

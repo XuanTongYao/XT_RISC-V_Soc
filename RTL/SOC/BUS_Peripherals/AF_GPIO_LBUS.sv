@@ -1,7 +1,7 @@
 // 带功能复用设计的GPIO模块
 // GPIO输入输出都有寄存器缓冲,缓冲时钟独立于lb_clk
 module AF_GPIO_LBUS
-  import XT_BUS::*;
+  import XT_LBUS_Pkg::*;
 #(
     parameter int NUM = 10,
     // 输入/输出功能数量(最多6个)

@@ -12,7 +12,8 @@
 // <<< 端 口 >>> //
 // hb_clk:            时钟信号
 module HarvardSystemRAM_BUS
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import XT_HBUS_Pkg::*;
 #(
     parameter int DATA_RAM_DEPTH = 512,  // 字深度(最大为2^30对应4GB字节)
     parameter int INST_RAM_DEPTH = 512

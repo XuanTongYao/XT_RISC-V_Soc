@@ -12,13 +12,14 @@
 // clk:            时钟信号
 // 0:读RX寄存器   1:读状态寄存器
 module UART_BUS
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import SystemPeripheral_Pkg::*;
 #(
     // 超采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
     parameter int OVER_SAMPLING = 16  // 必须为偶数，最小为8
 ) (
     input hb_clk,
-    input hb_slave_t xt_hb,
+    input sys_peripheral_t sys_share,
     input sel_t sel,
     output logic [31:0] rdata,
     input sampling_clk,  // 超采样时钟(频率必须比总线时钟低)
@@ -150,7 +151,7 @@ module UART_BUS
       rx_wr_ptr <= rx_wr_ptr + 1;
       rx_fifo_count <= rx_fifo_count + 1;
       rx_irq <= 1;
-    end else if (sel.ren && xt_hb.raddr[5:2] == 5'd9 && !state.rx_fifo_empty) begin
+    end else if (sel.ren && sys_share.raddr == 'd0 && !state.rx_fifo_empty) begin
       rx_rd_ptr <= rx_rd_ptr + 1;
       rx_fifo_count <= rx_fifo_count - 1;
       rx_irq <= 0;
@@ -161,8 +162,8 @@ module UART_BUS
   //----------发送----------//
   logic [7:0] tx;
   always_ff @(posedge hb_clk) begin
-    if (sel.wen && xt_hb.waddr[5:2] == 5'd9) begin
-      tx <= xt_hb.wdata[7:0];
+    if (sel.wen && sys_share.waddr == 'd0) begin
+      tx <= sys_share.wdata[7:0];
     end
   end
 
@@ -221,7 +222,7 @@ module UART_BUS
   //----------总线读----------//
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
-      if (xt_hb.raddr[5:2] == 5'd9) begin
+      if (sys_share.raddr == 'd0) begin
         rdata <= {24'b0, rx_fifo[rx_rd_ptr]};
       end else begin
         rdata <= {24'b0, 4'b0, state};

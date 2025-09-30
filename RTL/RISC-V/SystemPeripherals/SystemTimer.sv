@@ -2,13 +2,14 @@
 // 访问时不会有跨时钟域时序惩罚，其他的计时器不一定
 // 读取期间不保护寄存器的值，在软件上进行处理
 module SystemTimer
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import SystemPeripheral_Pkg::*;
 (
     // 计时时钟必须比高速总线时钟慢两倍以上
     input systemtimer_clk,
     // 与高速总线
     input hb_clk,
-    input hb_slave_t xt_hb,
+    input sys_peripheral_t sys_share,
     input sel_t sel,
     output logic [31:0] rdata,
 
@@ -25,15 +26,15 @@ module SystemTimer
   );
 
 
-  // mtime在低位，mtimecmp在高位
-  // 5'd7  5'd8
-  wire read_cmp = xt_hb.raddr[5:2] == 4'd7 || xt_hb.raddr[5:2] == 4'd8;
-  // 5'd5  5'd6
-  wire read_time = xt_hb.raddr[5:2] == 4'd5 || xt_hb.raddr[5:2] == 4'd6;
-  wire write_cmp = xt_hb.waddr[5:2] == 4'd7 || xt_hb.waddr[5:2] == 4'd8;
-  wire write_time = xt_hb.waddr[5:2] == 4'd5 || xt_hb.waddr[5:2] == 4'd6;
-  wire read_high = xt_hb.raddr[5:2] == 4'd6 || xt_hb.raddr[5:2] == 4'd8;
-  wire write_high = xt_hb.waddr[5:2] == 4'd6 || xt_hb.waddr[5:2] == 4'd8;
+  // mtime在低位地址0、1，mtimecmp在高位地址2、3
+  wire read_time = sys_share.raddr == 'd0 || sys_share.raddr == 'd1;
+  wire read_cmp = sys_share.raddr == 'd2 || sys_share.raddr == 'd3;
+
+  wire write_time = sys_share.waddr == 'd0 || sys_share.waddr == 'd1;
+  wire write_cmp = sys_share.waddr == 'd2 || sys_share.waddr == 'd3;
+
+  wire read_high = sys_share.raddr == 'd1 || sys_share.raddr == 'd3;
+  wire write_high = sys_share.waddr == 'd1 || sys_share.waddr == 'd3;
 
   logic [31:0] mtime_l = 0;
   logic [31:0] mtime_h = 0;
@@ -44,9 +45,9 @@ module SystemTimer
   always_ff @(posedge hb_clk) begin
     if (sel.wen && write_time) begin
       if (write_high) begin
-        mtime_h <= xt_hb.wdata;
+        mtime_h <= sys_share.wdata;
       end else begin
-        mtime_l <= xt_hb.wdata;
+        mtime_l <= sys_share.wdata;
       end
     end else if (time_update_pulse) begin
       mtime_l <= next_mtime_l[31:0];
@@ -66,9 +67,9 @@ module SystemTimer
       // 写入比较寄存器默认清空中断
       mtimer_int <= 0;
       if (write_high) begin
-        mtimecmp_h <= xt_hb.wdata;
+        mtimecmp_h <= sys_share.wdata;
       end else begin
-        mtimecmp_l <= xt_hb.wdata;
+        mtimecmp_l <= sys_share.wdata;
       end
     end else if (update_irq) begin
       mtimer_int <= time_ge_cmp;

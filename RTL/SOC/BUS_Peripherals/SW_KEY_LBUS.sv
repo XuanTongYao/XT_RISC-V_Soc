@@ -1,5 +1,5 @@
 module SW_KEY_LBUS
-  import XT_BUS::*;
+  import XT_LBUS_Pkg::*;
 (
     input lb_clk,
     input lb_slave_t xt_lb,

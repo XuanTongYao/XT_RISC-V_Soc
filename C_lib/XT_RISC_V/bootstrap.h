@@ -48,9 +48,9 @@ void check_UFM(void);
 //----------专为自举的特殊简化函数----------//
 
 // 对齐放在高位地址，防止被指令覆盖
-// RISC-V调用约定栈地址为16字节对齐，规避5个调用栈
+// RISC-V调用约定栈地址为16字节对齐，规避6个调用栈
 #define __DATA_BUFF_LEN 16
-#define __DATA_BUFF_ADDR (STACK_TOP_ADDR-16-80)
+#define __DATA_BUFF_ADDR (STACK_TOP_ADDR-16-96)
 #define __DATA_BUFF_8 ((uint8_t*)__DATA_BUFF_ADDR)
 #define __DATA_BUFF_16 ((uint16_t*)__DATA_BUFF_ADDR)
 #define __DATA_BUFF_32 ((uint32_t*)__DATA_BUFF_ADDR)

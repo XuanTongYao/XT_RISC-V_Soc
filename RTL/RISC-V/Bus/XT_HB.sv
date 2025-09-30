@@ -7,7 +7,8 @@
 // 0.3更新 轮询仲裁器，完全ACK访问，读/写独立，地址域映射
 // 0.4更新 放弃旧的地址域映射，使用设备识别符+地址偏移的MMIO
 module XT_HB
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import XT_HBUS_Pkg::*;
 #(
     parameter int MASTER_NUM = 1,  // 总线上主设备的数量
     parameter int DEVICE_NUM = 2,  // 总线上IO设备的数量

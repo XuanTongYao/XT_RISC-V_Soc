@@ -1,5 +1,5 @@
 module GPIO_LBUS
-  import XT_BUS::*;
+  import XT_LBUS_Pkg::*;
 #(
     parameter int NUM = 10
 ) (

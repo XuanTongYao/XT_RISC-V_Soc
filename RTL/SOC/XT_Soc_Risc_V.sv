@@ -2,7 +2,9 @@
 
 // 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import XT_HBUS_Pkg::*;
+  import XT_LBUS_Pkg::*;
 #(
     parameter int GPIO_NUM = 32,
     parameter int CSN_NUM  = 2    // 专用SPI片选引脚
@@ -67,18 +69,18 @@ module XT_Soc_Risc_V
   //----------XT_HB高速总线互联定义----------//
   // 内核
   localparam int HB_MASTER_NUM = 1;
-  // 指令RAM,数据RAM,XT_HB,WISHBONE,XT_LB
+  // 指令RAM,数据RAM,系统外设,WISHBONE,XT_LB
   localparam int HB_DEVICE_NUM = 5;
   // DEBUG,外部中断控制器,机器计时器,UART
-  localparam int HB_SLAVE_NUM = 4;
+  //   localparam int HB_SLAVE_NUM = 4;
   // 设备基地址
   localparam int DEVICE_BASE_ADDR[HB_DEVICE_NUM-1] = {
     `DATA_RAM_BASE, `DOMAIN_XT_HB_BASE, `DOMAIN_WISHBONE_BASE, `DOMAIN_XT_LB_BASE
   };
   // IO设备ID分配
-  localparam int ID_XT_LB = 4, ID_WISHBONE = 3, ID_XT_HB = 2, ID_DATA_RAM = 1, ID_INST_RAM = 0;
+  localparam int ID_XT_LB = 4, ID_WISHBONE = 3, ID_SYS_P = 2, ID_DATA_RAM = 1, ID_INST_RAM = 0;
   // HB从设备ID分配
-  localparam int HB_ID_UART = 3, HB_ID_SYSTEMTIMER = 2, HB_ID_EINT_CTRL = 1, HB_ID_BOOTLOADER = 0;
+  //   localparam int HB_ID_UART = 3, HB_ID_SYSTEMTIMER = 2, HB_ID_EINT_CTRL = 1, HB_ID_BOOTLOADER = 0;
 
 
   // 高速总线
@@ -93,8 +95,8 @@ module XT_Soc_Risc_V
   wire sel_t device_sel[HB_DEVICE_NUM];
   wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
   // 总线IO设备
-  wire [31:0] hb_data_in[HB_SLAVE_NUM];
-  wire sel_t hb_sel[HB_SLAVE_NUM];
+  //   wire [31:0] hb_data_in[HB_SLAVE_NUM];
+  //   wire sel_t hb_sel[HB_SLAVE_NUM];
 
 
   // 直连RAM/ROM(指令读取)
@@ -139,28 +141,37 @@ module XT_Soc_Risc_V
   );
 
 
-  // 高速总线本地地址域
-  XT_HB_Domain #(
-      .SLAVE_NUM(HB_SLAVE_NUM)
-  ) u_XT_HB_Domain (
-      .*,
-      .sel(device_sel[ID_XT_HB]),
-      .read_finish(read_finish[ID_XT_HB]),
-      .write_finish(write_finish[ID_XT_HB]),
-      .rdata(device_data_in[ID_XT_HB])
-  );
-
-
-  // 自举启动和调试控制
-  // 已经可以自举启动和下载程序
+  // 系统外设，及其接出来的信号
   wire [31:0] bootloader_instruction;
   wire [31:0] user_instruction;
-  HarvardBootloader u_HarvardBootloader (
+
+  localparam int EXTERNAL_INT_NUM = 13;
+  wire [EXTERNAL_INT_NUM-1:0] irq_source;
+  assign irq_source[7:1] = 7'b0;
+  SystemPeripheral #(
+      .EXTERNAL_INT_NUM  (EXTERNAL_INT_NUM),
+      .UART_OVER_SAMPLING(8)
+  ) u_SystemPeripheral (
       .*,
-      .sel(hb_sel[HB_ID_BOOTLOADER]),
-      .rdata(hb_data_in[HB_ID_BOOTLOADER]),
-      .download_mode(download_mode)
+      .sel         (device_sel[ID_SYS_P]),
+      .read_finish (read_finish[ID_SYS_P]),
+      .write_finish(write_finish[ID_SYS_P]),
+      .rdata       (device_data_in[ID_SYS_P]),
+      // 系统外设特殊部分
+      .rx_irq      (irq_source[0])
   );
+
+  // 高速总线本地地址域
+  //   XT_HB_Domain #(
+  //       .SLAVE_NUM(HB_SLAVE_NUM)
+  //   ) u_XT_HB_Domain (
+  //       .*,
+  //       .sel(device_sel[ID_XT_HB]),
+  //       .read_finish(read_finish[ID_XT_HB]),
+  //       .write_finish(write_finish[ID_XT_HB]),
+  //       .rdata(device_data_in[ID_XT_HB])
+  //   );
+
 
   // Bootloader和Debug固化程序
   localparam int ROM_DEPTH = 256;
@@ -194,27 +205,6 @@ module XT_Soc_Risc_V
       .inst_fetch           (user_instruction),
       .ram_inst_read_finish (read_finish[ID_INST_RAM]),
       .ram_inst_write_finish(write_finish[ID_INST_RAM])
-  );
-
-
-  // 外部中断控制器
-  localparam int EXTERNAL_INT_NUM = 13;
-  wire [EXTERNAL_INT_NUM-1:0] irq_source;
-  assign irq_source[7:1] = 7'b0;
-  External_INT_Ctrl #(
-      .INT_NUM(EXTERNAL_INT_NUM)
-  ) u_External_INT_Ctrl (
-      .*,
-      .sel  (hb_sel[HB_ID_EINT_CTRL]),
-      .rdata(hb_data_in[HB_ID_EINT_CTRL])
-  );
-
-
-  // mtime和mtimecmp
-  SystemTimer u_SystemTimer (
-      .*,
-      .sel  (hb_sel[HB_ID_SYSTEMTIMER]),
-      .rdata(hb_data_in[HB_ID_SYSTEMTIMER])
   );
 
 
@@ -336,18 +326,6 @@ module XT_Soc_Risc_V
 
 
   //----------高速总线外设----------//
-  UART_BUS #(
-      // 超采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
-      // 必须为偶数，最小为8
-      .OVER_SAMPLING(8)
-  ) u_UART (
-      .*,
-      .sel         (hb_sel[HB_ID_UART]),
-      .rdata       (hb_data_in[HB_ID_UART]),
-      // 超采样时钟(必须比总线时钟低)
-      .sampling_clk(sampling_clk),
-      .rx_irq      (irq_source[0])
-  );
 
 
 endmodule

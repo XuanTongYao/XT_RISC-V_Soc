@@ -6,6 +6,11 @@ MEMORY
 INST_RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x800
 DATA_RAM (rwx) : ORIGIN = 0x00000800, LENGTH = 0x800
 }
+PROVIDE(__inst_origin = ORIGIN(INST_RAM));
+PROVIDE(__inst_length = LENGTH(INST_RAM));
+PROVIDE(__data_origin = ORIGIN(DATA_RAM));
+PROVIDE(__data_length = LENGTH(DATA_RAM));
+
 PROVIDE(__stack_size = 512);
 
 SECTIONS
@@ -49,6 +54,8 @@ SECTIONS
     _estack = _sstack - __stack_size;
     __global_pointer$ = MIN(__SDATA_BEGIN__ + 0x800,
         MAX(__DATA_BEGIN__ + 0x800, __BSS_END__ - 0x800));
+
+    __peripheral_base = _sstack;
 
     _end = .;
 }

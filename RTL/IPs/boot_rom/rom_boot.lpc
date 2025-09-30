@@ -16,8 +16,8 @@ CoreRevision=2.8
 ModuleName=rom_boot
 SourceFormat=Verilog HDL
 ParameterFileVersion=1.0
-Date=05/27/2025
-Time=15:43:05
+Date=09/30/2025
+Time=09:32:17
 
 [Parameters]
 Verilog=1
@@ -30,11 +30,11 @@ IO=0
 Addresses=256
 Data=32
 LUT=1
-MemFile=d:/projects/github/xt_risc-v_soc/rtl/mem_files/bootstrap-os.txt
+MemFile=d:/projects/github/xt_risc-v_soc/build/flatbinarytxt/bootstrap-os.mem
 MemFormat=hex
 
 [FilesGenerated]
-d:/projects/github/xt_risc-v_soc/rtl/mem_files/bootstrap-os.txt=mem
+d:/projects/github/xt_risc-v_soc/build/flatbinarytxt/bootstrap-os.mem=mem
 
 [Command]
-cmd_line= -w -n rom_boot -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 8 -num_words 256 -data_width 32 -outdata REGISTERED -memfile d:/projects/github/xt_risc-v_soc/rtl/mem_files/bootstrap-os.txt -memformat hex
+cmd_line= -w -n rom_boot -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 8 -num_words 256 -data_width 32 -outdata REGISTERED -memfile d:/projects/github/xt_risc-v_soc/build/flatbinarytxt/bootstrap-os.mem -memformat hex

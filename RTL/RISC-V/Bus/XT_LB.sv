@@ -1,5 +1,7 @@
 module XT_LB
-  import XT_BUS::*;
+  import Utils_Pkg::sel_t;
+  import XT_HBUS_Pkg::*;
+  import XT_LBUS_Pkg::*;
 #(
     parameter int SLAVE_NUM = 4
 ) (

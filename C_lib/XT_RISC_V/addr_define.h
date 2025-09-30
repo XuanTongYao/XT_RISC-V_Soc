@@ -2,6 +2,7 @@
 #define ADDR_DEFINE_H
 
 #define DOMAIN_BASE(Domain)         (BUS_DOMAIN_BASE+DOMAIN_##Domain##_OFFSET)
+#define SP_BASE(Peripheral)         (DOMAIN_SP_BASE+(Peripheral##_ID<<(SP_OFFSET_LEN+2)))
 #define HB_BASE(Peripheral)         (DOMAIN_XT_HB_BASE+Peripheral##_OFFSET)
 #define WISHBONE_BASE(Peripheral)   (DOMAIN_WISHBONE_BASE+Peripheral##_OFFSET)
 #define LB_BASE(Peripheral)         (DOMAIN_XT_LB_BASE+Peripheral##_OFFSET)
@@ -20,40 +21,61 @@
 
 //----------总线地址域划分----------//
 // 地址域长度
-#define DOMAIN_XT_HB_LEN 2048
+#define DOMAIN_SP_LEN 2048
+#define DOMAIN_XT_HB_LEN 0
 #define DOMAIN_WISHBONE_LEN 2048
 #define DOMAIN_XT_LB_LEN 2048
 
 // 地址域偏移定义
-#define DOMAIN_XT_HB_OFFSET 0
+#define DOMAIN_SP_OFFSET 0
+#define DOMAIN_XT_HB_OFFSET (DOMAIN_SP_OFFSET+DOMAIN_SP_LEN)
 #define DOMAIN_WISHBONE_OFFSET (DOMAIN_XT_HB_OFFSET+DOMAIN_XT_HB_LEN)
 #define DOMAIN_XT_LB_OFFSET (DOMAIN_WISHBONE_OFFSET+DOMAIN_WISHBONE_LEN)
 
 // 地址域基地址定义
 #define BUS_DOMAIN_BASE         (DATA_RAM_BASE+DATA_RAM_LEN)
+#define DOMAIN_SP_BASE          DOMAIN_BASE(SP)
 #define DOMAIN_XT_HB_BASE       DOMAIN_BASE(XT_HB)
 #define DOMAIN_WISHBONE_BASE    DOMAIN_BASE(WISHBONE)
 #define DOMAIN_XT_LB_BASE       DOMAIN_BASE(XT_LB)
 
 
-//----------XT_HB总线本域----------//
-// 外设占用地址长度
-#define DEBUG_LEN 12
-#define EINT_CTRL_LEN 8
-#define SYSTEM_TIMER_LEN 16
-#define UART_LEN 8
-
-// 外设地址偏移定义
-#define DEBUG_OFFSET 0
-#define EINT_CTRL_OFFSET (DEBUG_OFFSET+DEBUG_LEN)
-#define SYSTEM_TIMER_OFFSET (EINT_CTRL_OFFSET+EINT_CTRL_LEN)
-#define UART_OFFSET (SYSTEM_TIMER_OFFSET+SYSTEM_TIMER_LEN)
+//----------系统外设----------//
+// 地址位宽
+#define SP_ADDR_LEN 5
+#define SP_ID_LEN 2
+#define SP_OFFSET_LEN (SP_ADDR_LEN-SP_ID_LEN)
+// 外设ID
+#define DEBUG_ID 0
+#define EINT_CTRL_ID 1
+#define SYSTEM_TIMER_ID 2
+#define UART_ID 3
 
 // 外设基地址定义
-#define DEBUG_BASE          HB_BASE(DEBUG)
-#define EINT_CTRL_BASE      HB_BASE(EINT_CTRL)
-#define SYSTEM_TIMER_BASE   HB_BASE(SYSTEM_TIMER)
-#define UART_BASE           HB_BASE(UART)
+#define DEBUG_BASE          SP_BASE(DEBUG)
+#define EINT_CTRL_BASE      SP_BASE(EINT_CTRL)
+#define SYSTEM_TIMER_BASE   SP_BASE(SYSTEM_TIMER)
+#define UART_BASE           SP_BASE(UART)
+
+
+//----------XT_HB总线本域----------//
+// // 外设占用地址长度
+// #define DEBUG_LEN 12
+// #define EINT_CTRL_LEN 8
+// #define SYSTEM_TIMER_LEN 16
+// #define UART_LEN 8
+
+// // 外设地址偏移定义
+// #define DEBUG_OFFSET 0
+// #define EINT_CTRL_OFFSET (DEBUG_OFFSET+DEBUG_LEN)
+// #define SYSTEM_TIMER_OFFSET (EINT_CTRL_OFFSET+EINT_CTRL_LEN)
+// #define UART_OFFSET (SYSTEM_TIMER_OFFSET+SYSTEM_TIMER_LEN)
+
+// // 外设基地址定义
+// #define DEBUG_BASE          HB_BASE(DEBUG)
+// #define EINT_CTRL_BASE      HB_BASE(EINT_CTRL)
+// #define SYSTEM_TIMER_BASE   HB_BASE(SYSTEM_TIMER)
+// #define UART_BASE           HB_BASE(UART)
 
 
 //----------WISHBONE总线----------//

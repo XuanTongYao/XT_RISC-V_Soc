@@ -1,11 +1,13 @@
 // 0:使能寄存器  4:待处理中断寄存器
-import XT_BUS::*;
-module External_INT_Ctrl #(
+module External_INT_Ctrl
+  import Utils_Pkg::sel_t;
+  import SystemPeripheral_Pkg::*;
+#(
     parameter int INT_NUM = 32
 ) (
     input rst_sync,
     input hb_clk,
-    input hb_slave_t xt_hb,
+    input sys_peripheral_t sys_share,
     input sel_t sel,
     output logic [31:0] rdata,
 
@@ -26,8 +28,8 @@ module External_INT_Ctrl #(
   always_ff @(posedge hb_clk) begin
     if (rst_sync) begin
       INT_enable_reg <= 0;
-    end else if (sel.wen && xt_hb.waddr[4:2] == 3'd3) begin
-      INT_enable_reg <= xt_hb.wdata[INT_NUM-1:0];
+    end else if (sel.wen && sys_share.waddr == 'd0) begin
+      INT_enable_reg <= sys_share.wdata[INT_NUM-1:0];
     end
   end
 
@@ -62,7 +64,7 @@ module External_INT_Ctrl #(
   // 总线读
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
-      if (xt_hb.waddr[4:2] == 3'd3) begin
+      if (sys_share.raddr == 'd0) begin
         rdata <= INT_enable_reg;
       end else begin
         rdata <= INT_pending_reg;
