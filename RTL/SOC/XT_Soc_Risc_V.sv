@@ -1,10 +1,9 @@
-`include "./../Defines/AddressDefines.sv"
-
 // 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
   import Utils_Pkg::sel_t;
   import XT_HBUS_Pkg::*;
   import XT_LBUS_Pkg::*;
+  import SocConfig::*;
 #(
     parameter int GPIO_NUM = 32,
     parameter int CSN_NUM  = 2    // 专用SPI片选引脚
@@ -67,21 +66,7 @@ module XT_Soc_Risc_V
 
 
   //----------XT_HB高速总线互联定义----------//
-  // 内核
-  localparam int HB_MASTER_NUM = 1;
-  // 指令RAM,数据RAM,系统外设,WISHBONE,XT_LB
-  localparam int HB_DEVICE_NUM = 5;
-  // DEBUG,外部中断控制器,机器计时器,UART
-  //   localparam int HB_SLAVE_NUM = 4;
-  // 设备基地址
-  localparam int DEVICE_BASE_ADDR[HB_DEVICE_NUM-1] = {
-    `DATA_RAM_BASE, `DOMAIN_XT_HB_BASE, `DOMAIN_WISHBONE_BASE, `DOMAIN_XT_LB_BASE
-  };
-  // IO设备ID分配
-  localparam int ID_XT_LB = 4, ID_WISHBONE = 3, ID_SYS_P = 2, ID_DATA_RAM = 1, ID_INST_RAM = 0;
-  // HB从设备ID分配
-  //   localparam int HB_ID_UART = 3, HB_ID_SYSTEMTIMER = 2, HB_ID_EINT_CTRL = 1, HB_ID_BOOTLOADER = 0;
-
+  // 在SocConfig中配置
 
   // 高速总线
   wire hb_master_in_t master_in[HB_MASTER_NUM];  // 主机输入
@@ -132,7 +117,7 @@ module XT_Soc_Risc_V
   XT_HB #(
       .MASTER_NUM(HB_MASTER_NUM),  // 总线上主设备的数量
       .DEVICE_NUM(HB_DEVICE_NUM),  // 总线上IO设备的数量
-      .DEVICE_BASE_ADDR(DEVICE_BASE_ADDR)
+      .DEVICE_BASE_ID(DEVICE_BASE_ID)
   ) u_XT_HB (
       .*,
       .bus(xt_hb),
@@ -153,10 +138,10 @@ module XT_Soc_Risc_V
       .UART_OVER_SAMPLING(8)
   ) u_SystemPeripheral (
       .*,
-      .sel         (device_sel[ID_SYS_P]),
-      .read_finish (read_finish[ID_SYS_P]),
-      .write_finish(write_finish[ID_SYS_P]),
-      .rdata       (device_data_in[ID_SYS_P]),
+      .sel         (device_sel[IDX_SYS_P]),
+      .read_finish (read_finish[IDX_SYS_P]),
+      .write_finish(write_finish[IDX_SYS_P]),
+      .rdata       (device_data_in[IDX_SYS_P]),
       // 系统外设特殊部分
       .rx_irq      (irq_source[0])
   );
@@ -166,10 +151,10 @@ module XT_Soc_Risc_V
   //       .SLAVE_NUM(HB_SLAVE_NUM)
   //   ) u_XT_HB_Domain (
   //       .*,
-  //       .sel(device_sel[ID_XT_HB]),
-  //       .read_finish(read_finish[ID_XT_HB]),
-  //       .write_finish(write_finish[ID_XT_HB]),
-  //       .rdata(device_data_in[ID_XT_HB])
+  //       .sel(device_sel[IDX_XT_HB]),
+  //       .read_finish(read_finish[IDX_XT_HB]),
+  //       .write_finish(write_finish[IDX_XT_HB]),
+  //       .rdata(device_data_in[IDX_XT_HB])
   //   );
 
 
@@ -189,22 +174,22 @@ module XT_Soc_Risc_V
   // 系统RAM
   HarvardSystemRAM_BUS #(
       // 字深度(最大为2^30对应4GB字节)
-      .DATA_RAM_DEPTH(`RAM_DEPTH),
-      .INST_RAM_DEPTH(`INST_RAM_DEPTH)
+      .DATA_RAM_DEPTH(DATA_RAM_DEPTH),
+      .INST_RAM_DEPTH(INST_RAM_DEPTH)
   ) u_HarvardSystemRAM (
       .*,
       .inst_fetch_clk_en    (core_stall_n),
       // 数据RAM
-      .ram_data_sel         (device_sel[ID_DATA_RAM]),
-      .ram_data_rdata       (device_data_in[ID_DATA_RAM]),
-      .ram_data_read_finish (read_finish[ID_DATA_RAM]),
-      .ram_data_write_finish(write_finish[ID_DATA_RAM]),
+      .ram_data_sel         (device_sel[IDX_DATA_RAM]),
+      .ram_data_rdata       (device_data_in[IDX_DATA_RAM]),
+      .ram_data_read_finish (read_finish[IDX_DATA_RAM]),
+      .ram_data_write_finish(write_finish[IDX_DATA_RAM]),
       // 指令RAM
-      .ram_inst_sel         (device_sel[ID_INST_RAM]),
+      .ram_inst_sel         (device_sel[IDX_INST_RAM]),
       .inst_fetch_addr      (instruction_addr),
       .inst_fetch           (user_instruction),
-      .ram_inst_read_finish (read_finish[ID_INST_RAM]),
-      .ram_inst_write_finish(write_finish[ID_INST_RAM])
+      .ram_inst_read_finish (read_finish[IDX_INST_RAM]),
+      .ram_inst_write_finish(write_finish[IDX_INST_RAM])
   );
 
 
@@ -234,10 +219,10 @@ module XT_Soc_Risc_V
       .wb_we_o     (wb_we_i),
       .wb_adr_o    (wb_adr_i),
       // 与XT_HB总线
-      .sel         (device_sel[ID_WISHBONE]),
-      .read_finish (read_finish[ID_WISHBONE]),
-      .write_finish(write_finish[ID_WISHBONE]),
-      .rdata       (device_data_in[ID_WISHBONE])
+      .sel         (device_sel[IDX_WISHBONE]),
+      .read_finish (read_finish[IDX_WISHBONE]),
+      .write_finish(write_finish[IDX_WISHBONE]),
+      .rdata       (device_data_in[IDX_WISHBONE])
   );
 
   localparam int ALL_CSN_NUM = 3;
@@ -267,10 +252,10 @@ module XT_Soc_Risc_V
       .SLAVE_NUM(LB_SLAVE_NUM)
   ) u_XT_LB (
       .*,
-      .sel         (device_sel[ID_XT_LB]),
-      .read_finish (read_finish[ID_XT_LB]),
-      .write_finish(write_finish[ID_XT_LB]),
-      .rdata       (device_data_in[ID_XT_LB]),
+      .sel         (device_sel[IDX_XT_LB]),
+      .read_finish (read_finish[IDX_XT_LB]),
+      .write_finish(write_finish[IDX_XT_LB]),
+      .rdata       (device_data_in[IDX_XT_LB]),
       // 低速总线部分
       .bus         (xt_lb)
   );

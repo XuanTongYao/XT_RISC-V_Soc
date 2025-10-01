@@ -71,19 +71,20 @@ module SystemPeripheral
   localparam bit [SP_ID_LEN-1:0] DEVICE_ID[SP_NUM-1] = {3'd1, 3'd2, 3'd3, 3'd4};
   // 5'b01_XXX_00
 
-  // 读取
-  logic [SP_NUM-1:0] raddr_sel;
+  logic [SP_NUM-1:0] id_sel[2];
+  MMIO #(
+      .ID_WIDTH(SP_ID_LEN),
+      .ADDR_NUM(2),
+      .DEVICE_NUM(SP_NUM),
+      .BASE_ID(DEVICE_ID)
+  ) u_MMIO (
+      .device_id({rid, wid}),
+      .sel(id_sel)
+  );
+  wire [SP_NUM-1:0] raddr_sel = id_sel[0];
+  wire [SP_NUM-1:0] waddr_sel = id_sel[1];
+
   logic [31:0] sp_data_in[SP_NUM];
-  always_comb begin
-    raddr_sel = 0;
-    raddr_sel[0] = 1;
-    for (int j = 1; j < SP_NUM; ++j) begin
-      if (rid >= DEVICE_ID[j-1]) begin
-        raddr_sel = 0;
-        raddr_sel[j] = 1;
-      end
-    end
-  end
   always_comb begin
     rdata = 0;
     for (int i = 0; i < SP_NUM; ++i) begin
@@ -94,19 +95,6 @@ module SystemPeripheral
     end
   end
 
-
-  // 写入
-  logic [SP_NUM-1:0] waddr_sel;
-  always_comb begin
-    waddr_sel = 0;
-    waddr_sel[0] = 1;
-    for (int j = 1; j < SP_NUM; ++j) begin
-      if (wid >= DEVICE_ID[j-1]) begin
-        waddr_sel = 0;
-        waddr_sel[j] = 1;
-      end
-    end
-  end
 
   sel_t sp_sel[SP_NUM];
   wire [SP_NUM-1:0] enable_rsel = sel.ren && !read_finish ? raddr_sel : 0;

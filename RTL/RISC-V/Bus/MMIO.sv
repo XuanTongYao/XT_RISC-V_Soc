@@ -1,23 +1,13 @@
 // 先实现一个从0开始的
 module MMIO #(
-    parameter int ADDR_WIDTH = 16,
     parameter int ID_WIDTH = 2,
     parameter int ADDR_NUM = 2,
     parameter int DEVICE_NUM = 4,
-    parameter int BASE_ADDR[DEVICE_NUM-1]
+    parameter bit [ID_WIDTH-1:0] BASE_ID[DEVICE_NUM-1]
 ) (
-    input [ADDR_WIDTH-1:0] addr[ADDR_NUM],
+    input [ID_WIDTH-1:0] device_id[ADDR_NUM],
     output logic [DEVICE_NUM-1:0] sel[ADDR_NUM]
 );
-  localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
-
-  logic [ID_WIDTH-1:0] device_id[ADDR_NUM];
-  always_comb begin
-    for (int i = 0; i < ADDR_NUM; ++i) begin
-      device_id[i] = addr[i][ADDR_WIDTH-1:OFFSET_WIDTH];
-    end
-  end
-
 
   generate
     if (DEVICE_NUM == 1) begin : gen_direct
@@ -32,7 +22,7 @@ module MMIO #(
           sel[i] = 0;
           sel[i][0] = 1;
           for (int j = 1; j < DEVICE_NUM; ++j) begin
-            if (device_id[i] >= BASE_ADDR[j-1][ADDR_WIDTH-1:OFFSET_WIDTH]) begin
+            if (device_id[i] >= BASE_ID[j-1]) begin
               sel[i] = 0;
               sel[i][j] = 1;
             end

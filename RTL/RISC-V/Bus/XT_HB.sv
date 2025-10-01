@@ -12,8 +12,8 @@ module XT_HB
 #(
     parameter int MASTER_NUM = 1,  // 总线上主设备的数量
     parameter int DEVICE_NUM = 2,  // 总线上IO设备的数量
-    // 设备基地址(包含，必须在识别符上对齐)，从0开始划分地址空间(所以0不用填)
-    parameter int DEVICE_BASE_ADDR[DEVICE_NUM-1]
+    // 设备基准识别符，从0开始划分地址空间(所以0不用填)
+    parameter bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[DEVICE_NUM-1]
 ) (
     input clk,
     input rst_sync,
@@ -109,15 +109,16 @@ module XT_HB
 
   // 地址映射与片选生成
   logic [DEVICE_NUM-1:0] sel[2];
+  wire [HB_ID_WIDTH-1:0] raddr_mux_id = HB_GetID(raddr_mux);
+  wire [HB_ID_WIDTH-1:0] waddr_mux_id = HB_GetID(raddr_mux);
   MMIO #(
-      .ADDR_WIDTH(HB_ADDR_WIDTH),
-      .ID_WIDTH  (HB_ID_WIDTH),
-      .ADDR_NUM  (2),
+      .ID_WIDTH(HB_ID_WIDTH),
+      .ADDR_NUM(2),
       .DEVICE_NUM(DEVICE_NUM),
-      .BASE_ADDR (DEVICE_BASE_ADDR)
+      .BASE_ID(DEVICE_BASE_ID)
   ) u_MMIO (
-      .addr({raddr_mux, waddr_mux}),
-      .sel (sel)
+      .device_id({raddr_mux_id, waddr_mux_id}),
+      .sel(sel)
   );
   wire [DEVICE_NUM-1:0] slave_rsel = hb_ren ? sel[0] : 0;
   wire [DEVICE_NUM-1:0] slave_wsel = hb_wen ? sel[1] : 0;

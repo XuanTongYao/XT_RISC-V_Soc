@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DiamondModule name="SystemDataRAM" module="SystemDataRAM" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 01 07 01:32:29.109" version="6.5" type="Module" synthesis="synplify" source_format="Verilog HDL">
+<DiamondModule name="SystemDataRAM" module="SystemDataRAM" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 10 01 07:35:29.769" version="6.5" type="Module" synthesis="synplify" source_format="Verilog HDL">
   <Package>
-		<File name="" type="" modified="2025 01 07 01:32:29.024"/>
-		<File name="SystemDataRAM.lpc" type="lpc" modified="2025 01 07 01:32:27.954"/>
-		<File name="SystemDataRAM.v" type="top_level_verilog" modified="2025 01 07 01:32:27.992"/>
-		<File name="SystemDataRAM_tmpl.v" type="template_verilog" modified="2025 01 07 01:32:27.993"/>
+		<File name="" type="" modified="2025 10 01 07:35:29.678"/>
+		<File name="SystemDataRAM.lpc" type="lpc" modified="2025 10 01 07:35:28.557"/>
+		<File name="SystemDataRAM.v" type="top_level_verilog" modified="2025 10 01 07:35:28.596"/>
+		<File name="SystemDataRAM_tmpl.v" type="template_verilog" modified="2025 10 01 07:35:28.596"/>
 		<File name="d:/projects/electronics/systemverilog/mxo2/modsd/test/test_commands/rv32ui-p-lw-data.txt" type="mem" modified="2025 01 07 01:14:12.967"/>
-		<File name="tb_SystemDataRAM_tmpl.v" type="testbench_verilog" modified="2025 01 07 01:32:27.994"/>
+		<File name="tb_SystemDataRAM_tmpl.v" type="testbench_verilog" modified="2025 10 01 07:35:28.597"/>
   </Package>
 </DiamondModule>

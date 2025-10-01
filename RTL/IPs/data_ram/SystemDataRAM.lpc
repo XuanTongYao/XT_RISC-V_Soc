@@ -16,8 +16,8 @@ CoreRevision=6.5
 ModuleName=SystemDataRAM
 SourceFormat=Verilog HDL
 ParameterFileVersion=1.0
-Date=01/07/2025
-Time=01:32:27
+Date=10/01/2025
+Time=07:35:28
 
 [Parameters]
 Verilog=1
@@ -27,9 +27,9 @@ Destination=Synplicity
 Expression=BusA(0 to 7)
 Order=[MSB:LSB]
 IO=0
-RAddress=512
+RAddress=1024
 RData=32
-WAddress=512
+WAddress=1024
 WData=32
 enByte=1
 ByteSize=8
@@ -50,4 +50,4 @@ no_init=0
 d:/projects/electronics/systemverilog/mxo2/modsd/test/test_commands/rv32ui-p-lw-data.txt=mem
 
 [Command]
-cmd_line= -w -n SystemDataRAM -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -type ramdps -device LCMXO2-4000HC -raddr_width 9 -rwidth 32 -waddr_width 9 -wwidth 32 -rnum_words 512 -wnum_words 512 -byte 8 -cascade 11 -mem_init0
+cmd_line= -w -n SystemDataRAM -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -type ramdps -device LCMXO2-4000HC -raddr_width 10 -rwidth 32 -waddr_width 10 -wwidth 32 -rnum_words 1024 -wnum_words 1024 -byte 8 -cascade 11 -mem_init0
