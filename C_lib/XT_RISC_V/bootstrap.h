@@ -20,7 +20,13 @@
 // 不能用字符串字面量(需要memcpy调用)，全局变量应该可以，但是有一点问题
 
 #define INST_BASE_ADDR ((uint32_t*)INST_RAM_BASE)
-#define MAX_PAGE Min(INST_RAM_LEN+DATA_RAM_LEN,TOTAL_PAGE)
+// 如果自举工作在内存中可能会用到
+#define BOOTSTRAP_START_WORD_ADDR 512 // 改加载地址记得改boot的跳转地址
+#define BOOTSTRAP_REMAIN_PAGES (((BOOTSTRAP_START_WORD_ADDR*4)+PAGE_BYTES-1)>>4) 
+#define BOOTSTRAP_LEN 900 // bootstrap程序占用的大小
+#define BOOTSTRAP_PAGES ((BOOTSTRAP_LEN+PAGE_BYTES-1)>>4) // bootstrap程序占用的页数
+#define BOOTSTRAP_START_PAGE (TOTAL_PAGE-BOOTSTRAP_PAGES) 
+#define MAX_PAGE Min(BOOTSTRAP_REMAIN_PAGES,TOTAL_PAGE-BOOTSTRAP_PAGES)
 
 /// @brief 自举启动
 void boot(void);
@@ -83,7 +89,7 @@ void __enable_transparent_UFM(void);
 /// @brief 关闭UFM透明传输
 void __disable_transparent_UFM(void);
 
-/// @brief 重置地址到1
+/// @brief 重置地址到扇区1页0
 void __reset_UFM_addr(void);
 
 /// @brief 读取一页数据

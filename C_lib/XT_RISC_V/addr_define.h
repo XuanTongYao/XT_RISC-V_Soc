@@ -2,15 +2,15 @@
 #define ADDR_DEFINE_H
 
 #define DOMAIN_BASE(Domain)         (BUS_DOMAIN_BASE+DOMAIN_##Domain##_OFFSET)
-#define SP_BASE(Peripheral)         (DOMAIN_SP_BASE+(Peripheral##_ID<<(SP_OFFSET_LEN+2)))
+#define SP_BASE(Peripheral)         (DOMAIN_SP_BASE+(Peripheral##_ID<<(SP_ID_START_BIT)))
 #define HB_BASE(Peripheral)         (DOMAIN_XT_HB_BASE+Peripheral##_OFFSET)
 #define WISHBONE_BASE(Peripheral)   (DOMAIN_WISHBONE_BASE+Peripheral##_OFFSET)
 #define LB_BASE(Peripheral)         (DOMAIN_XT_LB_BASE+Peripheral##_OFFSET)
 
 
 //----------内存RAM地址定义----------//
-#define INST_RAM_LEN 2048
-#define DATA_RAM_LEN 2048
+#define INST_RAM_LEN 4096
+#define DATA_RAM_LEN 4096
 #define INST_RAM_BASE 0
 #define DATA_RAM_BASE (INST_RAM_BASE+INST_RAM_LEN)
 #define STACK_TOP_ADDR (DATA_RAM_BASE+DATA_RAM_LEN)
@@ -21,10 +21,10 @@
 
 //----------总线地址域划分----------//
 // 地址域长度
-#define DOMAIN_SP_LEN 2048
+#define DOMAIN_SP_LEN 4096
 #define DOMAIN_XT_HB_LEN 0
-#define DOMAIN_WISHBONE_LEN 2048
-#define DOMAIN_XT_LB_LEN 2048
+#define DOMAIN_WISHBONE_LEN 4096
+#define DOMAIN_XT_LB_LEN 4096
 
 // 地址域偏移定义
 #define DOMAIN_SP_OFFSET 0
@@ -45,6 +45,7 @@
 #define SP_ADDR_LEN 5
 #define SP_ID_LEN 2
 #define SP_OFFSET_LEN (SP_ADDR_LEN-SP_ID_LEN)
+#define SP_ID_START_BIT (SP_OFFSET_LEN+2-1)
 // 外设ID
 #define DEBUG_ID 0
 #define EINT_CTRL_ID 1
@@ -52,11 +53,11 @@
 #define UART_ID 3
 
 // 外设基地址定义
+// 这些都是字对齐的
 #define DEBUG_BASE          SP_BASE(DEBUG)
 #define EINT_CTRL_BASE      SP_BASE(EINT_CTRL)
 #define SYSTEM_TIMER_BASE   SP_BASE(SYSTEM_TIMER)
 #define UART_BASE           SP_BASE(UART)
-
 
 //----------XT_HB总线本域----------//
 // // 外设占用地址长度
