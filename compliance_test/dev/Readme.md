@@ -2,6 +2,12 @@
 
 本文档**未完成**！
 
+![alt text](img/750f28327253137978b99c2cbc294b04.png)
+
+![alt text](img/dd5f952a-61a7-4127-99bf-6b36f3c0595d.png)
+
+![alt text](img/b5361efa-bf98-4441-981e-58702ea6a427.png)
+
 在对处理器进行具体的完整验证前，可以先快速运行一致性测试。
 
 一致性测试用于确认处理器基本结构、基本行为在允许的[ISA规范](https://riscv.org/specifications/ratified/)内，不等同于完整验证测试。
