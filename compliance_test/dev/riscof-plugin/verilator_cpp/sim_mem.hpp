@@ -2,7 +2,8 @@
 #define sim_mem_H
 #include <cstdint>
 #include <vector>
-
+#include <sstream>
+#include <stdexcept>
 
 enum WriteWidth : uint8_t {
     BYTE = 0b00,
@@ -35,6 +36,11 @@ public:
 
 template<typename T>
 inline void sim_mem::write_data(uint64_t addr, T data) {
+    if (addr + sizeof(data) >= mem.size()) {
+        std::ostringstream oss;
+        oss << "try write invaild address: " << addr << " len: " << sizeof(data);
+        throw std::runtime_error(oss.str());
+    }
     for (size_t i = 0; i < sizeof(data); i++, addr++) {
         uint8_t byte = data & 0xFF;
         mem.at(addr) = byte;
@@ -50,6 +56,11 @@ inline uint64_t sim_mem::addr_align(const uint64_t raw_addr, const Align align) 
 }
 
 inline uint64_t sim_mem::read_data(uint64_t addr, const size_t len) {
+    if (addr + len >= mem.size()) {
+        std::ostringstream oss;
+        oss << "try read invaild address: " << addr << " len: " << len;
+        throw std::runtime_error(oss.str());
+    }
     uint64_t ret = 0;
     for (size_t i = 0; i < len; i++, addr++) {
         ret |= uint64_t(mem.at(addr)) << (i * 8);
@@ -74,7 +85,7 @@ inline uint64_t sim_mem::read(const uint64_t addr) {
 }
 
 inline uint32_t sim_mem::read_inst(const uint64_t addr) {
-    auto inst_addr = addr_align(addr, Align::WORD);
+    auto inst_addr = addr_align(addr, Align::HALFWORD);
     return static_cast<uint32_t>(read_data(inst_addr, 4));
 
 }

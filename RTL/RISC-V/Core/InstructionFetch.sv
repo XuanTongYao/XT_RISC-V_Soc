@@ -1,6 +1,7 @@
 //----------指令读取模块----------//
 module InstructionFetch
   import Exception_Pkg::*;
+  import CoreConfig::*;
 (
     input [31:0] pc,
     // 与上层连线

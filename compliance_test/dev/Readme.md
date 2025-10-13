@@ -179,8 +179,8 @@ verilator --top [top_module] -cc [xx0.sv] [xx1.sv] --exe --build [xx0.cpp] [xx1.
 
 `cd riscof-plugin/verilator_cpp`
 
-搜索所有sv代码，忽略定义文件夹，文件列表放到rtl.files中
-`find [search_path] -type d -name "Defines" -prune -o -type f -name "*.sv" -print > rtl.files`
+搜索所有sv代码，文件列表放到rtl.files中
+`find [search_path] -type f -name "*.sv" -print > rtl.files`
 
 编译SV并构建仿真程序
 `verilator --top RISC_V_Core -cc -f rtl.files --exe --build --trace-fst sim_main.cpp sim_mem.cpp utils.cpp htif.cpp -Isrc`

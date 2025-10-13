@@ -1,7 +1,6 @@
-`include "../../Defines/InstructionDefines.sv"
-
 module ID_EX
   import Exception_Pkg::*;
+  import RV32I_Inst_Pkg::*;
 (
     input        clk,
     input        rst_sync,
@@ -43,7 +42,7 @@ module ID_EX
     if (rst_sync || flush || (exception_id_raise && stall_n)) begin
       ram_load_access_id_ex <= 0;
       ram_store_access_id_ex <= 0;
-      instruction_id_ex <= `INST_NOP;
+      instruction_id_ex <= INST_NOP;
       operand1 <= 0;
       operand2 <= 0;
       reg_wen_id_ex <= 0;

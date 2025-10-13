@@ -1,8 +1,7 @@
-`include "../../Defines/InstructionDefines.sv"
-
 //----------纯组合逻辑----------//
 module InstructionDecode
   import Exception_Pkg::*;
+  import RV32I_Inst_Pkg::*;
 (
     // 来自IF_ID
     input [31:0] instruction_addr_if_id,
@@ -67,8 +66,6 @@ module InstructionDecode
     // ram_load_addr有ram_load_access控制，大胆赋值即可
     ram_load_access_id = 0;
     ram_store_access_id = 0;
-    // TODO这个完全可以放到ALU那边来计算吧，放到op1 op2里面来优化
-    // 毕竟现在会在执行模块进行流水线停顿
     ram_load_addr_id = reg1_rdata + imm_i;
     ram_store_addr_id = reg1_rdata + imm_s;
     ram_store_data_id = reg2_rdata;
@@ -76,96 +73,96 @@ module InstructionDecode
     exception_id.raise = 0;
     exception_id.code = ILLEGAL_INST;
     unique case (opcode)
-      `INST_OP_LUI: begin
+      RV32I_OP_LUI: begin
         reg_wen_id  = 1;
         operand1_id = 0;
         operand2_id = imm_u;
       end
-      `INST_OP_AUIPC: begin
+      RV32I_OP_AUIPC: begin
         reg_wen_id  = 1;
         operand1_id = instruction_addr_if_id;
         operand2_id = imm_u;
       end
-      `INST_OP_JAL: begin
+      RV32I_OP_JAL: begin
         reg_wen_id  = 1;
         operand1_id = instruction_addr_if_id;
         operand2_id = imm_j;
       end
-      `INST_OP_JALR: begin
+      RV32I_OP_JALR: begin
         reg_wen_id  = 1;
         operand1_id = reg1_rdata;
         operand2_id = imm_i;
       end
-      `INST_OP_B: begin
+      RV32I_OP_B: begin
         unique case (funct3)
-          `INST_BEQ, `INST_BNE, `INST_BLT, `INST_BGE, `INST_BLTU, `INST_BGEU: begin
+          RV32I_BEQ, RV32I_BNE, RV32I_BLT, RV32I_BGE, RV32I_BLTU, RV32I_BGEU: begin
             operand1_id = reg1_rdata;
             operand2_id = reg2_rdata;
           end
           default: ;
         endcase
       end
-      `INST_OP_L: begin
+      RV32I_OP_L: begin
         unique case (funct3)
-          `INST_LB, `INST_LH, `INST_LW, `INST_LBU, `INST_LHU: begin
+          RV32I_LB, RV32I_LH, RV32I_LW, RV32I_LBU, RV32I_LHU: begin
             reg_wen_id = 1;
             ram_load_access_id = 1;
           end
           default: ;
         endcase
       end
-      `INST_OP_S: begin
+      RV32I_OP_S: begin
         unique case (funct3)
-          `INST_SB, `INST_SH, `INST_SW: begin
+          RV32I_SB, RV32I_SH, RV32I_SW: begin
             ram_store_access_id = 1;
           end
           default: ;
         endcase
       end
-      `INST_OP_I: begin
+      RV32I_OP_I: begin
         unique case (funct3)
-          `INST_ADDI, `INST_SLTI, `INST_SLTIU, `INST_XORI, `INST_ORI, `INST_ANDI: begin
+          RV32I_ADDI, RV32I_SLTI, RV32I_SLTIU, RV32I_XORI, RV32I_ORI, RV32I_ANDI: begin
             reg_wen_id  = 1;
             operand1_id = reg1_rdata;
             operand2_id = imm_i;
           end
-          `INST_SLLI, `INST_SRLI_SRAI: begin
+          RV32I_SLLI, RV32I_SRLI_SRAI: begin
             reg_wen_id  = 1;
             operand1_id = reg1_rdata;
             operand2_id = {27'b0, shamt};
           end
         endcase
       end
-      `INST_OP_R_M: begin
+      RV32I_OP_R: begin
         unique case (funct3)
-          `INST_ADD_SUB, `INST_SLL, `INST_SLT, `INST_SLTU, `INST_XOR, `INST_SRL_SRA, `INST_OR, `INST_AND: begin
+          RV32I_ADD_SUB, RV32I_SLL, RV32I_SLT, RV32I_SLTU, RV32I_XOR, RV32I_SRL_SRA, RV32I_OR, RV32I_AND: begin
             reg_wen_id  = 1;
             operand1_id = reg1_rdata;
             operand2_id = reg2_rdata;
           end
         endcase
       end
-      `INST_OP_SYSTEM: begin
+      RV32I_OP_SYSTEM: begin
         unique case (funct3)
-          `INST_PRIVILEGED: begin
+          RV32I_PRIVILEGED: begin
             unique case (funct12)
-              `INST_FUNCT12_ECALL, `INST_FUNCT12_EBREAK: begin
+              RV32I_FUNCT12_ECALL, RV32I_FUNCT12_EBREAK: begin
                 exception_id.raise = 1;
                 exception_id.code  = funct12[0] ? BREAKPOINT : ECALL_FROM_M_MODE;
               end
-              `INST_FUNCT12_MRET: ;  // 不需要额外处理
-              `INST_FUNCT12_WFI:  ;  // WFI(在执行阶段处理)
+              RV32I_FUNCT12_MRET: ;  // 不需要额外处理
+              RV32I_FUNCT12_WFI:  ;  // WFI(在执行阶段处理)
               default: begin
                 exception_id.raise = 1;
                 exception_id.code  = ILLEGAL_INST;
               end
             endcase
           end
-          `INST_CSRRW, `INST_CSRRS, `INST_CSRRC: begin
+          ZICSR_CSRRW, ZICSR_CSRRS, ZICSR_CSRRC: begin
             reg_wen_id  = 1;
             operand1_id = reg1_rdata;
           end
-          `INST_CSRRWI, `INST_CSRRSI, `INST_CSRRCI: begin
+          ZICSR_CSRRWI, ZICSR_CSRRSI, ZICSR_CSRRCI: begin
             reg_wen_id  = 1;
             operand1_id = imm_sys;
           end
@@ -173,7 +170,7 @@ module InstructionDecode
         endcase
       end
       // 不执行，等效于NOP指令
-      `INST_OP_FENCE: ;
+      RV32I_OP_FENCE: ;
       default: begin
         exception_id.raise = 1;
         exception_id.code  = ILLEGAL_INST;

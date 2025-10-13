@@ -43,34 +43,42 @@ static void reset() {
 }
 
 static void test(size_t timeout = 10000) {
-    std::cout << "Start test\n";
+    std::cout << "Start test" << std::endl;
     top->instruction = mem->read_inst(top->instruction_addr);
-    for (loop_cnt = 0; loop_cnt < timeout; loop_cnt++) {
-        top->clk = 0;
-        warpped_eval();
-        top->clk = 1;
-        auto last_inst_addr = top->instruction_addr;
-        warpped_eval();
-        top->instruction = mem->read_inst(last_inst_addr);
+    try {
+        for (loop_cnt = 0; loop_cnt < timeout; loop_cnt++) {
+            top->clk = 0;
+            warpped_eval();
+            top->clk = 1;
+            auto last_inst_addr = top->instruction_addr;
+            warpped_eval();
+            top->instruction = mem->read_inst(last_inst_addr);
 
 #ifdef EN_HTIF
-        if (htif->check_halt()) {
-            std::cout << "HTIF: HALT\n";
-            htif->finish(mem->get_mem());
-            return;
-        }
+            if (htif->check_halt()) {
+                std::cout << "HTIF: HALT" << std::endl;
+                htif->finish(mem->get_mem());
+                return;
+            }
 #endif
-        if (top->access_ram_read) {
-            top->access_ram_rdata = mem->read(top->access_ram_raddr);
-        } else if (top->access_ram_write) {
-            mem->wirte((WriteWidth)top->access_ram_write_width, top->access_ram_wdata, top->access_ram_waddr);
+            if (top->access_ram_read) {
+                top->access_ram_rdata = mem->read(top->access_ram_raddr);
+            } else if (top->access_ram_write) {
+                mem->wirte((WriteWidth)top->access_ram_write_width, top->access_ram_wdata, top->access_ram_waddr);
 #ifdef EN_HTIF
-            htif->try_halt(top->access_ram_waddr, top->access_ram_wdata);
+                htif->try_halt(top->access_ram_waddr, top->access_ram_wdata);
 #endif
+            }
         }
     }
+    catch (const std::exception& e) {
+        std::cerr << "catch an exception on " << loop_cnt << " loop_cnt\n"
+            << e.what() << std::endl;
+        throw std::runtime_error("break");
+    }
+
 #ifdef EN_HTIF
-    std::cout << "HTIF: TIMEOUT\n";
+    std::cout << "HTIF: TIMEOUT" << std::endl;
     htif->finish(mem->get_mem());
 #endif
 }
@@ -95,7 +103,7 @@ void read_test_bin(std::ifstream& fwifs, size_t fw_size, std::vector<uint8_t>& m
         safe_exit();
     }
 
-    std::cout << "Read " << fw_size << "B from firmware" << "\n";
+    std::cout << "Read " << fw_size << "B from firmware" << std::endl;
 }
 
 
@@ -122,14 +130,18 @@ int main(int argc, char** argv) {
     // 初始化模块
     top = new VRISC_V_Core();
     mem = new sim_mem(SIGNATURE_SIZE + fw_size);
-    std::cout << "Loading file into memory: " << fw << "\n";
+    std::cout << "Loading file into memory: " << fw << std::endl;
     read_test_bin(fwifs, fw_size, mem->get_mem());// 加载测试指令
     htif = new Htif();
 
     // 信号跟踪
 #if EN_LOG
+    auto levels = 0;
+    std::string tracelevels;
+    if (plusarg("tracelevels", tracelevels))
+        levels = std::stoi(tracelevels);
     tfp = new VerilatedFstC();
-    top->trace(tfp, 0);
+    top->trace(tfp, levels);
     tfp->open("simwave.fst");
     register_FstC_logger(tfp);
 #endif
@@ -142,7 +154,7 @@ int main(int argc, char** argv) {
     size_t timeout = htif->get_inst_num() * 2;
     if (plusarg("timeout", timeout_str)) {
         timeout = std::stoul(timeout_str);
-        std::cout << "Set timeout=" << std::dec << timeout << "\n";
+        std::cout << "Set timeout=" << std::dec << timeout << std::endl;
     }
     test(timeout);
     // 结束

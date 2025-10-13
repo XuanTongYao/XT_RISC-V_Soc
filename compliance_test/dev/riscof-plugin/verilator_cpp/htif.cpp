@@ -11,7 +11,7 @@ void Htif::parse_htif_plusargs() {
     std::cout <<
         "+--------+\n" <<
         "HTIF parse $plusargs\n" <<
-        "+--------+\n";
+        "+--------+" << std::endl;
 
     for (size_t i = 0; i < symbols_ptr.size(); i++) {
         auto prefixp = asm_symbols.at(i);
@@ -22,7 +22,7 @@ void Htif::parse_htif_plusargs() {
             if (std::string("rvtest_entry_point") != prefixp) *arg_ptr -= rvtest_entry_point;
             std::cout << prefixp << " = 0x"
                 << std::setw(8) << std::setfill('0') << std::hex
-                << *arg_ptr << std::dec << "\n";
+                << *arg_ptr << std::dec << std::endl;
         } else {
             safe_exit();
         }
@@ -32,7 +32,7 @@ void Htif::parse_htif_plusargs() {
         safe_exit();
     }
 
-    std::cout << "=--------=\n";
+    std::cout << "=--------=" << std::endl;
 }
 
 Htif::Htif() {
@@ -82,6 +82,6 @@ void Htif::finish(const std::vector<uint8_t>& dump_mem) {
         << std::hex << std::setw(8) << std::setfill('0') << begin_signature
         << " to 0x"
         << std::hex << std::setw(8) << std::setfill('0') << end_signature
-        << ": " << signature << "\n";
+        << ": " << signature << std::endl;
 }
 

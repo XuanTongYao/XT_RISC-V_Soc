@@ -1,7 +1,7 @@
-`include "../../Defines/InstructionDefines.sv"
 // 数据停一个时钟周期可选
 module IF_ID
   import Exception_Pkg::*;
+  import RV32I_Inst_Pkg::*;
 #(
     parameter bit INST_DELAY_1TICK = 1
 ) (
@@ -32,7 +32,7 @@ module IF_ID
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
       always_ff @(posedge clk) begin
         if (rst_sync || flush || exception_if_raise) begin
-          instruction_if_id <= `INST_NOP;
+          instruction_if_id <= INST_NOP;
         end else if (stall_n) begin
           instruction_if_id <= instruction_if;
         end
@@ -42,7 +42,7 @@ module IF_ID
       always_ff @(posedge clk) begin
         clear <= rst_sync || flush || exception_if_raise;
       end
-      assign instruction_if_id = clear ? `INST_NOP : instruction_if;
+      assign instruction_if_id = clear ? INST_NOP : instruction_if;
     end
   endgenerate
 

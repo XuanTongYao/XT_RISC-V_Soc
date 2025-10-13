@@ -35,7 +35,6 @@ module CSR
   // `define NORMAL 2'b00
   // `define DEBUG 2'b01
   // `define COUNTER 2'b10
-  `define READONLY 2'b11
   wire [1:0] rw_mode = csr_rwaddr[11:10];
   wire [1:0] privilege_level = csr_rwaddr[9:8];
   wire [7:0] short_addr = csr_rwaddr[7:0];
@@ -100,7 +99,7 @@ module CSR
       USER, SUPERVISOR, HYPERVISOR: csr_rdata = 32'b0;
       MACHINE: begin
         unique case (rw_mode)
-          `READONLY: begin
+          READONLY: begin
             unique case (short_addr)
               8'h14:   csr_rdata = mhartid;
               // 8'h15:   csr_rdata = mconfigptr;

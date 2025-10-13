@@ -1,8 +1,7 @@
-`include "../../Defines/InstructionDefines.sv"
-
 //----------纯组合逻辑----------//
 module InstructionExecute
   import CoreConfig::*;
+  import RV32I_Inst_Pkg::*;
 (
     // 来自ID_EX
     input        ram_load_access_id_ex,
@@ -90,7 +89,7 @@ module InstructionExecute
   logic alu_less;
   always_comb begin
     unique case (funct3)
-      `INST_SLT, `INST_SLTI: begin
+      RV32I_SLT, RV32I_SLTI: begin
         alu_less = alu_less_signed;
       end
       default: alu_less = alu_less_unsigned;
@@ -101,8 +100,8 @@ module InstructionExecute
   logic extension_bit;
   always_comb begin
     unique case (funct3)
-      `INST_LB: extension_bit = ram_load_data[7];
-      `INST_LH: extension_bit = ram_load_data[15];
+      RV32I_LB: extension_bit = ram_load_data[7];
+      RV32I_LH: extension_bit = ram_load_data[15];
       default:  extension_bit = 0;
     endcase
   end
@@ -135,44 +134,44 @@ module InstructionExecute
 
     wait_for_interrupt = 0;
     unique case (opcode)
-      `INST_OP_LUI:   reg_wdata = alu_add;
-      `INST_OP_AUIPC: reg_wdata = alu_add;
-      `INST_OP_JAL, `INST_OP_JALR: begin
+      RV32I_OP_LUI:   reg_wdata = alu_add;
+      RV32I_OP_AUIPC: reg_wdata = alu_add;
+      RV32I_OP_JAL, RV32I_OP_JALR: begin
         reg_wdata = next_pc;
         jump_addr_ex = {alu_add[31:1], 1'b0};
         jump_en_ex = 1;
       end
-      `INST_OP_B: begin
+      RV32I_OP_B: begin
         jump_addr_ex = alu_base_addr_offset;
         // 有jump_en_ex防止误操作，jump_addr_ex大胆赋值即可
         unique case (funct3)
-          `INST_BEQ:  jump_en_ex = alu_equal;
-          `INST_BNE:  jump_en_ex = !alu_equal;
-          `INST_BLT:  jump_en_ex = alu_less_signed;
-          `INST_BGE:  jump_en_ex = !alu_less_signed;
-          `INST_BLTU: jump_en_ex = alu_less_unsigned;
-          `INST_BGEU: jump_en_ex = !alu_less_unsigned;
+          RV32I_BEQ:  jump_en_ex = alu_equal;
+          RV32I_BNE:  jump_en_ex = !alu_equal;
+          RV32I_BLT:  jump_en_ex = alu_less_signed;
+          RV32I_BGE:  jump_en_ex = !alu_less_signed;
+          RV32I_BLTU: jump_en_ex = alu_less_unsigned;
+          RV32I_BGEU: jump_en_ex = !alu_less_unsigned;
           default:    ;
         endcase
       end
-      `INST_OP_L: begin
+      RV32I_OP_L: begin
         unique case (funct3)
-          `INST_LB, `INST_LBU: reg_wdata = extension_byte;
-          `INST_LH, `INST_LHU: reg_wdata = extension_halfword;
-          `INST_LW:            reg_wdata = ram_load_data;
+          RV32I_LB, RV32I_LBU: reg_wdata = extension_byte;
+          RV32I_LH, RV32I_LHU: reg_wdata = extension_halfword;
+          RV32I_LW:            reg_wdata = ram_load_data;
           default:             ;
         endcase
       end
-      `INST_OP_S:     ;  // 已经在译码阶段完成处理
-      `INST_OP_I: begin
+      RV32I_OP_S:     ;  // 已经在译码阶段完成处理
+      RV32I_OP_I: begin
         unique case (funct3)
-          `INST_ADDI:              reg_wdata = alu_add;
-          `INST_SLTI, `INST_SLTIU: reg_wdata = {31'b0, alu_less};
-          `INST_XORI:              reg_wdata = alu_xor;
-          `INST_ORI:               reg_wdata = alu_or;
-          `INST_ANDI:              reg_wdata = alu_and;
-          `INST_SLLI:              reg_wdata = alu_shift_left;
-          `INST_SRLI_SRAI: begin
+          RV32I_ADDI:              reg_wdata = alu_add;
+          RV32I_SLTI, RV32I_SLTIU: reg_wdata = {31'b0, alu_less};
+          RV32I_XORI:              reg_wdata = alu_xor;
+          RV32I_ORI:               reg_wdata = alu_or;
+          RV32I_ANDI:              reg_wdata = alu_and;
+          RV32I_SLLI:              reg_wdata = alu_shift_left;
+          RV32I_SRLI_SRAI: begin
             if (funct7[5] == 1'b1) begin
               //SRAI
               reg_wdata = alu_shift_right_a;
@@ -183,20 +182,20 @@ module InstructionExecute
           end
         endcase
       end
-      `INST_OP_R_M: begin
+      RV32I_OP_R: begin
         unique case (funct3)
-          `INST_ADD_SUB: begin
+          RV32I_ADD_SUB: begin
             if (funct7[5] == 1'b1) begin
               add_sub = 0;
             end
             reg_wdata = alu_add;
           end
-          `INST_SLT, `INST_SLTU: reg_wdata = {31'b0, alu_less};
-          `INST_XOR:             reg_wdata = alu_xor;
-          `INST_OR:              reg_wdata = alu_or;
-          `INST_AND:             reg_wdata = alu_and;
-          `INST_SLL:             reg_wdata = alu_shift_left;
-          `INST_SRL_SRA: begin
+          RV32I_SLT, RV32I_SLTU: reg_wdata = {31'b0, alu_less};
+          RV32I_XOR:             reg_wdata = alu_xor;
+          RV32I_OR:              reg_wdata = alu_or;
+          RV32I_AND:             reg_wdata = alu_and;
+          RV32I_SLL:             reg_wdata = alu_shift_left;
+          RV32I_SRL_SRA: begin
             if (funct7[5] == 1'b1) begin
               //SRA
               reg_wdata = alu_shift_right_a;
@@ -207,33 +206,33 @@ module InstructionExecute
           end
         endcase
       end
-      `INST_OP_SYSTEM: begin
+      RV32I_OP_SYSTEM: begin
         // CSR指令都是原子指令
         reg_wdata = csr_rdata;
         unique case (funct3)
-          `INST_PRIVILEGED: begin
+          RV32I_PRIVILEGED: begin
             unique case (funct12)
-              `INST_FUNCT12_ECALL, `INST_FUNCT12_EBREAK: ;  //等效于NOP指令
-              `INST_FUNCT12_MRET: begin
+              RV32I_FUNCT12_ECALL, RV32I_FUNCT12_EBREAK: ;  //等效于NOP指令
+              RV32I_FUNCT12_MRET: begin
                 jump_en_ex = 1;
                 jump_addr_ex = PadPC(csr_mepc);
                 trap_returned = 1;
               end
-              `INST_FUNCT12_WFI: wait_for_interrupt = 1;  // WFI(告知内核控制器请求等待)
+              RV32I_FUNCT12_WFI: wait_for_interrupt = 1;  // WFI(告知内核控制器请求等待)
               default: ;
             endcase
           end
-          `INST_CSRRW, `INST_CSRRWI: begin
+          ZICSR_CSRRW, ZICSR_CSRRWI: begin
             csr_ren   = rd != 5'd0;
             csr_wen   = 1;
             csr_wdata = operand1;
           end
-          `INST_CSRRS, `INST_CSRRSI: begin
+          ZICSR_CSRRS, ZICSR_CSRRSI: begin
             csr_ren   = 1;
             csr_wen   = rs1 != 5'd0;
             csr_wdata = operand1 | csr_rdata;
           end
-          `INST_CSRRC, `INST_CSRRCI: begin
+          ZICSR_CSRRC, ZICSR_CSRRCI: begin
             csr_ren   = 1;
             csr_wen   = rs1 != 5'd0;
             csr_wdata = ~operand1 & csr_rdata;
@@ -242,7 +241,7 @@ module InstructionExecute
         endcase
       end
       // 不执行，等效于NOP指令
-      `INST_OP_FENCE: ;
+      RV32I_OP_FENCE: ;
       default:        ;
     endcase
 

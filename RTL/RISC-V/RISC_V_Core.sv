@@ -81,6 +81,7 @@ module RISC_V_Core
   // PC寄存器
   wire [31:0] pc;
   wire [31:0] next_pc;
+  wire rvc = 0;
   PC_Reg u_PC_Reg (.*);
 
   // 控制状态寄存器

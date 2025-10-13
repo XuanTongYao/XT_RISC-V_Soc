@@ -1,5 +1,7 @@
 package CSR_Pkg;
 
+  localparam bit [1:0] READONLY = 2'b11;
+
   typedef enum bit [1:0] {
     USER = 2'b00,
     SUPERVISOR = 2'b01,
