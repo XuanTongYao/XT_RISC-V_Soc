@@ -59,6 +59,7 @@ module RISC_V_Core
   wire flush;
   wire stall_n;
   wire flushing_pipeline;
+  wire jump_pending;
   wire instruction_retire;
   assign core_stall_n = stall_n;
 
@@ -82,6 +83,7 @@ module RISC_V_Core
   wire [31:0] pc;
   wire [31:0] next_pc;
   wire rvc = 0;
+  // wire rvc;
   PC_Reg u_PC_Reg (.*);
 
   // 控制状态寄存器

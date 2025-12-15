@@ -8,6 +8,7 @@ module ExceptionCtrl
     input rst_sync,
     input flush,
     input stall_n,
+    input jump_pending,
 
     // 提交点(只关心指令执行前的一刻)
     input exception_t exception_commit,
@@ -41,28 +42,21 @@ module ExceptionCtrl
   // 在valid_interrupt_request时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
   logic ready_interrupt;
   logic [PC_LEN-1:0] last_jump_addr;
-  logic [1:0] jmp_shift;
-  wire recent_jump_pending = jmp_shift[1];
   always_ff @(posedge clk) begin
     if (rst_sync || ready_interrupt) begin
       ready_interrupt <= 0;
-      jmp_shift <= 0;
     end else if (stall_n) begin
       ready_interrupt <= valid_interrupt_request;
-      if (jump_en_ex) begin
-        last_jump_addr <= jump_addr_ex;
-        jmp_shift <= 2'b11;
-      end else begin
-        jmp_shift <= {jmp_shift[0], 1'b0};
-      end
+      if (jump_en_ex) last_jump_addr <= jump_addr_ex;
     end
   end
 
   wire is_interrupt = !raise && csr_mstatus.mie;
   assign any_interrupt_come = (csr_mie & csr_mip) != 0;
-  assign valid_interrupt_request = any_interrupt_come && is_interrupt;
+  // 防止stall等待时清空流水线
+  assign valid_interrupt_request = any_interrupt_come && is_interrupt && stall_n;
   assign trap_occurred = ready_interrupt || raise;
-  assign new_mepc = recent_jump_pending ? last_jump_addr : instruction_addr_id_ex;
+  assign new_mepc = jump_pending ? last_jump_addr : instruction_addr_id_ex;
 
   logic [30:0] code;
   assign new_mcause = {is_interrupt, code};

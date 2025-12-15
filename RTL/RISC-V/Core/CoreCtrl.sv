@@ -24,6 +24,7 @@ module CoreCtrl #(
     output logic flush,
     output logic stall_n,
     output logic flushing_pipeline,
+    output logic jump_pending,
     output logic instruction_retire
 );
 
@@ -51,10 +52,13 @@ module CoreCtrl #(
   always_ff @(posedge clk) begin
     if (rst_sync) begin
       nop_cnt <= 0;
+      jump_pending <= 0;
     end else if (flush) begin
       nop_cnt <= 2'b11;
+      if (jump) jump_pending <= 1'b1;
     end else if (nop_cnt != 0) begin
       nop_cnt <= {nop_cnt[0], 1'b0};
+      jump_pending <= nop_cnt[0];
     end
   end
 
