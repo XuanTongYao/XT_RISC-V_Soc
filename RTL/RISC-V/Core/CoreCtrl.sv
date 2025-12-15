@@ -10,11 +10,11 @@ module CoreCtrl #(
     // 来自指令执行模块
     input [31:0] jump_addr_ex,
     input jump_en_ex,
-    input wait_for_interrupt,
+    input wfi,
 
     // 来自异常/中断控制器
-    input any_interrupt_come,
-    input valid_interrupt_request,
+    input any_int_come,
+    input valid_int_req,
     input trap_occurred,
     input [31:0] trap_jump_addr,
 
@@ -39,7 +39,7 @@ module CoreCtrl #(
     end
 
     jump  = jump_en_ex || trap_occurred;
-    flush = jump || valid_interrupt_request;
+    flush = jump || valid_int_req;
   end
 
   //----------指令执行控制----------//
@@ -63,10 +63,10 @@ module CoreCtrl #(
   end
 
   //----------核心暂停控制----------//
-  wire waiting_int = wait_for_interrupt && !any_interrupt_come;
-  wire has_stall_req = |stall_req;
+  wire waiting_int = wfi && !any_int_come;
+  wire any_stall_req = |stall_req;
   always_comb begin
-    stall_n = !(has_stall_req || waiting_int);
+    stall_n = !(any_stall_req || waiting_int);
   end
 
 

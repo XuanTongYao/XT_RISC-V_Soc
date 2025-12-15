@@ -26,8 +26,8 @@ module ExceptionCtrl
     output mcause_t new_mcause,
     // output logic [31:0] new_mtval,
 
-    output logic any_interrupt_come,
-    output logic valid_interrupt_request,
+    output logic any_int_come,
+    output logic valid_int_req,
     output logic trap_occurred,
     output logic [31:0] trap_jump_addr,
 
@@ -39,32 +39,31 @@ module ExceptionCtrl
   wire [USED_CODE_LEN-1:0] raise_code = exception_commit.code;  // 引发代码
 
   // 中断需要等本条指令执行完成后再处理
-  // 在valid_interrupt_request时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
-  logic ready_interrupt;
+  // 在valid_int_req时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
+  logic ready_for_int;
   logic [PC_LEN-1:0] last_jump_addr;
   always_ff @(posedge clk) begin
-    if (rst_sync || ready_interrupt) begin
-      ready_interrupt <= 0;
+    if (rst_sync || ready_for_int) begin
+      ready_for_int <= 0;
     end else if (stall_n) begin
-      ready_interrupt <= valid_interrupt_request;
+      ready_for_int <= valid_int_req;
       if (jump_en_ex) last_jump_addr <= jump_addr_ex;
     end
   end
 
-  wire is_interrupt = !raise && csr_mstatus.mie;
-  assign any_interrupt_come = (csr_mie & csr_mip) != 0;
-  // 防止stall等待时清空流水线
-  assign valid_interrupt_request = any_interrupt_come && is_interrupt && stall_n;
-  assign trap_occurred = ready_interrupt || raise;
+  wire is_int = !raise && csr_mstatus.mie;
+  assign any_int_come = (csr_mie & csr_mip) != 0;
+  assign valid_int_req = any_int_come && is_int && stall_n;  // 注意防止stall等待时清空流水线
+  assign trap_occurred = ready_for_int || raise;
   assign new_mepc = jump_pending ? last_jump_addr : instruction_addr_id_ex;
 
   logic [30:0] code;
-  assign new_mcause = {is_interrupt, code};
+  assign new_mcause = {is_int, code};
   // assign new_mtval  = 0;
   always_comb begin
     trap_jump_addr = {csr_mtvec.base, 2'b0};
     code = PadExceptionCode(raise_code);
-    if (is_interrupt) begin
+    if (is_int) begin
       // 优先级: 外部->软件->定时器，这和中断号的顺序不一样
       if (csr_mie.meie && csr_mip.meip) begin
         code = {custom_int_code, 4'b0};  // 外部中断控制器重定向

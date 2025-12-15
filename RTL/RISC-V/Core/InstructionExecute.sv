@@ -42,7 +42,7 @@ module InstructionExecute
     // 传递给核心控制器
     output logic [31:0] jump_addr_ex,
     output logic jump_en_ex,
-    output logic wait_for_interrupt
+    output logic wfi
 );
   // TODO实际上这个地方应该有异常判断
   wire [31:0] inst = instruction_id_ex;
@@ -132,7 +132,7 @@ module InstructionExecute
     csr_rwaddr = inst[31:20];
     csr_wdata = 0;
 
-    wait_for_interrupt = 0;
+    wfi = 0;
     unique case (opcode)
       RV32I_OP_LUI:   reg_wdata = alu_add;
       RV32I_OP_AUIPC: reg_wdata = alu_add;
@@ -218,7 +218,7 @@ module InstructionExecute
                 jump_addr_ex = PadPC(csr_mepc);
                 trap_returned = 1;
               end
-              RV32I_FUNCT12_WFI: wait_for_interrupt = 1;  // WFI(告知内核控制器请求等待)
+              RV32I_FUNCT12_WFI: wfi = 1;  // WFI(告知内核控制器请求等待)
               default: ;
             endcase
           end

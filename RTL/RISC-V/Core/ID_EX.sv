@@ -18,7 +18,6 @@ module ID_EX
     input [31:0] operand2_id,
     input        reg_wen_id,
     input        exception_id_raise,
-    input        wait_for_interrupt,
 
     // 传递给EX
     output logic        ram_load_access_id_ex,

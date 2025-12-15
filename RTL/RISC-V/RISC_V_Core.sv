@@ -63,7 +63,7 @@ module RISC_V_Core
   wire instruction_retire;
   assign core_stall_n = stall_n;
 
-  wire wait_for_interrupt;
+  wire wfi;
 
 
 
@@ -161,8 +161,8 @@ module RISC_V_Core
   wire [PC_LEN-1:0] new_mepc;
   wire mcause_t new_mcause;
   // wire [31:0] new_mtval;
-  wire any_interrupt_come;
-  wire valid_interrupt_request;
+  wire any_int_come;
+  wire valid_int_req;
   wire trap_occurred;
   wire [31:0] trap_jump_addr;
   ExceptionCtrl u_ExceptionCtrl (
