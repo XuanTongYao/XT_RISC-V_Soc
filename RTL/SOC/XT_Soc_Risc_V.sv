@@ -98,7 +98,7 @@ module XT_Soc_Risc_V
   wire mextern_int;
   wire msoftware_int;
   wire mtimer_int;
-  wire [26:0] custom_int_code;
+  wire [30:0] custom_int_code;
   RISC_V_Core #(
       .INST_FETCH_REG(1)
   ) u_RISC_V_Core (

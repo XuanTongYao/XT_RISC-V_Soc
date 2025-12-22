@@ -32,7 +32,7 @@ module ExceptionCtrl
     output logic [31:0] trap_jump_addr,
 
     // 外部中断控制器
-    input [26:0] custom_int_code
+    input [30:0] custom_int_code
 );
 
   wire raise = exception_commit.raise;  // 是否引发同步异常
@@ -66,7 +66,7 @@ module ExceptionCtrl
     if (is_int) begin
       // 优先级: 外部->软件->定时器，这和中断号的顺序不一样
       if (csr_mie.meie && csr_mip.meip) begin
-        code = {custom_int_code, 4'b0};  // 外部中断控制器重定向
+        code = custom_int_code;  // 外部中断控制器重定向
         // code = MACHINE_EXTERNAL_INT;
       end else if (csr_mie.msie && csr_mip.msip) begin
         code = MACHINE_SOFTWARE_INT;

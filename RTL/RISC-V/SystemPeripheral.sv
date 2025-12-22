@@ -26,7 +26,7 @@ module SystemPeripheral
     input download_mode,
     // EINT_CTRL
     input [EXTERNAL_INT_NUM-1:0] irq_source,
-    output logic [26:0] custom_int_code,
+    output logic [30:0] custom_int_code,
     output logic mextern_int,
     // SYSTEM_TIMER
     input systemtimer_clk,

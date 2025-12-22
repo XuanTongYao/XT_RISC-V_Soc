@@ -12,11 +12,13 @@ module External_INT_Ctrl
     output logic [31:0] rdata,
 
     input [INT_NUM-1:0] irq_source,
-    // 自定义中断代码，用于向量跳转，大于等于16的部分，只有27位，原来的代码最长也只有31位
-    output logic [26:0] custom_int_code,
+
+    output logic [30:0] custom_int_code,
     output logic mextern_int
 
 );
+  localparam int CUSTOM_CODE_BEGIN = 16;
+  localparam int CODE_WIDTH = $clog2(INT_NUM + CUSTOM_CODE_BEGIN);
 
   logic [INT_NUM-1:0] INT_enable_reg;
   logic [INT_NUM-1:0] INT_pending_reg;
@@ -33,20 +35,16 @@ module External_INT_Ctrl
   end
 
 
-  logic [5:0] int_id;
   always_comb begin
     int id;
-    id = 0;
-    int_id = 0;
-    for (int i = 0; i < INT_NUM; ++i) begin
-      if (INT_pending_reg[i]) begin
-        id = i + 1;
-        int_id = id[5:0];
+    for (id = 0; id < INT_NUM; ++id) begin
+      if (INT_pending_reg[id]) begin
         break;
       end
     end
+    id = id + CUSTOM_CODE_BEGIN;
     mextern_int = |INT_pending_reg;
-    custom_int_code = {21'b0, int_id};
+    custom_int_code = {{(31 - CODE_WIDTH) {1'b0}}, id[CODE_WIDTH-1:0]};
   end
 
 

@@ -46,7 +46,7 @@ module RISC_V_Core
     input mextern_int,
     input msoftware_int,
     input mtimer_int,
-    input [26:0] custom_int_code,
+    input [30:0] custom_int_code,
 
     // Debug
     output logic [31:0] instruction_addr_id_ex_debug
