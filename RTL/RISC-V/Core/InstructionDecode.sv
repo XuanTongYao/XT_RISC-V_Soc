@@ -34,22 +34,22 @@ module InstructionDecode
 
   //----------指令信息提取----------//
   wire [31:0] inst = instruction_if_id;
-  wire [ 6:0] opcode = inst[6:0];  // R I S B U J
+  wire [ 6:0] opcode = inst[6:0];
+  wire [ 2:0] funct3 = inst[14:12];
+  wire [ 6:0] funct7 = inst[31:25];
+  wire [11:0] funct12 = inst[31:20];
+  wire [ 4:0] rs1 = inst[19:15];
+  wire [ 4:0] rs2 = inst[24:20];
+  wire [ 4:0] shamt = rs2;
 
   // 立即数
   wire [31:0] imm_i = {{20{inst[31]}}, inst[31:20]};
+  wire [31:0] imm_u = {inst[31:12], 12'b0};
   wire [31:0] imm_s = {{20{inst[31]}}, inst[31:25], inst[11:7]};
   wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-  wire [31:0] imm_u = {inst[31:12], 12'b0};
   wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
   wire [31:0] imm_sys = {27'b0, inst[19:15]};
 
-  wire [ 2:0] funct3 = inst[14:12];  // R I S B
-  wire [ 4:0] rs1 = inst[19:15];  // R I S B
-  wire [ 4:0] rs2 = inst[24:20];
-  wire [ 4:0] shamt = rs2;
-  wire [ 6:0] funct7 = inst[31:25];
-  wire [11:0] funct12 = inst[31:20];
 
   // 源寄存器1的数据reg1_rdata一定和操作数1 operand1_id绑定
   // 源寄存器2的数据reg2_rdata一定和操作数2 operand2_id绑定

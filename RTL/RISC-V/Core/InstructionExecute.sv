@@ -49,23 +49,21 @@ module InstructionExecute
 
 
   //----------指令信息提取----------//
-  wire [6:0] opcode = inst[6:0];  // R I S B U J
-  wire [4:0] rd = inst[11:7];  // R I U J
+  wire [6:0] opcode = inst[6:0];
+  wire [2:0] funct3 = inst[14:12];
+  wire [6:0] funct7 = inst[31:25];
+  wire [11:0] funct12 = inst[31:20];
+  wire [4:0] rs1 = inst[19:15];
+  wire [4:0] rs2 = inst[24:20];
+  wire [4:0] rd = inst[11:7];
 
   // 立即数
   wire [31:0] imm_i = {{20{inst[31]}}, inst[31:20]};
+  wire [31:0] imm_u = {inst[31:12], 12'b0};
   wire [31:0] imm_s = {{20{inst[31]}}, inst[31:25], inst[11:7]};
   wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-  wire [31:0] imm_u = {inst[31:12], 12'b0};
   wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
 
-  // 其他
-  wire [2:0] funct3 = inst[14:12];  // R I S B
-  wire [4:0] rs1 = inst[19:15];  // R I S B
-  wire [4:0] rs2 = inst[24:20];
-  wire [4:0] shamt = rs2;
-  wire [6:0] funct7 = inst[31:25];
-  wire [11:0] funct12 = inst[31:20];
 
 
   //----------运算逻辑单元----------//

@@ -12,29 +12,27 @@ module External_INT_Ctrl
     output logic [31:0] rdata,
 
     input [INT_NUM-1:0] irq_source,
-    // 自定义中断代码，大于等于16的部分，只有27位，原来的代码最长也只有31位
+    // 自定义中断代码，用于向量跳转，大于等于16的部分，只有27位，原来的代码最长也只有31位
     output logic [26:0] custom_int_code,
     output logic mextern_int
 
 );
 
-  // logic [INT_NUM-1:0] INT_delay_reg;
-  // always_ff @(posedge hb_clk) begin
-  //   INT_delay_reg <= irq_source;
-  // end
-
-
   logic [INT_NUM-1:0] INT_enable_reg;
+  logic [INT_NUM-1:0] INT_pending_reg;
   always_ff @(posedge hb_clk) begin
     if (rst_sync) begin
-      INT_enable_reg <= 0;
-    end else if (sel.wen && sys_share.waddr == 'd0) begin
-      INT_enable_reg <= sys_share.wdata[INT_NUM-1:0];
+      INT_enable_reg  <= 0;
+      INT_pending_reg <= 0;
+    end else begin
+      if (sel.wen && sys_share.waddr == 'd0) begin
+        INT_enable_reg <= sys_share.wdata[INT_NUM-1:0];
+      end
+      INT_pending_reg <= irq_source & INT_enable_reg;
     end
   end
 
 
-  logic [INT_NUM-1:0] INT_pending_reg;
   logic [5:0] int_id;
   always_comb begin
     int id;
@@ -47,16 +45,8 @@ module External_INT_Ctrl
         break;
       end
     end
-  end
-  always_ff @(posedge hb_clk) begin
-    if (rst_sync) begin
-      INT_pending_reg <= 0;
-      mextern_int <= 0;
-    end else begin
-      INT_pending_reg <= irq_source & INT_enable_reg;
-      mextern_int <= |INT_pending_reg;
-    end
-    custom_int_code <= {21'b0, int_id};
+    mextern_int = |INT_pending_reg;
+    custom_int_code = {21'b0, int_id};
   end
 
 
