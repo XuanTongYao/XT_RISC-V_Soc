@@ -1,28 +1,28 @@
 // 模块: UART通信模块
-// 功能: 串口通信(不支持校验位)，在码元结束边沿判决
+// 功能: 串口通信(不支持校验位)，取码元中心奇数个点进行判决(设N=过采样率/4，忽略前N个样本和后N+1个样本)
+//       常见过采样率对应判决位:4(1,1,2), 8(2,3,3), 16(4,7,5)
 //       仅支持8bit数据位，固定1bit停止位
-//       接收有4字节FIFO
-// 版本: v0.4
+//       收发有4字节FIFO
+//       读取数据默认清空中断
+// 版本: v0.5
 // 作者: 姚萱彤
 // <<< 参 数 >>> //
-// OVER_SAMPLING:        超采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)，必须为偶数，最小为4
+// OVER_SAMPLING:        过采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)，必须为偶数，最小为8
 //
-//
-// <<< 端 口 >>> //
-// clk:            时钟信号
 // 0:读RX寄存器   1:读状态寄存器
 module UART_BUS
   import Utils_Pkg::sel_t;
   import SystemPeripheral_Pkg::*;
 #(
-    // 超采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
+    // 过采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
     parameter int OVER_SAMPLING = 16  // 必须为偶数，最小为8
 ) (
     input hb_clk,
+    input rst,
     input sys_peripheral_t sys_share,
     input sel_t sel,
     output logic [31:0] rdata,
-    input sampling_clk,  // 超采样时钟(频率必须比总线时钟低)
+    input sampling_clk,  // 过采样时钟(频率必须比总线时钟低)
 
     output logic rx_irq = 0,
 
@@ -30,40 +30,24 @@ module UART_BUS
     output logic uart_tx = 1
 );
   localparam int unsigned SAMPLING_CNT = OVER_SAMPLING - 1;
-  localparam int unsigned ADJUDICATE_CNT = OVER_SAMPLING / 2;
+  localparam int unsigned DECISION_START_CNT = OVER_SAMPLING / 4;
+  localparam int unsigned DECISION_CNT = (OVER_SAMPLING / 2) - 1;
+  localparam int unsigned DECISION_END_CNT = DECISION_START_CNT + DECISION_CNT;
+  localparam int unsigned DECISION_CONDITION = (DECISION_CNT + 1) / 2;
 
-  //----------发送时钟----------//
-  wire band_clk;
-  ClockDivider #(
-      .DIV(OVER_SAMPLING)
-  ) u_ClockDivider (
-      .clk   (sampling_clk),
-      .clkout(band_clk)
-  );
-
-
-  // 状态
-  typedef struct packed {
-    logic rx_fifo_full;   // 高位
-    logic rx_fifo_empty;
-    logic rx_end;
-    logic tx_ready;
-  } uart_state_t;
-  uart_state_t state;
-  logic tx_ready = 1;
-  assign state.tx_ready = tx_ready;
+  localparam int unsigned SAMPLING_WIDTH = $clog2(OVER_SAMPLING);
+  localparam int unsigned DECISION_WIDTH = $clog2(DECISION_CNT + 1);
 
 
   //----------接收----------//
-  // 下降沿检测
-  wire negedge_trigger;
-  OncePulse #(
-      .TRIGGER(2'b10)
-  ) u_OncePulse (
-      .clk  (sampling_clk),
-      .ctrl (uart_rx),
-      .pulse(negedge_trigger)
-  );
+  // 时钟同步与下降沿检测
+  logic sync_rx = 0;
+  logic negedge_shift = 0;
+  wire  negedge_detected = negedge_shift & ~sync_rx;
+  always_ff @(posedge sampling_clk) begin
+    sync_rx <= uart_rx;
+    negedge_shift <= sync_rx;
+  end
 
   // 状态机
   typedef enum bit [1:0] {
@@ -74,156 +58,176 @@ module UART_BUS
   } rx_state_t;
   rx_state_t rx_state;
 
-  logic [2:0] bit_num;
-  logic [7:0] rx;
+  logic [SAMPLING_WIDTH-1:0] sample_count;  // 记录每个码元的采样数
+  wire symbol_end = sample_count == SAMPLING_CNT[SAMPLING_WIDTH-1:0];  // 码元结束
 
-  wire valid_bit = rx_state == CHECK_START ? !uart_rx : uart_rx;
-  logic [$clog2(OVER_SAMPLING)-1:0] sample_cnt;
-  logic [$clog2(OVER_SAMPLING)-1:0] last_valid_data_cnt;
-  wire [$clog2(OVER_SAMPLING):0] valid_data_cnt = last_valid_data_cnt + valid_bit;
-  wire adjudicating = sample_cnt == SAMPLING_CNT;
-  wire adjudicate_result = valid_data_cnt >= ADJUDICATE_CNT;
-
+  logic [DECISION_WIDTH-1:0] high_sample_count;  // 用于判决的高电平样本数
+  wire decision = high_sample_count >= DECISION_CONDITION[DECISION_WIDTH-1:0];  // 多数判决
+  logic decision_result;  // 判决结果
   always_ff @(posedge sampling_clk) begin
-    unique case (rx_state)
-      IDLE: begin
-        bit_num <= 0;
-        if (negedge_trigger && !uart_rx) rx_state <= CHECK_START;
-      end
-      CHECK_START: begin
-        if (adjudicating) begin
-          if (adjudicate_result) begin
-            rx_state <= RECEIVING;
-          end else begin
-            rx_state <= IDLE;
-          end
-        end
-      end
-      RECEIVING: begin
-        if (adjudicating) begin
-          rx <= {adjudicate_result, rx[7:1]};
-          bit_num <= bit_num + 1'b1;
-          if (bit_num == 3'd7) rx_state <= CHECK_STOP;
-        end
-      end
-      CHECK_STOP: begin
-        if (adjudicating) rx_state <= IDLE;
-      end
-    endcase
-  end
-
-
-  // 采样
-  always_ff @(posedge sampling_clk) begin
-    if (rx_state == IDLE) begin
-      if (negedge_trigger && !uart_rx) begin
-        last_valid_data_cnt <= 2'd2;
-        sample_cnt <= 2'd2;
-      end
+    if ((rx_state == IDLE && !negedge_detected) || symbol_end) begin
+      sample_count <= 0;
     end else begin
-      if (adjudicating) begin
-        sample_cnt <= 0;
-        last_valid_data_cnt <= 0;
-      end else begin
-        sample_cnt <= sample_cnt + 1'b1;
-        last_valid_data_cnt <= valid_data_cnt;
+      sample_count <= sample_count + 1;
+      if (sample_count == 0) begin
+        high_sample_count <= 0;
+      end else if (sample_count == DECISION_END_CNT[SAMPLING_WIDTH-1:0]) begin
+        decision_result <= decision;
+      end else if (sample_count >= DECISION_START_CNT[SAMPLING_WIDTH-1:0] && sync_rx) begin
+        high_sample_count <= high_sample_count + 1;
       end
     end
   end
 
-  logic [7:0] rx_fifo[4];
-  logic [1:0] rx_wr_ptr, rx_rd_ptr;
-  logic [2:0] rx_fifo_count;
-  assign state.rx_fifo_full = rx_fifo_count == 4;
-  assign state.rx_fifo_empty = rx_fifo_count == 0;
-  assign state.rx_end = !state.rx_fifo_empty;
-  wire rx_end_pulse;
-  OncePulse #(
-      .TRIGGER(2'b10)
-  ) u_rx_OncePulse (
+  logic [2:0] data_count;
+  logic [7:0] rx_buffer;  // 接收缓冲区
+  logic frame_end = 0;
+  always_ff @(posedge sampling_clk) begin
+    unique case (rx_state)
+      IDLE: begin
+        if (negedge_detected) rx_state <= CHECK_START;
+      end
+      CHECK_START: begin
+        data_count <= 0;
+        // 检测起始位低电平
+        if (symbol_end) rx_state <= decision_result ? IDLE : RECEIVING;
+      end
+      RECEIVING: begin
+        if (symbol_end) begin
+          rx_buffer  <= {decision_result, rx_buffer[7:1]};  // 右移
+          data_count <= data_count + 1;
+          if (data_count == 3'd7) rx_state <= CHECK_STOP;
+        end
+      end
+      CHECK_STOP: begin
+        if (symbol_end) begin
+          frame_end <= ~frame_end;
+          rx_state  <= IDLE;
+        end
+      end
+      default: rx_state <= IDLE;
+    endcase
+  end
+
+
+  wire frame_end_pulse;
+  OncePulse u_rx_OncePulse (
       .clk  (hb_clk),
-      .ctrl (rx_state == CHECK_STOP),
-      .pulse(rx_end_pulse)
+      .ctrl (frame_end),
+      .pulse(frame_end_pulse)
   );
+
+  wire [7:0] rx_fifo_q;
+  wire rx_full, rx_empty;
+  FIFO_SC #(
+      .WIDTH(8),
+      .DEPTH(4)
+  ) u_rx_FIFO_SC (
+      .clk         (hb_clk),
+      .rst         (rst),
+      .wen         (frame_end_pulse),
+      .ren         (sel.ren && sys_share.raddr == 'd0),
+      .data        (rx_buffer),
+      .q           (rx_fifo_q),
+      .full        (rx_full),
+      .empty       (rx_empty),
+      .almost_full (),
+      .almost_empty()
+  );
+
   always_ff @(posedge hb_clk) begin
-    if (rx_end_pulse && !state.rx_fifo_full) begin
-      rx_fifo[rx_wr_ptr] <= rx;
-      rx_wr_ptr <= rx_wr_ptr + 1;
-      rx_fifo_count <= rx_fifo_count + 1;
+    if (frame_end_pulse) begin
       rx_irq <= 1;
-    end else if (sel.ren && sys_share.raddr == 'd0 && !state.rx_fifo_empty) begin
-      rx_rd_ptr <= rx_rd_ptr + 1;
-      rx_fifo_count <= rx_fifo_count - 1;
-      rx_irq <= 0;
+    end else if (sel.ren && sys_share.raddr == 'd0) begin
+      rx_irq <= 0;  // 读自动清零中断
     end
   end
 
 
   //----------发送----------//
-  logic [7:0] tx;
+  // 发送时钟
+  wire band_clk;
+  ClockDivider #(
+      .DIV(OVER_SAMPLING)
+  ) u_ClockDivider (
+      .clk   (sampling_clk),
+      .clkout(band_clk)
+  );
+
+
+  logic [7:0] tx_fifo_q;
+  logic tx_full, tx_empty;
+  logic tx_fifo_ren;
+  FIFO_SC #(
+      .WIDTH(8),
+      .DEPTH(4)
+  ) u_tx_FIFO_SC (
+      .clk         (hb_clk),
+      .rst         (rst),
+      .wen         (sel.wen && sys_share.waddr == 'd0),
+      .ren         (tx_fifo_ren),
+      .data        (sys_share.wdata[7:0]),
+      .q           (tx_fifo_q),
+      .full        (tx_full),
+      .empty       (tx_empty),
+      .almost_full (),
+      .almost_empty()
+  );
+
+  // 跨时钟同步
+  logic tx_not_empty;
   always_ff @(posedge hb_clk) begin
-    if (sel.wen && sys_share.waddr == 'd0) begin
-      tx <= sys_share.wdata[7:0];
-    end
+    tx_not_empty <= !tx_empty;
   end
+
 
   // 使用移位寄存器代替计数器实现LUT优化
-  logic [9:0] shift_reg = 10'b000000000_1;
+  logic copy_fifo;
   logic copy_done = 0;
-  logic [8:0] tx_copy;
-  wire send_stop_bit = shift_reg[9];
+  logic [3:0] tx_symbol_count;
+  logic [8:0] tx_buffer;
   always_ff @(posedge band_clk) begin
-    if (!tx_ready) begin
-      if (copy_done) begin
-        shift_reg <= {shift_reg[8:0], shift_reg[9]};
-        tx_copy   <= {1'b1, tx_copy[8:1]};  // 从后面填充结束位
-        uart_tx   <= tx_copy[0];
-        if (send_stop_bit) copy_done <= 0;
-      end else begin
-        tx_copy   <= {tx, 1'b0};
-        copy_done <= 1'b1;
-      end
+    copy_fifo <= tx_not_empty;
+    if (copy_done) begin
+      tx_symbol_count <= tx_symbol_count + 1;
+      tx_buffer <= {1'b1, tx_buffer[8:1]};  // 从后面填充结束位并右移
+      uart_tx <= tx_buffer[0];
+      if (tx_symbol_count == 4'd9) copy_done <= 0;
+    end else if (copy_fifo) begin
+      tx_symbol_count <= 0;
+      copy_done <= 1;
+      tx_buffer <= {tx_fifo_q, 1'b0};  // 插入起始位
     end
   end
 
-  // 旧的实现
-  // wire [9:0] tx_vec = {1'b1, tx, 1'b0};// 插入起始位与结束位
-  // logic [3:0] tx_ptr = 0;
-  // wire send_stop_bit = tx_ptr == 4'd9;
-  // always_ff @(posedge band_clk) begin
-  //   if (!state.tx_ready) begin
-  //     if (send_stop_bit) begin
-  //       tx_ptr <= 0;
-  //     end else begin
-  //       tx_ptr <= tx_ptr + 1'b1;
-  //     end
-  //     uart_tx <= tx_vec[tx_ptr];
-  //   end
-  // end
-
-
-  wire tx_ready_pulse;
   OncePulse #(
-      .TRIGGER(2'b10)
+      .TRIGGER(2'b01)
   ) u_tx_OncePulse (
       .clk  (hb_clk),
-      .ctrl (send_stop_bit),
-      .pulse(tx_ready_pulse)
+      .ctrl (copy_done),
+      .pulse(tx_fifo_ren)
   );
-  always_ff @(posedge hb_clk) begin
-    if (sel.wen) begin
-      tx_ready <= 0;
-    end else if (tx_ready_pulse) begin
-      tx_ready <= 1;
-    end
-  end
 
 
   //----------总线读----------//
+  // 状态
+  typedef struct packed {
+    // 高位
+    logic rx_full;       // 接收缓冲区已满
+    logic tx_empty;      // 发送缓冲区空
+    logic rx_not_empty;  // 接收缓冲区存在数据
+    logic tx_ready;      // 发送功能已就绪（缓冲区未满）
+  } uart_state_t;
+  uart_state_t state;
+  assign state.rx_full = rx_full;
+  assign state.tx_empty = tx_empty;
+  assign state.rx_not_empty = !rx_empty;
+  assign state.tx_ready = !tx_full;
+
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
       if (sys_share.raddr == 'd0) begin
-        rdata <= {24'b0, rx_fifo[rx_rd_ptr]};
+        rdata <= {24'b0, rx_fifo_q};
       end else begin
         rdata <= {24'b0, 4'b0, state};
       end

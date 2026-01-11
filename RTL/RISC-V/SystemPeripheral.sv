@@ -146,6 +146,7 @@ module SystemPeripheral
       .OVER_SAMPLING(UART_OVER_SAMPLING)
   ) u_UART (
       .*,
+      .rst  (rst_sync),
       .sel  (sp_sel[IDX_UART]),
       .rdata(sp_data_in[IDX_UART])
   );
