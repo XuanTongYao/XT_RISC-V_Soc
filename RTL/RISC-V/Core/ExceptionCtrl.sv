@@ -51,19 +51,19 @@ module ExceptionCtrl
     end
   end
 
-  wire is_int = !raise && csr_mstatus.mie;
   assign any_int_come = (csr_mie & csr_mip) != 0;
-  assign valid_int_req = any_int_come && is_int && stall_n;  // 注意防止stall等待时清空流水线
+  // 注意防止stall等待时清空流水线
+  assign valid_int_req = any_int_come && csr_mstatus.mie && !raise && stall_n;
   assign trap_occurred = ready_for_int || raise;
   assign new_mepc = jump_pending ? last_jump_addr : instruction_addr_id_ex;
 
   logic [30:0] code;
-  assign new_mcause = {is_int, code};
+  assign new_mcause = {ready_for_int, code};
   // assign new_mtval  = 0;
   always_comb begin
     trap_jump_addr = {csr_mtvec.base, 2'b0};
     code = PadExceptionCode(raise_code);
-    if (is_int) begin
+    if (ready_for_int) begin
       // 优先级: 外部->软件->定时器，这和中断号的顺序不一样
       if (csr_mie.meie && csr_mip.meip) begin
         code = custom_int_code;  // 外部中断控制器重定向

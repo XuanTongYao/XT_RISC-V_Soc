@@ -14,7 +14,7 @@ package SocConfig;
   // 指令RAM,数据RAM,系统外设,WISHBONE,XT_LB
   localparam int HB_DEVICE_NUM = 5;
   // 设备基准ID分配，分别是上面那些设备
-  localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_NUM-1] = {3'd1, 3'd2, 3'd3, 3'd4};
+  localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_NUM-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
   // IO设备索引分配
   localparam int IDX_XT_LB = 4, IDX_WISHBONE = 3, IDX_SYS_P = 2, IDX_DATA_RAM = 1, IDX_INST_RAM = 0;
   // HB从设备ID分配

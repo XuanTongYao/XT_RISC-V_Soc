@@ -296,9 +296,9 @@ module XT_Soc_Risc_V
   AF_GPIO_LBUS #(
       .NUM           (GPIO_NUM),
       .FUNCT_IN_NUM  (AF_FUNCT_IN_NUM),
-      .FUNCT_IN_MASK ({32'h0000_00FF, 32'h0000_00FF}),
+      .FUNCT_IN_MASK ('{32'h0000_00FF, 32'h0000_00FF}),
       .FUNCT_OUT_NUM (2),
-      .FUNCT_OUT_MASK({32'h1FE0_0000, 32'h1FE0_0000}),
+      .FUNCT_OUT_MASK('{32'h1FE0_0000, 32'h1FE0_0000}),
       .BASE_ADDR     (8'd24)
   ) u_AF_GPIO_LBUS (
       .*,

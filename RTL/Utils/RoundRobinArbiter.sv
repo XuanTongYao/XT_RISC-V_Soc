@@ -15,10 +15,9 @@ module RoundRobinArbiter #(
   logic [ DEVICE_NUM-1:0] next_grant;
   logic [INDEX_WIDTH-1:0] next_grant_index;
   always_comb begin
-    int unsigned index = 0;
     next_grant = 0;
     next_grant_index = 0;
-    for (int unsigned i = 1; i < DEVICE_NUM + 1; ++i) begin
+    for (int unsigned i = 1, index = 0; i < DEVICE_NUM + 1; ++i) begin
       index = 32'(grant_index) + i;
       if (index >= DEVICE_NUM) begin
         index -= DEVICE_NUM;
