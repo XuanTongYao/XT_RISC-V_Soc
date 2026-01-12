@@ -19,17 +19,21 @@ typedef union
 
 #define FLASH_W_DATA_REG ((byte_reg_ptr)(FLASH_BASE + 1))
 
-typedef struct
+typedef union
 {
-    uint8_t I2CACT : 1;
-    uint8_t SSPIACT : 1;
-    uint8_t RXFF : 1;
-    uint8_t RXFE : 1;
-    uint8_t TXFF : 1;
-    uint8_t TXFE : 1;
-    uint8_t : 1;
-    // WB总线到配置(FPGA配置)接口激活(慎用！！！)
-    uint8_t WBCACT : 1;
+    uint8_t reg;
+    struct
+    {
+        uint8_t I2CACT : 1;
+        uint8_t SSPIACT : 1;
+        uint8_t RXFF : 1;
+        uint8_t RXFE : 1;
+        uint8_t TXFF : 1;
+        uint8_t TXFE : 1;
+        uint8_t : 1;
+        // WB总线到配置(FPGA配置)接口激活(慎用！！！)
+        uint8_t WBCACT : 1;
+    };
 }FlashStatus;
 #define FLASH_STATE_REG ((const volatile FlashStatus*)(FLASH_BASE + 2))
 

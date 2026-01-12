@@ -7,13 +7,17 @@
 
 #define UART_DATA_REG ((byte_reg_ptr)UART_BASE)
 
-typedef struct
+typedef union
 {
-    uint32_t tx_ready : 1;
-    uint32_t rx_end : 1;
-    uint32_t rx_fifo_empty : 1;
-    uint32_t rx_fifo_full : 1;
-    uint32_t : 28;
+    uint32_t reg;
+    struct
+    {
+        uint32_t tx_ready : 1;
+        uint32_t rx_end : 1;
+        uint32_t tx_empty : 1;  // 发送缓冲区空
+        uint32_t rx_full : 1;   // 接收缓冲区已满
+        uint32_t : 28;
+    };
 }UART_STATE;
 #define UART_STATE_REG ((const volatile UART_STATE*)(UART_BASE + 4))
 
