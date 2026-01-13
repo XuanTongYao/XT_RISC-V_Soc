@@ -42,6 +42,7 @@ void boot(void) {
         __continue_read_one_UFM_page();
         for (size_t i = 0; i < 4; i++, ram_32addr++) {
             INST_BASE_ADDR[ram_32addr] = __DATA_BUFF_32[i];
+            NOP;// FIXME 在这加一个NOP又能正常加载了？感觉是连续写的问题，没招了，临时解决一下
         }
     }
     // TODO 还需要手动清空全局区的内容(目前直接使用高位地址存放临时数据，暂时不需要)
