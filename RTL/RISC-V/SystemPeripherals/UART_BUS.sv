@@ -27,7 +27,7 @@ module UART_BUS
     output logic rx_irq = 0,
 
     input uart_rx,
-    output logic uart_tx = 1
+    output logic uart_tx
 );
   localparam int unsigned SAMPLING_CNT = OVER_SAMPLING - 1;
   localparam int unsigned DECISION_START_CNT = OVER_SAMPLING / 4;
@@ -181,22 +181,34 @@ module UART_BUS
   end
 
 
-  // 使用移位寄存器代替计数器实现LUT优化
   logic copy_fifo;
-  logic copy_done = 0;
+  logic copy_done, copy_done_delay;
   logic [3:0] tx_symbol_count;
-  logic [8:0] tx_buffer;
+  logic [7:0] tx_buffer;
+  always_ff @(posedge band_clk, posedge rst) begin
+    if (rst) begin
+      copy_done <= 0;
+      uart_tx   <= 1;
+    end else begin
+      if (copy_done) begin
+        uart_tx <= tx_buffer[0];
+        if (tx_symbol_count == 4'd8) copy_done <= 0;
+      end else if (copy_fifo) begin
+        copy_done <= 1;
+        uart_tx   <= 0;  // 发送起始位
+      end
+    end
+  end
+
   always_ff @(posedge band_clk) begin
+    copy_done_delay <= copy_done;
     copy_fifo <= tx_not_empty;
     if (copy_done) begin
       tx_symbol_count <= tx_symbol_count + 1;
-      tx_buffer <= {1'b1, tx_buffer[8:1]};  // 从后面填充结束位并右移
-      uart_tx <= tx_buffer[0];
-      if (tx_symbol_count == 4'd9) copy_done <= 0;
+      tx_buffer <= {1'b1, tx_buffer[7:1]};  // 从后面填充结束位并右移
     end else if (copy_fifo) begin
       tx_symbol_count <= 0;
-      copy_done <= 1;
-      tx_buffer <= {tx_fifo_q, 1'b0};  // 插入起始位
+      tx_buffer <= tx_fifo_q;
     end
   end
 
@@ -204,7 +216,7 @@ module UART_BUS
       .TRIGGER(2'b01)
   ) u_tx_OncePulse (
       .clk  (hb_clk),
-      .ctrl (copy_done),
+      .ctrl (copy_done_delay),
       .pulse(tx_fifo_ren)
   );
 
