@@ -1,7 +1,7 @@
 // XT_HB的时钟速度hb_clk必须大于等于wb_clk_i
-// 若读写同时发生则进行RMW
-// 只支持单次读写与RMW
-// 读写周期可能已经优化到极限
+// 仅支持单次读写，有原子指令再考虑支持RMW，正在思考正确的RMW如何实现
+// Q:如果有多个设备(比如DMA)要使用WISHBONE资源怎么办？
+// A:给每个设备单独配一个主机，避开访问冲突问题。
 module WISHBONE_MASTER
   import Utils_Pkg::sel_t;
   import XT_HBUS_Pkg::*;
@@ -31,101 +31,65 @@ module WISHBONE_MASTER
     output logic write_finish
 );
 
-  //----------状态机----------//
-  typedef enum bit [1:0] {
-    IDLE  = 2'd0,
-    READ  = 2'd1,
-    WRITE = 2'd2,
-    RWM   = 2'd3
-  } wishbone_state_e;
-  wishbone_state_e wishbone_state;
-
-  logic ready_ack, rw_finish;
+  logic rw_finish;
   assign read_finish  = rw_finish;
   assign write_finish = rw_finish;
   OncePulse #(
       .TRIGGER(2'b01)
   ) u_wc_OncePulse (
       .clk  (hb_clk),
-      .ctrl (wb_ack_i && ready_ack),
+      .ctrl (wb_ack_i),
       .pulse(rw_finish)
   );
+
+
   // 启动读写控制
-  // 把这里的信号换成一个设备准备信号
-  // 访问WISHBONE前一定会有一个周期执行其他指令,hb_ready初始值会被置1
+  // 这里等一个周期，等HB的主机走到下一条指令
   logic hb_ready;
+  wire  start_rw = hb_ready && (sel.ren || sel.wen);
   always_ff @(posedge hb_clk) begin
-    if (wishbone_state == IDLE) begin
-      hb_ready <= 1;
-    end else if (wishbone_state == WRITE || wishbone_state == READ) begin
+    if (wb_cyc_o) begin
       hb_ready <= 0;
+    end else begin
+      hb_ready <= 1;
+    end
+  end
+
+
+  always_ff @(posedge wb_clk_i) begin
+    if (wb_rst_i) begin
+      wb_stb_o <= 0;
+      wb_cyc_o <= 0;
+    end else begin
+      if (wb_cyc_o) begin  // 进行中
+        if (wb_ack_i) begin
+          wb_stb_o <= 0;
+          wb_cyc_o <= 0;
+        end
+      end else if (start_rw) begin  // 空闲
+        wb_stb_o <= 1;
+        wb_cyc_o <= 1;
+      end
     end
   end
 
   always_ff @(posedge wb_clk_i) begin
-    unique case (wishbone_state)
-      IDLE: begin
-        // 先读取再写入
-        if (hb_ready) begin
-          if (sel.ren && sel.wen) begin
-            ready_ack <= 0;
-            wishbone_state <= READ;
-          end else if (sel.ren) begin
-            ready_ack <= 1;
-            wishbone_state <= READ;
-          end else if (sel.wen) begin
-            ready_ack <= 1;
-            wishbone_state <= WRITE;
-          end
-        end
-      end
-      READ: begin
-        if (wb_ack_i) begin
+    if (wb_cyc_o) begin  // 进行中
+      if (wb_ack_i) begin
+        if (!wb_we_o) begin  // 读周期
           rdata <= {24'b0, wb_dat_i};
-          if (ready_ack) begin
-            wishbone_state <= IDLE;
-          end else begin
-            wishbone_state <= RWM;
-          end
         end
       end
-      WRITE: begin
-        if (wb_ack_i) begin
-          wishbone_state <= IDLE;
-        end
+    end else if (start_rw) begin  // 空闲
+      if (sel.ren) begin
+        wb_we_o  <= 0;
+        wb_adr_o <= xt_hb.raddr[7:0];
+      end else begin
+        wb_we_o  <= 1;
+        wb_adr_o <= xt_hb.waddr[7:0];
+        wb_dat_o <= xt_hb.wdata[7:0];
       end
-      RWM: begin
-        ready_ack <= 1;
-        wishbone_state <= WRITE;
-      end
-      default: ;
-    endcase
+    end
   end
-
-  always_comb begin
-    wb_adr_o = xt_hb.waddr[7:0];
-    wb_we_o  = 0;
-    wb_stb_o = 0;
-    wb_cyc_o = 0;
-    wb_dat_o = xt_hb.wdata[7:0];
-    unique case (wishbone_state)
-      IDLE: ;
-      READ: begin
-        wb_adr_o = xt_hb.raddr[7:0];
-        wb_stb_o = 1;
-        wb_cyc_o = 1;
-      end
-      WRITE: begin
-        wb_adr_o = xt_hb.waddr[7:0];
-        wb_we_o  = 1;
-        wb_stb_o = 1;
-        wb_cyc_o = 1;
-      end
-      RWM: begin
-        wb_cyc_o = 1;
-      end
-    endcase
-  end
-
 
 endmodule
