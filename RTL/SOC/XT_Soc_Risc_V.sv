@@ -42,7 +42,7 @@ module XT_Soc_Risc_V
   wire pll_rst;
   ClockMonitor #(
       .MAX_LOCK_PERIOD((2_150_000 / 1_000) * 40),
-      .POWERUP_PERIOD (0)
+      .POWER_ON_PERIOD(0)
   ) u_ClockMonitor (
       .*,
       .independent_clk(clk_inner_osc),
@@ -53,7 +53,6 @@ module XT_Soc_Risc_V
   wire systemtimer_clk;  // 1MHz
   wire sampling_clk;  // 153_846，生成19200波特率误差0.16%
   wire lb_clk;  // 100K
-  wire rst_sync = ~pll_lock;
   SystemPLL u_SystmePLL (
       .CLKI(clk_osc),
       .CLKOP(clk),
@@ -62,6 +61,14 @@ module XT_Soc_Risc_V
       .CLKOS3(lb_clk),
       .RST(pll_rst),
       .LOCK(pll_lock)
+  );
+
+  wire rst_sync_n;
+  wire rst_sync = ~rst_sync_n;
+  SyncAsyncReset u_SyncAsyncReset (
+      .clk       (clk),
+      .rst_n     (pll_lock),
+      .rst_sync_n(rst_sync_n)
   );
 
 

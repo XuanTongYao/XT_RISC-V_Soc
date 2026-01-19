@@ -154,7 +154,7 @@ module SystemPeripheral
   // 最高位为激活中断，低15位可作为中断原因
   wire sel_t sel_soft_int = sp_sel[IDX_SOFTWARE_INT];
   logic [15:0] msoftware_int_reg;
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb_clk, posedge rst_sync) begin
     if (rst_sync) begin
       msoftware_int <= 0;
       msoftware_int_reg <= 0;

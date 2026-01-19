@@ -22,7 +22,7 @@ module External_INT_Ctrl
 
   logic [INT_NUM-1:0] INT_enable_reg;
   logic [INT_NUM-1:0] INT_pending_reg;
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb_clk, posedge rst_sync) begin
     if (rst_sync) begin
       INT_enable_reg  <= 0;
       INT_pending_reg <= 0;

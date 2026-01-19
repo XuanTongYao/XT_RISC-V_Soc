@@ -20,7 +20,7 @@ module PC_Reg
     end
   end
 
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk, posedge rst_sync) begin
     if (rst_sync) begin
       pc <= 0;
     end else if (jump) begin

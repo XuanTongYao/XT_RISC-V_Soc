@@ -49,7 +49,7 @@ module CoreCtrl #(
   assign instruction_retire = !(flushing_pipeline || trap_occurred) && (jump || stall_n);
   logic [1:0] nop_cnt;
   assign flushing_pipeline = nop_cnt != 0;
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk, posedge rst_sync) begin
     if (rst_sync) begin
       nop_cnt <= 0;
       jump_pending <= 0;

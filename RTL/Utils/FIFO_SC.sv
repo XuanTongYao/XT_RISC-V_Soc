@@ -38,6 +38,11 @@ module FIFO_SC #(
       write_ptr <= 0;
     end else if (write_vaild) begin
       write_ptr <= write_ptr + 1;
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (write_vaild) begin
       fifo[write_ptr] <= data;
     end
   end

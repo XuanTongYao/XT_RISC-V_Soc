@@ -36,6 +36,9 @@ module ID_EX
   always_ff @(posedge clk) begin
     if (stall_n) begin
       instruction_addr_id_ex <= instruction_addr_id;
+      ram_load_addr_id_ex <= ram_load_addr_id;
+      ram_store_addr_id_ex <= ram_store_addr_id;
+      ram_store_data_id_ex <= ram_store_data_id;
     end
     // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
     if (rst_sync || flush || (exception_id_raise && stall_n)) begin
@@ -48,9 +51,6 @@ module ID_EX
     end else if (stall_n) begin
       ram_load_access_id_ex <= ram_load_access_id;
       ram_store_access_id_ex <= ram_store_access_id;
-      ram_load_addr_id_ex <= ram_load_addr_id;
-      ram_store_addr_id_ex <= ram_store_addr_id;
-      ram_store_data_id_ex <= ram_store_data_id;
       instruction_id_ex <= instruction_id;
       operand1 <= operand1_id;
       operand2 <= operand2_id;

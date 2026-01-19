@@ -49,7 +49,7 @@ module HarvardBootloader
 
   //----------运行模式切换----------//
   logic [7:0] debug_reg = 0;
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb_clk, posedge rst_sync) begin
     if (rst_sync) begin
       debug_reg <= 0;
     end else if (sel.wen && w_debug) begin
@@ -71,7 +71,7 @@ module HarvardBootloader
     end
   end
 
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb_clk, posedge rst_sync) begin
     if (rst_sync) begin
       run_mode <= BOOT;
     end else if (run_mode == BOOT && debug_reg == 8'hF0) begin
