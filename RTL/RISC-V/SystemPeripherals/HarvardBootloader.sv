@@ -42,7 +42,7 @@ module HarvardBootloader
     if (sel.wen && w_str_addr) begin
       rom_addr <= sys_share.wdata[5:0];
     end else if (sel.ren && r_str) begin
-      rom_addr <= rom_addr + 1'b1;
+      rom_addr <= rom_addr + 1;
     end
   end
 
@@ -57,25 +57,13 @@ module HarvardBootloader
     end
   end
 
-  typedef enum bit {
-    BOOT   = 0,
-    NORMAL = 1
-  } run_mode_e;
-
-  run_mode_e run_mode;
-  always_comb begin
-    if (run_mode == BOOT) begin
-      instruction = bootloader_instruction;
-    end else begin
-      instruction = user_instruction;
-    end
-  end
-
+  logic normal_mode;
+  assign instruction = normal_mode ? user_instruction : bootloader_instruction;
   always_ff @(posedge hb_clk, posedge rst_sync) begin
     if (rst_sync) begin
-      run_mode <= BOOT;
-    end else if (run_mode == BOOT && debug_reg == 8'hF0) begin
-      run_mode <= NORMAL;
+      normal_mode <= 0;
+    end else if (!normal_mode && debug_reg == 8'hF0) begin
+      normal_mode <= 1;
     end
   end
 

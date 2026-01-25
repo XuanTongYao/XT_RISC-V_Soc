@@ -19,7 +19,7 @@
 #define STR_ERR_LEN 6
 // 不能用字符串字面量(需要memcpy调用)，全局变量应该可以，但是有一点问题
 
-#define INST_BASE_ADDR ((uint32_t*)INST_RAM_BASE)
+#define INST_BASE_ADDR ((volatile uint32_t*)INST_RAM_BASE)
 // 如果自举工作在内存中可能会用到
 #define BOOTSTRAP_START_WORD_ADDR 512 // 改加载地址记得改boot的跳转地址
 #define BOOTSTRAP_REMAIN_PAGES (((BOOTSTRAP_START_WORD_ADDR*4)+PAGE_BYTES-1)>>4) 
@@ -55,15 +55,15 @@ void check_UFM(void);
 // RISC-V调用约定栈地址为16字节对齐，规避6个调用栈
 #define __DATA_BUFF_LEN 16
 #define __DATA_BUFF_ADDR (STACK_TOP_ADDR-16-96)
-#define __DATA_BUFF_8 ((uint8_t*)__DATA_BUFF_ADDR)
-#define __DATA_BUFF_16 ((uint16_t*)__DATA_BUFF_ADDR)
-#define __DATA_BUFF_32 ((uint32_t*)__DATA_BUFF_ADDR)
+#define __DATA_BUFF_8 ((volatile uint8_t*)__DATA_BUFF_ADDR)
+#define __DATA_BUFF_16 ((volatile uint16_t*)__DATA_BUFF_ADDR)
+#define __DATA_BUFF_32 ((volatile uint32_t*)__DATA_BUFF_ADDR)
 
-#define __CMD_OPERANDS_BE_32 ((uint32_t*)(__DATA_BUFF_ADDR-4))
-#define __CMD_OPERANDS_BE_BYTES ((uint8_t*)(__DATA_BUFF_ADDR-4))
+#define __CMD_OPERANDS_BE_32 ((volatile uint32_t*)(__DATA_BUFF_ADDR-4))
+#define __CMD_OPERANDS_BE_BYTES ((volatile uint8_t*)(__DATA_BUFF_ADDR-4))
 #define __SET_CMD_OPERANDS_BE(CMD,OPERANDS) *__CMD_OPERANDS_BE_32=((CMD<<24)|OPERANDS);
 
-#define __PROG_INFO ((PROG_INFO*)(__DATA_BUFF_ADDR-4-4))
+#define __PROG_INFO ((volatile PROG_INFO*)(__DATA_BUFF_ADDR-4-4))
 
 
 #undef IS_XB_CMD
@@ -93,11 +93,11 @@ void __disable_transparent_UFM(void);
 /// @brief 重置地址到扇区1页0
 void __reset_UFM_addr(void);
 
-/// @brief 读取一页数据
-/// @param addr 地址
-/// @warning 必须先启用UFM透明传输
-/// @warning 会修改__DATA_BUFF
-void __read_one_UFM_page(const uint16_t addr);
+// /// @brief 读取一页数据
+// /// @param addr 地址
+// /// @warning 必须先启用UFM透明传输
+// /// @warning 会修改__DATA_BUFF
+// void __read_one_UFM_page(const uint16_t addr);
 
 /// @brief 从下一个地址读取一页数据
 /// @attention Flash硬件 支持地址自增

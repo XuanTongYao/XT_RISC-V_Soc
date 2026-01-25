@@ -42,9 +42,9 @@ void boot(void) {
         __continue_read_one_UFM_page();
         for (size_t i = 0; i < 4; i++, ram_32addr++) {
             INST_BASE_ADDR[ram_32addr] = __DATA_BUFF_32[i];
+            NOP;
         }
     }
-    // TODO 还需要手动清空全局区的内容(目前直接使用高位地址存放临时数据，暂时不需要)
     __disable_transparent_UFM();
     *DEBUG_REG = INTO_NORMAL_MODE;
     asm("j 0x0");

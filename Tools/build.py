@@ -5,10 +5,8 @@ from pathlib import Path
 os.chdir(Path(__file__).parent.parent.absolute())
 import inc
 
-# riscv64-unknown-elf-gcc --version
-# riscv-none-elf-gcc --version
-
-
+gcc = "riscv64-unknown-elf-gcc"
+objcopy = "riscv64-unknown-elf-objcopy"
 gcc = "riscv-none-elf-gcc"
 objcopy = "riscv-none-elf-objcopy"
 
@@ -83,6 +81,14 @@ def align_to_page(flat_output: str, output_name: str):
                 padding = 16 - (len(binary_data) % 16)
                 for _ in range(padding):
                     out.write(b"\x00")
+    # page_txt_output = os.path.join(inc.TXT_DIR, output_name) + "page.mem"
+    # with open(page_out, "rb") as f:
+    #     binary_data = f.read()
+    #     with open(page_txt_output, "w") as out:
+    #         for i in range(0, len(binary_data), 16):
+    #             page = binary_data[i : i + 16]
+    #             hex_str = "".join(f"{b:02X}" for b in reversed(page))  # 高位字符在前
+    #             out.write(hex_str + "\n")
 
 
 if __name__ == "__main__":

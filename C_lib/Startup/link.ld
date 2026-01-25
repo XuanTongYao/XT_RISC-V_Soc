@@ -26,7 +26,6 @@ SECTIONS
     } > INST_RAM
 
 
-    . = ALIGN(4);
     .rodata : 
     {
         *(.rodata .rodata.*) 
@@ -45,20 +44,27 @@ SECTIONS
         *(.sdata .sdata.* .gnu.linkonce.s.*)
     } > DATA_RAM
 
+    . = ALIGN(ALIGNOF(.sbss));
+    __BSS_START__ = .;
+    .sbss           :
+    {
+        *(.sbss .sbss.* .gnu.linkonce.sb.*)
+        *(.scommon)
+    } > DATA_RAM
     .bss :
     {
-        *(.sbss)
-        *(.bss)
-        __BSS_END__ = .;
+        *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
+        . = ALIGN(. != 0 ? 32 / 8 : 1);
     } > DATA_RAM
+    . = ALIGN(4);
+    __BSS_END__ = .;
 
     _sstack = ORIGIN(DATA_RAM) + LENGTH(DATA_RAM);
     _estack = _sstack - __stack_size;
     __global_pointer$ = MIN(__SDATA_BEGIN__ + 0x800,
         MAX(__DATA_BEGIN__ + 0x800, __BSS_END__ - 0x800));
 
-    __peripheral_base = _sstack;
 
     _end = .;
 }

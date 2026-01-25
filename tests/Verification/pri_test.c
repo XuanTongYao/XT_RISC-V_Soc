@@ -17,13 +17,12 @@ void main(void) {
     }
 }
 
-
 IRQ UART_RX_IRQ_Handler(void) {
     *LEDSD_REG = *UART_DATA_REG;
 }
 
 
-IRQ Ecall_ErrorHandler(void) {
+void Ecall_ErrorHandler(void) {
     *LEDSD_REG = 0xEC;
-    EXCEPTION_DONE;
+    EXCEPTION_SKIP;
 }

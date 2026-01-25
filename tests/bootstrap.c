@@ -45,7 +45,6 @@ void boot(void) {
             NOP;// FIXME 在这加一个NOP又能正常加载了？感觉是连续写的问题，没招了，临时解决一下
         }
     }
-    // TODO 还需要手动清空全局区的内容(目前直接使用高位地址存放临时数据，暂时不需要)
     __disable_transparent_UFM();
     *DEBUG_REG = INTO_NORMAL_MODE;
     asm("j 0x0");

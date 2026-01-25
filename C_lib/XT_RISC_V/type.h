@@ -3,16 +3,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// 内联汇编忽略
-#ifdef VSCODE
-#define asm(X)
-#endif
 
-#ifdef VSCODE
-#define __attribute__(X)
-#endif
-
-// 指示函数为异常/中断处理函数，以便编译器正确保存并转移上下文
+// 指示函数为中断处理函数，以便编译器正确保存并转移上下文
 #define IRQ __attribute__((interrupt)) void
 
 
