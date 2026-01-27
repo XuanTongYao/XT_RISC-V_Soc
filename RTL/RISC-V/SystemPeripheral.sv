@@ -116,7 +116,7 @@ module SystemPeripheral
 
   //----------外设实例----------//
   // 从ROM自举启动和UART程序下载
-  HarvardBootloader u_HarvardBootloader (
+  HarvardBootstrap u_HarvardBootstrap (
       .*,
       .sel  (sp_sel[IDX_BOOTLOADER]),
       .rdata(sp_data_in[IDX_BOOTLOADER])

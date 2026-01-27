@@ -1,6 +1,6 @@
 // 自举启动和下载控制器
 // 向寄存器写入0xF0，延迟一个周期(给予PC->0的时间)后切换到用户代码模式
-module HarvardBootloader
+module HarvardBootstrap
   import Utils_Pkg::sel_t;
   import SystemPeripheral_Pkg::*;
 (

@@ -1,4 +1,4 @@
-// XT_HB的时钟速度hb_clk必须大于等于wb_clk_i
+// hb_clk和wb_clk_i实际上是同一个时钟
 // 仅支持单次读写，有原子指令再考虑支持RMW，正在思考正确的RMW如何实现
 // Q:如果有多个设备(比如DMA)要使用WISHBONE资源怎么办？
 // A:给每个设备单独配一个主机，避开访问冲突问题。
@@ -34,20 +34,20 @@ module WISHBONE_MASTER
   logic rw_finish;
   assign read_finish  = rw_finish;
   assign write_finish = rw_finish;
-  OncePulse #(
-      .TRIGGER(2'b01)
-  ) u_wc_OncePulse (
-      .clk  (hb_clk),
-      .ctrl (wb_ack_i),
-      .pulse(rw_finish)
-  );
+  always_ff @(posedge wb_clk_i) begin
+    if (rw_finish) begin
+      rw_finish <= 0;
+    end else if (wb_ack_i && wb_stb_o) begin
+      rw_finish <= 1;
+    end
+  end
 
 
   // 启动读写控制
   // 这里等一个周期，等HB的主机走到下一条指令
   logic hb_ready;
   wire  start_rw = hb_ready && (sel.ren || sel.wen);
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge wb_clk_i) begin
     if (wb_cyc_o) begin
       hb_ready <= 0;
     end else begin
