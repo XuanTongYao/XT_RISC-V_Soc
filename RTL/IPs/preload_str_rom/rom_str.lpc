@@ -16,8 +16,8 @@ CoreRevision=2.8
 ModuleName=rom_str
 SourceFormat=Verilog HDL
 ParameterFileVersion=1.0
-Date=05/27/2025
-Time=15:43:12
+Date=01/29/2026
+Time=21:25:58
 
 [Parameters]
 Verilog=1
@@ -30,11 +30,11 @@ IO=0
 Addresses=64
 Data=8
 LUT=0
-MemFile=d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_str.txt
+MemFile=d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_emoji.txt
 MemFormat=hex
 
 [FilesGenerated]
-d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_str.txt=mem
+d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_emoji.txt=mem
 
 [Command]
-cmd_line= -w -n rom_str -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 6 -num_words 64 -data_width 8 -outdata UNREGISTERED -memfile d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_str.txt -memformat hex
+cmd_line= -w -n rom_str -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 6 -num_words 64 -data_width 8 -outdata UNREGISTERED -memfile d:/projects/github/xt_risc-v_soc/rtl/mem_files/preload_emoji.txt -memformat hex

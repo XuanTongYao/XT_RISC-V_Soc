@@ -1,6 +1,9 @@
 OUTPUT_ARCH( "riscv" )
 ENTRY(_start)
 
+/* 查看默认链接脚本 */
+/* riscv-none-elf-ld "--verbose" *> default.ld */
+
 MEMORY
 {
 INST_RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x1000
@@ -18,6 +21,7 @@ SECTIONS
     .text :
     {
         KEEP (*(SORT_NONE(.init)))
+        __TRAP_VECTOR__ = .;
         KEEP (*(SORT_NONE(.trap.vector)))
         KEEP (*(SORT_NONE(.trap.delete_handler)))
         KEEP (*(SORT_NONE(.trap.error_handler)))

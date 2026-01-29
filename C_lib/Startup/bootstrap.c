@@ -1,5 +1,6 @@
 //----------自举启动与DEBUG----------//
 #include "XT_RISC_V.h"
+#define EMOJI
 #include "bootstrap.h"
 
 // 取消分页表
@@ -50,10 +51,7 @@ void boot(void) {
     asm("j 0x0");
 }
 
-#define WAIT_CMD STR_1
-#define WAIT_LEN STR_2
-#define WAIT_START_FLAG STR_3
-#define WAIT_CONFIRM STR_4
+
 // 下载模式：
 // 1. 从串口选择进入下载模式/自举启动
 // 2. 等待下载指令
@@ -65,8 +63,8 @@ void download(void) {
     while (1) {
         UART_STATE state = *UART_STATE_REG;
         if (!state.rx_end) {
-            *PRELOAD_STR_INIT_ADDR_REG = WAIT_CMD;
-            __tx_bytes_block_auto_increment(STR_1_LEN);
+            *PRELOAD_STR_INIT_ADDR_REG = STR_CMD;
+            __tx_bytes_block_auto_increment(STR_CMD_LEN);
             continue;
         }
         uint8_t uart_cmd = *UART_DATA_REG;
@@ -75,8 +73,8 @@ void download(void) {
 
         // 进入下载模式
         while (1) {
-            *PRELOAD_STR_INIT_ADDR_REG = WAIT_LEN;
-            __tx_bytes_block_auto_increment(STR_2_LEN);
+            *PRELOAD_STR_INIT_ADDR_REG = STR_LEN;
+            __tx_bytes_block_auto_increment(STR_LEN_LEN);
             // 接收两字节的页面长度(MSB)
             uint16_t page_num = (rx_block() << 8);
             page_num |= rx_block();
@@ -87,16 +85,16 @@ void download(void) {
             prog_info_tmp.page_len = page_num;
             break;
         }
-        *PRELOAD_STR_INIT_ADDR_REG = WAIT_START_FLAG;
-        __tx_bytes_block_auto_increment(STR_3_LEN);
+        *PRELOAD_STR_INIT_ADDR_REG = STR_START_DOWNLOAD;
+        __tx_bytes_block_auto_increment(STR_START_DOWNLOAD_LEN);
         // 确认
         while (0x78 != rx_block()) {}
         // 擦除
         *__PROG_INFO = prog_info_tmp;
         __erase_UFM();
         from_uart_download();
-        *PRELOAD_STR_INIT_ADDR_REG = WAIT_CONFIRM;
-        __tx_bytes_block_auto_increment(STR_4_LEN);
+        *PRELOAD_STR_INIT_ADDR_REG = STR_CONFIRM;
+        __tx_bytes_block_auto_increment(STR_CONFIRM_LEN);
 
         // 完成确认
         while (0x57 != rx_block()) {}

@@ -1,23 +1,46 @@
 #include "flash.h"
 #include "Utils.h"
-#include "bootloader.h"
+#include "bootstrap_control.h"
 
-// "下载:0x56,启动:0xF1"
-#define STR_1 0
-#define STR_1_LEN 24
+#ifdef EMOJI
+// 用emoji代替文字
+
+// "💾:0x56,🛫:0xF1"
+#define STR_CMD 0
+#define STR_CMD_LEN 20
 // "Len="
-#define STR_2 24
-#define STR_2_LEN 5
-// "开始:0x78"
-#define STR_3 28
-#define STR_3_LEN 12
-// "完成:0x57"
-#define STR_4 40
-#define STR_4_LEN 12
-// "ERROR"
+#define STR_LEN 20
+#define STR_LEN_LEN 4
+// "\n🔛:0x78"
+#define STR_START_DOWNLOAD 24
+#define STR_START_DOWNLOAD_LEN 10
+// "\n✅:0x57"
+#define STR_CONFIRM 34
+#define STR_CONFIRM_LEN 9
+// "\n❌" 
+#define STR_ERR 43
+#define STR_ERR_LEN 4
+
+#else
+
+// "下载:0x56,启动:0xF1\n"
+#define STR_CMD 0
+#define STR_CMD_LEN 24
+// "Len="
+#define STR_LEN 24
+#define STR_LEN_LEN 4
+// "\n开始:0x78"
+#define STR_START_DOWNLOAD 28
+#define STR_START_DOWNLOAD_LEN 12
+// "\n完成:0x57"
+#define STR_CONFIRM 40
+#define STR_CONFIRM_LEN 12
+// "\nERROR"
 #define STR_ERR 52
 #define STR_ERR_LEN 6
-// 不能用字符串字面量(需要memcpy调用)，全局变量应该可以，但是有一点问题
+
+#endif
+// 不能用字符串字面量(需要memcpy调用)，只读数据也不好从单端口ROM读取
 
 #define INST_BASE_ADDR ((volatile uint32_t*)INST_RAM_BASE)
 // 如果自举工作在内存中可能会用到

@@ -5,12 +5,16 @@ from pathlib import Path
 os.chdir(Path(__file__).parent.parent.absolute())
 import inc
 
+# 旧编译器（更小体积）
 gcc = "riscv64-unknown-elf-gcc"
 objcopy = "riscv64-unknown-elf-objcopy"
+架构 = "-march=rv32i -mabi=ilp32"
+
+# 新编译器（更加成熟）
 gcc = "riscv-none-elf-gcc"
 objcopy = "riscv-none-elf-objcopy"
-
 架构 = "-march=rv32i_zicsr -mabi=ilp32"
+
 库参数 = "-nostdlib"
 其他参数 = "-fstrict-volatile-bitfields"
 优化等级 = "-Os"

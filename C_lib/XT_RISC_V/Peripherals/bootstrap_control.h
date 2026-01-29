@@ -1,5 +1,5 @@
-#ifndef BOOTLOADER_H
-#define BOOTLOADER_H
+#ifndef BOOTSTRAP_CONTROL_H
+#define BOOTSTRAP_CONTROL_H
 #include "type.h"
 #include "addr_define.h"
 

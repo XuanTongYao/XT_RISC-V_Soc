@@ -8,7 +8,7 @@ _start:
     .option pop
     lla sp, _sstack # 初始化栈指针
     # 初始化 中断向量
-    lla a0,_exception
+    lla a0, __TRAP_VECTOR__
     ori a0, a0, 1
     csrw mtvec, a0
     # 清空 未初始化段
