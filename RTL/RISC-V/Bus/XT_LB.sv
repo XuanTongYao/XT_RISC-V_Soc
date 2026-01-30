@@ -1,3 +1,4 @@
+// TODO 改成带ACK的
 module XT_LB
   import Utils_Pkg::sel_t;
   import XT_HBUS_Pkg::*;
@@ -7,6 +8,7 @@ module XT_LB
 ) (
     // 与高速总线桥接
     input hb_clk,
+    input rst_sync,
     input hb_slave_t xt_hb,
     input sel_t sel,
     output logic [31:0] rdata,
@@ -14,7 +16,7 @@ module XT_LB
     // 低速总线部分
     input lb_clk,
     input [31:0] lb_data_in[SLAVE_NUM],
-    output lb_slave_t bus = 0,
+    output lb_slave_t bus,
     output logic read_finish,
     output logic write_finish
 );
@@ -27,30 +29,39 @@ module XT_LB
     end
   end
 
-  logic lb_ack = 0;
+
+  // HB时钟部分
+  wire send = sel.ren || sel.wen;
+  wire send_ready;
+  wire ack;
+  assign read_finish  = ack;
+  assign write_finish = ack;
   localparam int TRUNCATED_WIDTH = 2 * LB_ADDR_WIDTH + 32 + 2 + 2;
   wire [TRUNCATED_WIDTH-1:0] truncated_xt_hb = {
     sel.ren, sel.wen, xt_hb.raddr[LB_ADDR_WIDTH-1:0], xt_hb.waddr[LB_ADDR_WIDTH-1:0], xt_hb.wdata, xt_hb.write_width
   };
+
+
+  // LB时钟部分
+  logic receive;
+  wire receive_ready;
   wire ren, wen;
   wire [LB_ADDR_WIDTH-1:0] raddr, waddr;
   wire [31:0] wdata;
-  wire [1:0] write_width;
-  wire hb_ready;
-  wire waiting_slow_domain;
-  ClockDomainCrossing #(
-      .CDC_DFF_NUM(TRUNCATED_WIDTH)
-  ) u_ClockDomainCrossing (
-      .fast_clk           (hb_clk),
-      .data_enable        (sel.ren || sel.wen),
-      .ack                (lb_ack),
-      .data_in            (truncated_xt_hb),
-      .data_out           ({ren, wen, raddr, waddr, wdata, write_width}),
-      .data_valid         (hb_ready),
-      .waiting_slow_domain(waiting_slow_domain)
+  wire [ 1:0] write_width;
+  CDC_MCP_Formulation #(
+      .CDC_DATA_WIDTH(TRUNCATED_WIDTH)
+  ) u_CDC_MCP_Formulation (
+      .*,
+      .clk_send(hb_clk),
+      .rst_send(rst_sync),
+
+      .clk_receive(lb_clk),
+      .rst_receive(rst_sync),
+
+      .data_in (truncated_xt_hb),
+      .data_out({ren, wen, raddr, waddr, wdata, write_width})
   );
-  assign read_finish  = !waiting_slow_domain;
-  assign write_finish = !waiting_slow_domain;
 
 
   //----------状态机----------//
@@ -61,43 +72,64 @@ module XT_LB
   } lb_state_e;
   lb_state_e lb_state;
 
-  // 这里可以简化逻辑，wdata和write_width可以不需要门控
   logic read_before_write;
+  assign bus.wdata = wdata;
+  assign bus.write_width = write_width;
+  always_ff @(posedge lb_clk, posedge rst_sync) begin
+    if (rst_sync) begin
+      lb_state <= IDLE;
+      bus.ren  <= 0;
+      bus.wen  <= 0;
+      receive  <= 0;
+    end else begin
+      unique case (lb_state)
+        IDLE: begin
+          receive <= 0;
+          // 先读取后写入
+          if (receive_ready && ren) begin
+            lb_state <= READ;
+            bus.ren  <= 1;
+          end else if (receive_ready && wen) begin
+            lb_state <= WRITE;
+            bus.wen  <= 1;
+          end
+        end
+        WRITE: begin
+          lb_state <= IDLE;
+          bus.wen  <= 0;
+          receive  <= 1;
+        end
+        READ: begin
+          bus.ren <= 0;
+          if (read_before_write) begin
+            lb_state <= WRITE;
+            bus.wen  <= 1;
+          end else begin
+            lb_state <= IDLE;
+            receive  <= 1;
+          end
+        end
+      endcase
+    end
+  end
+
+
   always_ff @(posedge lb_clk) begin
     unique case (lb_state)
       IDLE: begin
         // 先读取后写入
-        if (hb_ready && ren) begin
-          lb_state <= READ;
-          bus.ren  <= 1;
+        if (receive_ready && ren) begin
           bus.addr <= raddr;
-          if (wen) read_before_write <= 1;
-          else read_before_write <= 0;
-        end else if (hb_ready && wen) begin
-          lb_state        <= WRITE;
-          bus.wen         <= 1;
-          bus.addr        <= waddr;
-          bus.wdata       <= wdata;
-          bus.write_width <= write_width;
+          read_before_write <= wen;
+        end else if (receive_ready && wen) begin
+          bus.addr <= waddr;
         end
       end
-      WRITE: begin
-        lb_state <= IDLE;
-        lb_ack   <= ~lb_ack;
-        bus.wen  <= 0;
-      end
+      WRITE: ;
       READ: begin
-        rdata   <= rdata_mux;
-        bus.ren <= 0;
+        rdata <= rdata_mux;
         if (read_before_write) begin
-          lb_state        <= WRITE;
-          bus.wen         <= 1;
-          bus.addr        <= waddr;
-          bus.wdata       <= wdata;
-          bus.write_width <= write_width;
-        end else begin
-          lb_state <= IDLE;
-          lb_ack   <= ~lb_ack;
+          bus.addr <= waddr;
         end
       end
     endcase

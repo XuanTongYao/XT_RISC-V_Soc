@@ -1,3 +1,5 @@
+// @Deprecated
+// 已弃用
 module ClockDomainCrossing #(
     parameter int CDC_DFF_NUM = 8
 ) (
