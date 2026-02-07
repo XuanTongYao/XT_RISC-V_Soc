@@ -30,10 +30,11 @@ module CDC_MCP_Formulation #(
   logic ack_receive_tff;  // 提前声明
 
   //----------发送时钟域----------//
-  OncePulse #(
+  OncePulseRst #(
       .DELAY(2)
   ) u_OncePulse_ack (
       .clk  (clk_send),
+      .rst  (rst_send),
       .ctrl (ack_receive_tff),
       .pulse(ack)
   );
@@ -66,10 +67,11 @@ module CDC_MCP_Formulation #(
 
   //----------接收时钟域----------//
   wire data_en;
-  OncePulse #(
+  OncePulseRst #(
       .DELAY(2)
   ) u_OncePulse_en (
       .clk  (clk_receive),
+      .rst  (rst_receive),
       .ctrl (data_en_send_tff),
       .pulse(data_en)
   );
