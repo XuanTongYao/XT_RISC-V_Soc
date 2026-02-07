@@ -1,4 +1,3 @@
-// TODO 改成带ACK的
 module XT_LB
   import Utils_Pkg::sel_t;
   import XT_HBUS_Pkg::*;
@@ -17,25 +16,33 @@ module XT_LB
     input lb_clk,
     input [31:0] lb_data_in[SLAVE_NUM],
     output lb_slave_t bus,
+    output logic lb_wsel[SLAVE_NUM],
     output logic read_finish,
     output logic write_finish
 );
 
-  logic [31:0] rdata_mux;
-  always_comb begin
-    rdata_mux = 0;
-    for (int i = 0; i < SLAVE_NUM; i++) begin
-      rdata_mux = rdata_mux | lb_data_in[i];  // 逐个或运算
-    end
-  end
+  logic [31:0] rdata_buffer;
 
 
   // HB时钟部分
-  wire send = sel.ren || sel.wen;
+  logic send_ready_delay, finish;
+  wire send = (sel.ren || sel.wen) && send_ready_delay;
   wire send_ready;
   wire ack;
-  assign read_finish  = ack;
-  assign write_finish = ack;
+  always_ff @(posedge hb_clk) begin
+    send_ready_delay <= send_ready;
+    if (ack) begin
+      rdata <= rdata_buffer;
+    end
+
+    if (finish) begin
+      finish <= 0;
+    end else if (ack) begin
+      finish <= 1;
+    end
+  end
+  assign read_finish  = finish;
+  assign write_finish = finish;
   localparam int TRUNCATED_WIDTH = 2 * LB_ADDR_WIDTH + 32 + 2 + 2;
   wire [TRUNCATED_WIDTH-1:0] truncated_xt_hb = {
     sel.ren, sel.wen, xt_hb.raddr[LB_ADDR_WIDTH-1:0], xt_hb.waddr[LB_ADDR_WIDTH-1:0], xt_hb.wdata, xt_hb.write_width
@@ -72,41 +79,46 @@ module XT_LB
   } lb_state_e;
   lb_state_e lb_state;
 
-  logic read_before_write;
+  wire [LB_ID_WIDTH-1:0] r_id = LB_GetID(raddr);
+  wire [LB_ID_WIDTH-1:0] w_id = LB_GetID(waddr);
+  logic wsel[SLAVE_NUM];
+  always_comb begin
+    wsel = '{default: 1'b0};
+    wsel[w_id] = 1;
+  end
+  assign lb_wsel = lb_state == WRITE ? wsel : '{default: 1'b0};
+
+
   assign bus.wdata = wdata;
   assign bus.write_width = write_width;
+  logic read_before_write;
   always_ff @(posedge lb_clk, posedge rst_sync) begin
     if (rst_sync) begin
       lb_state <= IDLE;
-      bus.ren  <= 0;
-      bus.wen  <= 0;
       receive  <= 0;
     end else begin
       unique case (lb_state)
         IDLE: begin
-          receive <= 0;
           // 先读取后写入
           if (receive_ready && ren) begin
             lb_state <= READ;
-            bus.ren  <= 1;
+            receive  <= ~wen;
           end else if (receive_ready && wen) begin
             lb_state <= WRITE;
-            bus.wen  <= 1;
+            receive  <= 1;
           end
         end
         WRITE: begin
           lb_state <= IDLE;
-          bus.wen  <= 0;
-          receive  <= 1;
+          receive  <= 0;
         end
         READ: begin
-          bus.ren <= 0;
           if (read_before_write) begin
             lb_state <= WRITE;
-            bus.wen  <= 1;
+            receive  <= 1;
           end else begin
             lb_state <= IDLE;
-            receive  <= 1;
+            receive  <= 0;
           end
         end
       endcase
@@ -119,17 +131,17 @@ module XT_LB
       IDLE: begin
         // 先读取后写入
         if (receive_ready && ren) begin
-          bus.addr <= raddr;
+          bus.addr <= LB_GetOffset(raddr);
           read_before_write <= wen;
         end else if (receive_ready && wen) begin
-          bus.addr <= waddr;
+          bus.addr <= LB_GetOffset(waddr);
         end
       end
       WRITE: ;
       READ: begin
-        rdata <= rdata_mux;
+        rdata_buffer <= lb_data_in[r_id];
         if (read_before_write) begin
-          bus.addr <= waddr;
+          bus.addr <= LB_GetOffset(waddr);
         end
       end
     endcase

@@ -38,6 +38,7 @@ module XT_Soc_Risc_V
       .SEDSTDBY()
   );
 
+  // FIXME 外部复位有点小问题
   wire pll_lock;
   wire pll_rst;
   ClockMonitor #(
@@ -255,6 +256,7 @@ module XT_Soc_Risc_V
   localparam int LB_SLAVE_NUM = 4;
   wire [31:0] lb_data_in[LB_SLAVE_NUM];
   wire lb_slave_t xt_lb;
+  wire lb_wsel[LB_SLAVE_NUM];
   XT_LB #(
       .SLAVE_NUM(LB_SLAVE_NUM)
   ) u_XT_LB (
@@ -273,29 +275,6 @@ module XT_Soc_Risc_V
       .sw_raw({sw_raw, download_mode})
   );
 
-
-  //   GPIO_LBUS #(
-  //       .NUM(GPIO_NUM)
-  //   ) u_GPIO_LBUS (
-  //       .*,
-  //       .rdata(lb_data_in[1][GPIO_NUM-1:0]),
-  //       .gpio (gpio)
-  //   );
-
-  LED_LBUS #(
-      .LED_NUM(8)
-  ) u_LED_LBUS (
-      .*,
-      .rdata(lb_data_in[2][7:0]),
-      .led  (led)
-  );
-
-  LEDSD_Direct_LBUS u_LEDSD_Direct_BUS (
-      .*,
-      .rdata(lb_data_in[3][7:0]),
-      .ledsd(ledsd)
-  );
-
   localparam int AF_FUNCT_IN_NUM = 2;
   wire funct_in[AF_FUNCT_IN_NUM];
   assign tc_rst = funct_in[0];
@@ -305,16 +284,34 @@ module XT_Soc_Risc_V
       .FUNCT_IN_NUM  (AF_FUNCT_IN_NUM),
       .FUNCT_IN_MASK ('{32'h0000_00FF, 32'h0000_00FF}),
       .FUNCT_OUT_NUM (2),
-      .FUNCT_OUT_MASK('{32'h1FE0_0000, 32'h1FE0_0000}),
-      .BASE_ADDR     (8'd24)
+      .FUNCT_OUT_MASK('{32'h1FE0_0000, 32'h1FE0_0000})
   ) u_AF_GPIO_LBUS (
       .*,
       .gpio_clk (clk),
+      .wsel     (lb_wsel[1]),
       .rdata    (lb_data_in[1]),
       .funct_in (funct_in),
       .funct_out({tc_oc, af_spi_csn}),
       .gpio     (gpio)
   );
+
+  LED_LBUS #(
+      .LED_NUM(8)
+  ) u_LED_LBUS (
+      .*,
+      .wsel (lb_wsel[2]),
+      .rdata(lb_data_in[2][7:0]),
+      .led  (led)
+  );
+
+  LEDSD_Direct_LBUS u_LEDSD_Direct_BUS (
+      .*,
+      .wsel (lb_wsel[3]),
+      .rdata(lb_data_in[3][7:0]),
+      .ledsd(ledsd)
+  );
+
+
 
 
   //----------高速总线外设----------//

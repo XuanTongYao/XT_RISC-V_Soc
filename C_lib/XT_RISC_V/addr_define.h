@@ -5,7 +5,7 @@
 #define SP_BASE(Peripheral)         (DOMAIN_SP_BASE+(Peripheral##_ID<<(SP_ID_START_BIT)))
 #define HB_BASE(Peripheral)         (DOMAIN_XT_HB_BASE+Peripheral##_OFFSET)
 #define WISHBONE_BASE(Peripheral)   (DOMAIN_WISHBONE_BASE+Peripheral##_OFFSET)
-#define LB_BASE(Peripheral)         (DOMAIN_XT_LB_BASE+Peripheral##_OFFSET)
+#define LB_BASE(ID)                 (DOMAIN_XT_LB_BASE+((ID)<<(LB_ID_START_BIT)))
 
 
 //----------内存RAM地址定义----------//
@@ -43,14 +43,15 @@
 //----------系统外设----------//
 // 地址位宽
 #define SP_ADDR_LEN 5
-#define SP_ID_LEN 2
+#define SP_ID_LEN 3
 #define SP_OFFSET_LEN (SP_ADDR_LEN-SP_ID_LEN)
-#define SP_ID_START_BIT (SP_OFFSET_LEN+2-1)
+#define SP_ID_START_BIT (SP_OFFSET_LEN+2)
 // 外设ID
 #define DEBUG_ID 0
 #define EINT_CTRL_ID 1
 #define SYSTEM_TIMER_ID 2
 #define UART_ID 3
+#define SOFTWARE_INT_ID 4
 
 // 外设基地址定义
 // 这些都是字对齐的
@@ -58,6 +59,7 @@
 #define EINT_CTRL_BASE      SP_BASE(EINT_CTRL)
 #define SYSTEM_TIMER_BASE   SP_BASE(SYSTEM_TIMER)
 #define UART_BASE           SP_BASE(UART)
+#define SOFTWARE_INT_BASE   SP_BASE(SOFTWARE_INT)
 
 //----------XT_HB总线本域----------//
 // // 外设占用地址长度
@@ -112,25 +114,15 @@
 
 
 //----------XT_LB总线----------//
-#define KEY_SW_LEN 4
-#define GPIO_LEN 8  // 已弃用，地址保留
-#define RGB_LEN 8   // 已弃用，地址保留
-#define LED_LEN 1
-#define LEDSD_LEN 3
-#define AF_GPIO_LEN 16
+// 每个设备均分地址，字节对齐
+#define LB_ADDR_LEN 8
+#define LB_ID_LEN 2
+#define LB_OFFSET_LEN   (LB_ADDR_LEN-LB_ID_LEN)
+#define LB_ID_START_BIT (LB_OFFSET_LEN)
 
-#define KEY_SW_OFFSET 0
-#define GPIO_OFFSET (KEY_SW_OFFSET+KEY_SW_LEN)  // 已弃用，地址保留
-#define RGB_OFFSET (GPIO_OFFSET+GPIO_LEN)       // 已弃用，地址保留
-#define LED_OFFSET (RGB_OFFSET+RGB_LEN)
-#define LEDSD_OFFSET (LED_OFFSET+LED_LEN)
-#define AF_GPIO_OFFSET (LEDSD_OFFSET+LEDSD_LEN)
-
-#define KEY_SW_BASE     LB_BASE(KEY_SW)
-#define GPIO_BASE       LB_BASE(GPIO)   // 已弃用，地址保留
-#define RGB_BASE        LB_BASE(RGB)    // 已弃用，地址保留
-#define LED_BASE        LB_BASE(LED)
-#define LEDSD_BASE      LB_BASE(LEDSD)
-#define AF_GPIO_BASE    LB_BASE(AF_GPIO)
+#define KEY_SW_BASE     LB_BASE(0)
+#define AF_GPIO_BASE    LB_BASE(1)
+#define LED_BASE        LB_BASE(2)
+#define LEDSD_BASE      LB_BASE(3)
 
 #endif

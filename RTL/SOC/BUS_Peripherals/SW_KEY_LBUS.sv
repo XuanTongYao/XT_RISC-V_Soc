@@ -1,3 +1,6 @@
+// 寄存器布局
+// 0-1 key_reg
+// 2-3 switch_reg
 module SW_KEY_LBUS
   import XT_LBUS_Pkg::*;
 (
@@ -24,12 +27,10 @@ module SW_KEY_LBUS
 
   //----------读取----------//
   always_comb begin
-    if (MatchRLB(xt_lb, 8'd0)) begin
+    if (xt_lb.addr[1:0] == 'd0) begin
       rdata = {12'b0, ~key_reg};
-    end else if (MatchRLB(xt_lb, 8'd2)) begin
-      rdata = {13'b0, switch_reg};
     end else begin
-      rdata = 0;
+      rdata = {13'b0, switch_reg};
     end
   end
 

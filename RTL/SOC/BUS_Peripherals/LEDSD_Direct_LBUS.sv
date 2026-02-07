@@ -1,3 +1,6 @@
+// 寄存器布局
+// 0 display_data
+// 1 ledsd_control
 module LEDSD_Direct_LBUS
   import XT_LBUS_Pkg::*;
 #(
@@ -7,6 +10,7 @@ module LEDSD_Direct_LBUS
 ) (
     input lb_clk,
     input lb_slave_t xt_lb,
+    input wsel,
     output logic [7:0] rdata,
 
     output logic [8:0] ledsd[NUM]
@@ -20,21 +24,21 @@ module LEDSD_Direct_LBUS
 
   logic [7:0] display_data;
   always_ff @(posedge lb_clk) begin
-    if (MatchWLB(xt_lb, 8'd21)) begin
-      display_data <= xt_lb.wdata[7:0];
-    end else if (MatchWLB(xt_lb, 8'd22)) begin
-      ledsd_control <= xt_lb.wdata[(2*NUM)-1:0];
+    if (wsel) begin
+      if (xt_lb.addr[0] == 'd0) begin
+        display_data <= xt_lb.wdata[7:0];
+      end else begin
+        ledsd_control <= xt_lb.wdata[(2*NUM)-1:0];
+      end
     end
   end
 
 
   always_comb begin
-    if (MatchRLB(xt_lb, 8'd21)) begin
+    if (xt_lb.addr[0] == 'd0) begin
       rdata = display_data;
-    end else if (MatchRLB(xt_lb, 8'd22)) begin
-      rdata = {{(8 - (2 * NUM)) {1'b0}}, ledsd_control};
     end else begin
-      rdata = 0;
+      rdata = {{(8 - (2 * NUM)) {1'b0}}, ledsd_control};
     end
   end
 

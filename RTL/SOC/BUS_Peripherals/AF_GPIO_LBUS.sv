@@ -1,5 +1,10 @@
 // 带功能复用设计的GPIO模块
 // GPIO输入输出都有寄存器缓冲,缓冲时钟独立于lb_clk
+// 寄存器布局
+// 0-3    DIR
+// 4-7    DATA
+// 8-11   AF_IN
+// 12-15  AF_OUT
 module AF_GPIO_LBUS
   import XT_LBUS_Pkg::*;
 #(
@@ -10,12 +15,12 @@ module AF_GPIO_LBUS
     // 非压缩数组,左索引是0 和funct_in对应
     parameter bit [31:0] FUNCT_IN_MASK[FUNCT_IN_NUM],
     parameter int FUNCT_OUT_NUM = 1,
-    parameter bit [31:0] FUNCT_OUT_MASK[FUNCT_OUT_NUM],
-    parameter bit [7:0] BASE_ADDR = 8'd4  //基地址
+    parameter bit [31:0] FUNCT_OUT_MASK[FUNCT_OUT_NUM]
 ) (
     input gpio_clk,
     input lb_clk,
     input lb_slave_t xt_lb,
+    input wsel,
     output logic [31:0] rdata,
 
     // funct_in、funct_out非压缩数组,左索引是0
@@ -23,10 +28,10 @@ module AF_GPIO_LBUS
     input funct_out[FUNCT_OUT_NUM],
     inout [NUM-1:0] gpio
 );
-  localparam bit [7:0] BASE_ADDR_DIR = BASE_ADDR;
-  localparam bit [7:0] BASE_ADDR_DATA = BASE_ADDR + 8'd4;
-  localparam bit [7:0] BASE_ADDR_AF_IN = BASE_ADDR_DATA + 8'd4;
-  localparam bit [7:0] BASE_ADDR_AF_OUT = BASE_ADDR_AF_IN + 8'd4;
+  localparam bit [3:0] BASE_ADDR_DIR = 4'd0;
+  localparam bit [3:0] BASE_ADDR_DATA = BASE_ADDR_DIR + 4'd4;
+  localparam bit [3:0] BASE_ADDR_AF_IN = BASE_ADDR_DATA + 4'd4;
+  localparam bit [3:0] BASE_ADDR_AF_OUT = BASE_ADDR_AF_IN + 4'd4;
 
 
   // 方向寄存器0:输入  1:输出
@@ -124,29 +129,28 @@ module AF_GPIO_LBUS
 
   // 写寄存器
   always_ff @(posedge lb_clk) begin
-    if (MatchWLB(xt_lb, BASE_ADDR_DIR)) begin
-      gpio_dir_reg <= xt_lb.wdata;
-    end
-    if (MatchWLB(xt_lb, BASE_ADDR_DATA)) begin
-      gpio_out_data_reg <= xt_lb.wdata;
-    end
-    if (MatchWLB(xt_lb, BASE_ADDR_AF_IN)) begin
-      funct_in_af_reg <= xt_lb.wdata;
-    end
-    if (MatchWLB(xt_lb, BASE_ADDR_AF_OUT)) begin
-      funct_out_af_reg <= xt_lb.wdata;
+    if (wsel) begin
+      if (xt_lb.addr[3:0] == BASE_ADDR_DIR) begin
+        gpio_dir_reg <= xt_lb.wdata;
+      end else if (xt_lb.addr[3:0] == BASE_ADDR_DATA) begin
+        gpio_out_data_reg <= xt_lb.wdata;
+      end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_IN) begin
+        funct_in_af_reg <= xt_lb.wdata;
+      end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
+        funct_out_af_reg <= xt_lb.wdata;
+      end
     end
   end
 
   // 读寄存器
   always_comb begin
-    if (MatchRLB(xt_lb, BASE_ADDR_DIR)) begin
+    if (xt_lb.addr[3:0] == BASE_ADDR_DIR) begin
       rdata = gpio_dir_reg;
-    end else if (MatchRLB(xt_lb, BASE_ADDR_DATA)) begin
+    end else if (xt_lb.addr[3:0] == BASE_ADDR_DATA) begin
       rdata = gpio_in_reg;
-    end else if (MatchRLB(xt_lb, BASE_ADDR_AF_IN)) begin
+    end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_IN) begin
       rdata = funct_in_af_reg;
-    end else if (MatchRLB(xt_lb, BASE_ADDR_AF_OUT)) begin
+    end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
       rdata = funct_out_af_reg;
     end else begin
       rdata = 0;
