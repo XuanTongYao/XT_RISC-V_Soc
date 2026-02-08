@@ -1,0 +1,47 @@
+{
+    "signal": [
+        {
+            "name": "CLK_LB",
+            "wave": "P........"
+        },
+        {
+            "name": "访问请求",
+            "wave": "0=..=.=.0",
+            "data": "读写 读 写"
+        },
+        {
+            "name": "状态机",
+            "wave": "=.=======",
+            "data": "IDLE R W IDLE R IDLE W IDLE"
+        },
+        {
+            "name": "地址",
+            "wave": "x.==x=x=x",
+            "data": "0 0 0 0"
+        },
+        {
+            "name": "读数据",
+            "wave": "x.=x.=x..",
+            "data": "0x00 0xFF"
+        },
+        {
+            "name": "写数据",
+            "wave": "x..=xxx=x",
+            "data": "0xFF 0x1A"
+        },
+        {
+            "name": "从机写片选",
+            "wave": "0..10..10"
+        },
+        {
+            "name": "从机寄存器",
+            "wave": "=...=...=",
+            "data": "0x00 0xFF 0x1A"
+        },
+        {
+            "name": "从机读取输出",
+            "wave": "=...=...=",
+            "data": "0x00 0xFF 0x1A"
+        }
+    ]
+}

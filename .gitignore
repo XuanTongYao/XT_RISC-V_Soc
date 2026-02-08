@@ -11,3 +11,5 @@ RTL/IPs/*/*.tcl
 RTL/IPs/*/*.v
 RTL/IPs/*/*.vhd
 zlocal_only
+rust_test
+assets/**/.$*.bkp

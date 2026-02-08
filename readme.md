@@ -2,25 +2,26 @@
 
 **个人学习作品**，适合初学者食用。
 
-一个极其简易的`RV32I_zicsr`指令集**单核MCU**，几乎所有用户级与特权级指令支持，仅运行机器模式。
+一个极其简易的`RV32I_Zicsr`指令集**单核MCU**，几乎所有用户级与特权级指令支持，仅运行机器模式。
 
 1. [RTL](RTL)包含了所有Verilog代码，顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
 2. [C_lib](C_lib)包含了本MCU的C语言库文件，包括寄存器定义、启动文件等
 3. [Tools](Tools)有c语言编译工具，编译脚本
 4. [Tests](tests)包含了测试用的C语言代码，同时也是编译脚本默认寻找**源文件**的位置
+5. [compliance_test](compliance_test)包含了一致性测试相关的内容
 
 PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。外设基本是围绕[该核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
 
 害，这个核心板的下载程序有问题，EBR和UFM都无法初始化，JTAG被绑定到中介下载芯片上了，也无法使用逻辑分析仪等工具，唯一的下载方式就是使用模拟的USB大容量设备，并且只支持jed文件。
 
-[一致性测试](compliance_test/dev/Readme.md)
+[RISC-V一致性测试](compliance_test/dev/Readme.md)
 
 ## 目录
 
 - [XT\_RISC-V 微控制器](#xt_risc-v-微控制器)
   - [目录](#目录)
   - [MCU特性](#mcu特性)
-    - [RV32I内核](#rv32i内核)
+    - [RV32I\_Zicsr内核](#rv32i_zicsr内核)
       - [异常/中断控制器](#异常中断控制器)
     - [时钟树](#时钟树)
     - [其他核心模块](#其他核心模块)
@@ -37,7 +38,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
     - [读的副效应问题](#读的副效应问题)
     - [同时读写问题](#同时读写问题)
   - [XT低速总线](#xt低速总线)
-  - [BOOTLOADER](#bootloader)
+  - [BOOTSTRAP](#bootstrap)
     - [编译工具链](#编译工具链)
     - [程序下载](#程序下载)
   - [引脚与GPIO](#引脚与gpio)
@@ -47,19 +48,20 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 架构图
 
-![alt text](img/image-10.png)
+![alt text](img/架构图.png)
 
 内存地址映射
 
-![alt text](img/image-8.png)
+![alt text](img/内存映射.png)
 
-### RV32I内核
+### RV32I_Zicsr内核
 
 - 三级流水线，取指、译码、执行
 - 不支持JTAG和DEBUG
 - 屏障指令空实现(等效NOP)
 - ECALL、EBREAK指令跳转异常
 - WFI指令暂停流水线
+- 精简的CSR寄存器([详见RTL代码](RTL/RISC-V/Core/CSR.sv))
 
 #### 异常/中断控制器
 
@@ -78,7 +80,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 - PLL输入时钟频率**12MHz**
 - 核心、高速总线、WISHBONE总线位于同一时钟域，基准频率**12MHz**
 - 机器计时器固定频率**1MHz**
-- UART采样频率**153.846KHz**，超采样率为**8**时**波特率19200误差0.16%**
+- UART采样频率**153.846KHz**，过采样率为**8**时**波特率19200误差0.16%**
 - 低速总线频率**100KHz**
 
 ### 其他核心模块
@@ -98,7 +100,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 ### 系统外设
 
-1. Bootloader控制器
+1. 自举控制器
 2. 外部中断控制器
 3. 64bit机器计时器
 4. UART通信接口
@@ -152,11 +154,11 @@ XT_HB是内核访问外部数据必经的通道，承担内存地址映射、互
 
 完整地址示例：
 
-| 设备识别符 | 偏移量        | 说明     |
-| ---------- | ------------- | -------- |
-| 001        | 0000000000000 | 基地址/访问地址   |
-| 101        | 0000000000000 | 基地址/访问地址   |
-| 101        | 0000011100001 | 访问地址 |
+| 设备识别符 | 偏移量        | 说明            |
+| ---------- | ------------- | --------------- |
+| 001        | 0000000000000 | 基地址/访问地址 |
+| 101        | 0000000000000 | 基地址/访问地址 |
+| 101        | 0000011100001 | 访问地址        |
 
 设备也可以是其他总线，其他总线可以看作是一个抽象的**地址域**，XT_HB只与各个抽象的设备(地址域)进行数据交换，其他总线内部自行控制从设备。
 
@@ -185,29 +187,26 @@ XT_HB是内核访问外部数据必经的通道，承担内存地址映射、互
 
 ## XT低速总线
 
-使用最简单的设计，半双工通信。若读写同时发生，先读后写。
-有2个控制信号量：读取，写入。总线保证控制信号一定互斥。
+XT_HB通过[CDC_MCP_Formulation模块](RTL/Utils/Clock/CDC_MCP_Formulation.sv)跨时钟域，与XT_LB交换数据。
 
-使用时钟域跨越的设计
+同样使用识别符+偏移量的地址分配策略，每个从设备**平分**地址空间，从设备只进行部分地址解码。
 
-![alt text](img/image-9.png)
+使用最简单的设计，半双工通信。若读写同时发生，先读后写。总线只输出部分地址。从机的读数据输出始终使用组合逻辑读取，不经过输出寄存器。总线内部根据识别符产生写片选独热码，分别路由到不同的从机，固定使用一个周期完成写入。
 
-从机必须在读使能时读取数据，并保证在下一个时钟沿到来前保持稳定，从机读取时不经过输出寄存器。
-从机在非读取时（读取为0时）必须输出全0数据，总线通过对所有从机的读数据进行或运算得到总体读数据（不使用MUX的结构）。
-总线状态机在锁存状态时锁定总体读数据然后反馈给高速总线。
+![XT_LB读写时序](https://svg.wavedrom.com/github/XuanTongYao/XT_RISC-V_Soc/main/assets/waveform/xt_lb.json5)
 
-## BOOTLOADER
+## BOOTSTRAP
 
 自举加载流程：
 
-1. 初始化加载ROM中的Bootloader程序
+1. 初始化加载ROM中的bootstrap程序
 2. 把FLASH中的数据逐个拷贝到指令存储器RAM中
 3. 指令地址跳转到0
 4. 触发脉冲将MUX切换到指令存储器RAM
 
 ### 编译工具链
 
-[SiFive riscv64-unknown-elf-gcc-8.3.0](https://github.com/sifive/freedom-tools/releases/tag/v2020.04.0-Toolchain.Only)已停止更新但**程序尺寸最小**，自举启动由此编译
+[SiFive riscv64-unknown-elf-gcc-8.3.0](https://github.com/sifive/freedom-tools/releases/tag/v2020.04.0-Toolchain.Only)已停止更新但**程序尺寸最小**，自举程序由此编译
 
 [riscv-none-elf-gcc-xpack](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack)标准最新，默认情况下**推荐使用**
 
@@ -220,20 +219,18 @@ XT_HB是内核访问外部数据必经的通道，承担内存地址映射、互
 
 综合前请使用[初始化文件](RTL/mem_files)重新生成`rom_boot`与`rom_str`IP核
 
+emoji提示`💾下载 🛫启动 🔛开始 ✅完成 ❌错误`
+
 1. 将下载开关(拨码开关1)拨动到高电平位置
 2. 连接电脑并打开串口程序
-3. 选择下载操作；**操作提示：*下载:0x56,启动:0xF1***
+3. 选择下载操作；**操作提示：*💾:0x56,🛫:0xF1***
 4. 发送程序的页数(共两字节，先高位)；**操作提示：*Len=***
-5. 确认开始下载；**操作提示：*开始:0x78***
+5. 确认开始下载；**操作提示：*🔛:0x78***
 6. 发送程序二进制文件（确保已经补零对齐到页长度）
-7. 确认下载完成；**操作提示：*完成:0x57***
-8. 启动程序；**操作提示：*下载:0x56,启动:0xF1***
+7. 确认下载完成；**操作提示：*✅:0x57***
+8. 启动程序；**操作提示：*💾:0x56,🛫:0xF1***
 
-![alt text](img/image-3.png)
-![alt text](img/image-4.png)
-![alt text](img/image-5.png)
-![alt text](img/image-6.png)
-![alt text](img/image-7.png)
+![alt text](img/程序下载.png)
 
 ## 引脚与GPIO
 
