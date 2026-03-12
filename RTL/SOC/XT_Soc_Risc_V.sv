@@ -96,7 +96,6 @@ module XT_Soc_Risc_V
   wire [31:0] instruction_addr;
   wire [31:0] instruction;
   wire core_stall_n;
-  wire [31:0] instruction_addr_id_ex_debug;
 
   // 与高速总线相连
   wire [31:0] access_ram_raddr, access_ram_waddr;
@@ -112,12 +111,12 @@ module XT_Soc_Risc_V
   ) u_RISC_V_Core (
       .*,
       // 与高速总线相连
-      .access_ram_read       (master_in[0].read),
-      .access_ram_write      (master_in[0].write),
-      .access_ram_write_width(master_in[0].write_width),
-      .access_ram_rdata      (hb_rdata),
-      .access_ram_wdata      (master_in[0].wdata),
-      .stall_req             (stall_req[0])
+      .access_ram_read (master_in[0].read),
+      .access_ram_write(master_in[0].write),
+      .access_ram_width(master_in[0].write_width),
+      .access_ram_rdata(hb_rdata),
+      .access_ram_wdata(master_in[0].wdata),
+      .stall_req       (stall_req[0])
   );
 
 

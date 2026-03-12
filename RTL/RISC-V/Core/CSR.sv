@@ -144,9 +144,10 @@ module CSR
     end else begin
       if (atomic_rw_en) begin
         unique case (short_addr)
-          8'h00: mstatus <= {24'b0, csr_wdata[7], 3'b0, csr_wdata[3], 3'b0};
-          8'h04: mie <= {csr_wdata[11], csr_wdata[7], csr_wdata[3]};
-          8'h05: mtvec <= csr_wdata;
+          8'h00:   mstatus <= {24'b0, csr_wdata[7], 3'b0, csr_wdata[3], 3'b0};
+          8'h04:   mie <= {csr_wdata[11], csr_wdata[7], csr_wdata[3]};
+          8'h05:   mtvec <= csr_wdata;
+          default: ;
         endcase
       end else if (trap_occurred) begin
         mstatus.mpie <= mstatus.mie;
@@ -163,11 +164,12 @@ module CSR
   always_ff @(posedge clk) begin
     if (atomic_rw_en) begin
       unique case (short_addr)
-        8'h40: mscratch <= csr_wdata;
-        8'h41: mepc <= csr_wdata[31:PC_ZEROS];  // (允许软件写入，通常用于ecall)
+        8'h40:   mscratch <= csr_wdata;
+        8'h41:   mepc <= csr_wdata[31:PC_ZEROS];  // (允许软件写入，通常用于ecall)
         // 8'h42: mcause <= csr_wdata;(禁止软件写入)
         // 8'h43: mtval <= csr_wdata;(只读)
         // 8'h44: mip <= csr_wdata;(只读)
+        default: ;
       endcase
     end else if (trap_occurred) begin
       mepc   <= new_mepc;

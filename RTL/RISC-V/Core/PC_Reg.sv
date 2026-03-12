@@ -1,6 +1,8 @@
 module PC_Reg
   import CoreConfig::*;
-(
+#(
+    parameter bit [XLEN-1:0] PC_RESET = 0
+) (
     input clk,
     input rst_sync,
     input stall_n,
@@ -22,7 +24,7 @@ module PC_Reg
 
   always_ff @(posedge clk, posedge rst_sync) begin
     if (rst_sync) begin
-      pc <= 0;
+      pc <= PC_RESET;
     end else if (jump) begin
       pc <= jump_addr;
     end else if (stall_n) begin

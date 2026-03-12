@@ -59,8 +59,8 @@ module InstructionDecode
     // 刚好5bit不会越界，不同指令自己会选择是否读寄存器的
     reg1_raddr = rs1;
     reg2_raddr = rs2;
-    operand1_id = 0;
-    operand2_id = 0;
+    operand1_id = 'x;
+    operand2_id = 'x;
     reg_wen_id = 0;
 
     // ram_load_addr有ram_load_access控制，大胆赋值即可
@@ -121,16 +121,17 @@ module InstructionDecode
       end
       RV32I_OP_I: begin
         unique case (funct3)
-          RV32I_ADDI, RV32I_SLTI, RV32I_SLTIU, RV32I_XORI, RV32I_ORI, RV32I_ANDI: begin
+          RV32I_ADDI, RV32I_SLTI, RV32I_SLTIU, RV32I_XORI, RV32I_ORI, RV32I_ANDI, RV32I_SLLI, RV32I_SRLI_SRAI: begin
             reg_wen_id  = 1;
             operand1_id = reg1_rdata;
             operand2_id = imm_i;
+            // 优化对移位指令无影响，因为执行模块只取低5位
           end
-          RV32I_SLLI, RV32I_SRLI_SRAI: begin
-            reg_wen_id  = 1;
-            operand1_id = reg1_rdata;
-            operand2_id = {27'b0, shamt};
-          end
+          // RV32I_SLLI, RV32I_SRLI_SRAI: begin
+          //   reg_wen_id  = 1;
+          //   operand1_id = reg1_rdata;
+          //   operand2_id = {27'b0, shamt};
+          // end
         endcase
       end
       RV32I_OP_R: begin

@@ -22,7 +22,8 @@ module RISC_V_Core
   import Exception_Pkg::*;
 #(
     parameter bit INST_FETCH_REG = 0,  // 读取指令时是否已经经过寄存器
-    parameter int STALL_REQ_NUM  = 1   // 暂停请求的数量
+    parameter int STALL_REQ_NUM = 1,  // 暂停请求的数量
+    parameter bit [XLEN-1:0] PC_RESET = 0
 ) (
     input clk,
     input rst_sync,
@@ -36,7 +37,7 @@ module RISC_V_Core
     // 与高速总线相连
     output logic access_ram_read,
     output logic access_ram_write,
-    output logic [1:0] access_ram_write_width,  // 写入的大小 字节、半字、字
+    output logic [1:0] access_ram_width,  // 访问的大小 字节、半字、字
     output logic [31:0] access_ram_raddr,
     output logic [31:0] access_ram_waddr,
     input [31:0] access_ram_rdata,
@@ -46,10 +47,7 @@ module RISC_V_Core
     input mextern_int,
     input msoftware_int,
     input mtimer_int,
-    input [30:0] custom_int_code,
-
-    // Debug
-    output logic [31:0] instruction_addr_id_ex_debug
+    input [30:0] custom_int_code
 );
 
 
@@ -69,14 +67,9 @@ module RISC_V_Core
 
   //----------寄存器----------//
   // 整数寄存器
-  wire [4:0] reg1_raddr;
-  wire [4:0] reg2_raddr;
-  wire [31:0] reg1_rdata;
-  wire [31:0] reg2_rdata;
-
   wire reg_wen;
-  wire [4:0] reg_waddr;
-  wire [31:0] reg_wdata;
+  wire [4:0] reg1_raddr, reg2_raddr, reg_waddr;
+  wire [31:0] reg1_rdata, reg2_rdata, reg_wdata;
   CoreReg u_CoreReg (.*);
 
   // PC寄存器
@@ -84,7 +77,7 @@ module RISC_V_Core
   wire [31:0] next_pc;
   wire rvc = 0;
   // wire rvc;
-  PC_Reg u_PC_Reg (.*);
+  PC_Reg #(.PC_RESET(PC_RESET)) u_PC_Reg (.*);
 
   // 控制状态寄存器
   wire trap_returned;
@@ -137,7 +130,6 @@ module RISC_V_Core
   wire reg_wen_id_ex;
   ID_EX u_ID_EX (.*);
 
-  assign instruction_addr_id_ex_debug = instruction_addr_id_ex;
 
   // 目前译码和执行不平衡（执行高占用），某些信号可以在Decode中提前提取
   wire [31:0] jump_addr_ex;
@@ -145,13 +137,13 @@ module RISC_V_Core
   InstructionExecute u_InstructionExecute (
       .*,
       // 访存
-      .ram_load_en    (access_ram_read),
-      .ram_load_addr  (access_ram_raddr),
-      .ram_load_data  (access_ram_rdata),
-      .ram_store_en   (access_ram_write),
-      .ram_store_width(access_ram_write_width),
-      .ram_store_addr (access_ram_waddr),
-      .ram_store_data (access_ram_wdata)
+      .ram_load_en     (access_ram_read),
+      .ram_load_addr   (access_ram_raddr),
+      .ram_load_data   (access_ram_rdata),
+      .ram_store_en    (access_ram_write),
+      .ram_store_addr  (access_ram_waddr),
+      .ram_store_data  (access_ram_wdata),
+      .ram_access_width(access_ram_width)
   );
 
 

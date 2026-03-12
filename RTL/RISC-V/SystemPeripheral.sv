@@ -68,7 +68,7 @@ module SystemPeripheral
   // 设备索引分配
   localparam int IDX_BOOTLOADER = 0, IDX_EINT_CTRL = 1, IDX_SYSTEM_TIMER = 2, IDX_UART = 3, IDX_SOFTWARE_INT = 4;
   // 设备识别符
-  localparam bit [SP_ID_LEN-1:0] DEVICE_ID[SP_NUM-1] = {3'd1, 3'd2, 3'd3, 3'd4};
+  localparam bit [SP_ID_LEN-1:0] DEVICE_ID[SP_NUM-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
   // 5'b01_XXX_00
 
   logic [SP_NUM-1:0] id_sel[2];

@@ -37,7 +37,7 @@ module InstructionExecute
     output logic [31:0] ram_store_addr,
     input [31:0] ram_load_data,
     output logic [31:0] ram_store_data,
-    output logic [1:0] ram_store_width,
+    output logic [1:0] ram_access_width,
 
     // 传递给核心控制器
     output logic [31:0] jump_addr_ex,
@@ -66,8 +66,8 @@ module InstructionExecute
 
 
 
-  //----------运算逻辑单元----------//
-  // 运算单元
+  //----------算数逻辑单元----------//
+  // 算数单元
   // 加法器允许进位输入且不消耗额外资源，我们可以利用这来实现一个加/减法器，更节省资源
   // 减法实际上是op1 + ~op2 + 1'b1
   // 大多数器件的原语都支持加减法器同时实现(消耗少量资源)
@@ -115,20 +115,20 @@ module InstructionExecute
     ram_load_addr = ram_load_addr_id_ex;
     ram_store_addr = ram_store_addr_id_ex;
     ram_store_data = ram_store_data_id_ex;
-    ram_store_width = funct3[1:0];
+    ram_access_width = funct3[1:0];
     add_sub = 1;
 
     reg_wen = reg_wen_id_ex;
     reg_waddr = rd;
-    reg_wdata = 0;
-    jump_addr_ex = 0;
+    reg_wdata = 'x;
+    jump_addr_ex = 'x;
     jump_en_ex = 0;
 
     trap_returned = 0;
     csr_ren = 0;
     csr_wen = 0;
     csr_rwaddr = inst[31:20];
-    csr_wdata = 0;
+    csr_wdata = 'x;
 
     wfi = 0;
     unique case (opcode)
