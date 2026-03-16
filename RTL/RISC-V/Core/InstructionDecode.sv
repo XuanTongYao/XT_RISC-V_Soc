@@ -125,13 +125,7 @@ module InstructionDecode
             reg_wen_id  = 1;
             operand1_id = reg1_rdata;
             operand2_id = imm_i;
-            // 优化对移位指令无影响，因为执行模块只取低5位
           end
-          // RV32I_SLLI, RV32I_SRLI_SRAI: begin
-          //   reg_wen_id  = 1;
-          //   operand1_id = reg1_rdata;
-          //   operand2_id = {27'b0, shamt};
-          // end
         endcase
       end
       RV32I_OP_R: begin

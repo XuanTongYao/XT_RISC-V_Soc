@@ -66,11 +66,8 @@ module InstructionExecute
 
 
 
-  //----------算数逻辑单元----------//
-  // 算数单元
-  // 加法器允许进位输入且不消耗额外资源，我们可以利用这来实现一个加/减法器，更节省资源
-  // 减法实际上是op1 + ~op2 + 1'b1
-  // 大多数器件的原语都支持加减法器同时实现(消耗少量资源)
+  //----------算术逻辑单元----------//
+  // 大多数器件都支持加/减法器同时实现(消耗少量额外资源)
   logic add_sub;
   wire [31:0] alu_add = add_sub ? operand1 + operand2 : operand1 - operand2;
   wire [31:0] alu_xor = operand1 ^ operand2;
@@ -80,7 +77,7 @@ module InstructionExecute
   wire [31:0] alu_shift_right_l = operand1 >> operand2[4:0];
   wire [31:0] alu_shift_right_a = $signed(operand1) >>> operand2[4:0];
   wire [31:0] alu_base_addr_offset = instruction_addr_id_ex + imm_b;
-  // 逻辑单元
+
   wire alu_equal = operand1 == operand2;
   wire alu_less_signed = $signed(operand1) < $signed(operand2);
   wire alu_less_unsigned = operand1 < operand2;

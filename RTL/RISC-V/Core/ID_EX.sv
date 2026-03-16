@@ -47,8 +47,6 @@ module ID_EX
       ram_load_access_id_ex <= 0;
       ram_store_access_id_ex <= 0;
       instruction_id_ex <= INST_NOP;
-      // operand1 <= 0;
-      // operand2 <= 0;
       reg_wen_id_ex <= 0;
     end else if (stall_n) begin
       ram_load_access_id_ex <= ram_load_access_id;
