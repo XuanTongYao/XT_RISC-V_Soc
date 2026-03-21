@@ -46,12 +46,12 @@ module InstructionDecode
   wire [ 4:0] shamt = rs2;
 
   // 立即数
-  wire [31:0] imm_i = {{20{inst[31]}}, inst[31:20]};
-  wire [31:0] imm_u = {inst[31:12], 12'b0};
-  wire [31:0] imm_s = {{20{inst[31]}}, inst[31:25], inst[11:7]};
-  wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-  wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
-  wire [31:0] imm_sys = {27'b0, inst[19:15]};
+  wire [31:0] imm_i = CFG.XLEN'($signed(inst[31:20]));
+  wire [31:0] imm_u = CFG.XLEN'($signed({inst[31:12], 12'b0}));
+  wire [31:0] imm_s = CFG.XLEN'($signed({inst[31:25], inst[11:7]}));
+  wire [31:0] imm_b = CFG.XLEN'($signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0}));
+  wire [31:0] imm_j = CFG.XLEN'($signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}));
+  wire [31:0] imm_sys = CFG.XLEN'(inst[19:15]);
 
 
   // 源寄存器1的数据reg1_rdata一定和操作数1 operand1_id绑定

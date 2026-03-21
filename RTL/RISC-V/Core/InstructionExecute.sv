@@ -60,11 +60,11 @@ module InstructionExecute
   wire [4:0] rd = inst[11:7];
 
   // 立即数
-  wire [31:0] imm_i = {{20{inst[31]}}, inst[31:20]};
-  wire [31:0] imm_u = {inst[31:12], 12'b0};
-  wire [31:0] imm_s = {{20{inst[31]}}, inst[31:25], inst[11:7]};
-  wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-  wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
+  wire [31:0] imm_i = CFG.XLEN'($signed(inst[31:20]));
+  wire [31:0] imm_u = CFG.XLEN'($signed({inst[31:12], 12'b0}));
+  wire [31:0] imm_s = CFG.XLEN'($signed({inst[31:25], inst[11:7]}));
+  wire [31:0] imm_b = CFG.XLEN'($signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0}));
+  wire [31:0] imm_j = CFG.XLEN'($signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}));
 
 
 
@@ -163,7 +163,7 @@ module InstructionExecute
       RV32I_OP_I: begin
         unique case (funct3)
           RV32I_ADDI:              reg_wdata = alu_add;
-          RV32I_SLTI, RV32I_SLTIU: reg_wdata = {31'b0, alu_less};
+          RV32I_SLTI, RV32I_SLTIU: reg_wdata = CFG.XLEN'(alu_less);
           RV32I_XORI:              reg_wdata = alu_xor;
           RV32I_ORI:               reg_wdata = alu_or;
           RV32I_ANDI:              reg_wdata = alu_and;
@@ -187,7 +187,7 @@ module InstructionExecute
             end
             reg_wdata = alu_add;
           end
-          RV32I_SLT, RV32I_SLTU: reg_wdata = {31'b0, alu_less};
+          RV32I_SLT, RV32I_SLTU: reg_wdata = CFG.XLEN'(alu_less);
           RV32I_XOR:             reg_wdata = alu_xor;
           RV32I_OR:              reg_wdata = alu_or;
           RV32I_AND:             reg_wdata = alu_and;

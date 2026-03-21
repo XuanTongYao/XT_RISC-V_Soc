@@ -21,8 +21,7 @@ module RingCounter #(
     output logic [CYCLE-1:0] q,
     output logic pulse
 );
-  localparam int ZERO_NUM = CYCLE - 1;
-  localparam bit [CYCLE-1:0] INIT_VAL = {{ZERO_NUM{1'b0}}, 1'b1};
+  localparam bit [CYCLE-1:0] INIT_VAL = CYCLE'(1'b1);
 
   generate
     if (CYCLE <= 1) begin : gen_none

@@ -44,7 +44,7 @@ module External_INT_Ctrl
     end
     id = id + CUSTOM_CODE_BEGIN;
     mextern_int = |INT_pending_reg;
-    custom_int_code = {{(31 - CODE_WIDTH) {1'b0}}, id[CODE_WIDTH-1:0]};
+    custom_int_code = 31'(id[CODE_WIDTH-1:0]);
   end
 
 

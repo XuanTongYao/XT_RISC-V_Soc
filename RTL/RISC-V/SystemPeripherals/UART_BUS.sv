@@ -231,10 +231,7 @@ module UART_BUS
     logic tx_ready;      // 发送功能已就绪（缓冲区未满）
   } uart_state_t;
   uart_state_t state;
-  assign state.rx_full = rx_full;
-  assign state.tx_empty = tx_empty;
-  assign state.rx_not_empty = !rx_empty;
-  assign state.tx_ready = !tx_full;
+  assign state = '{rx_full: rx_full, tx_empty: tx_empty, rx_not_empty: !rx_empty, tx_ready: !tx_full};
 
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
