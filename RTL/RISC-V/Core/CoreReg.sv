@@ -1,4 +1,8 @@
-module CoreReg (
+module CoreReg
+  import CoreConfig::*;
+#(
+    parameter core_cfg_t CFG
+) (
     input clk,
     input rst_sync,
     input stall_n,
@@ -6,17 +10,17 @@ module CoreReg (
     // 读取
     input [4:0] reg1_raddr,
     input [4:0] reg2_raddr,
-    output logic [31:0] reg1_rdata,
-    output logic [31:0] reg2_rdata,
+    output logic [CFG.XLEN-1:0] reg1_rdata,
+    output logic [CFG.XLEN-1:0] reg2_rdata,
 
     // 写入
     input [4:0] reg_waddr,
-    input [31:0] reg_wdata,
+    input [CFG.XLEN-1:0] reg_wdata,
     input reg_wen
 
 );
   // 0号寄存器X0固定为0
-  logic [31:0] core_reg[32];
+  logic [CFG.XLEN-1:0] core_reg[CFG.REG_NUMS];
 
   //----------数据控制----------//
   always_comb begin

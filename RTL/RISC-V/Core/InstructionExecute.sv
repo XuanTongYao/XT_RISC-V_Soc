@@ -2,7 +2,9 @@
 module InstructionExecute
   import CoreConfig::*;
   import RV32I_Inst_Pkg::*;
-(
+#(
+    parameter core_cfg_t CFG
+) (
     // 来自ID_EX
     input        ram_load_access_id_ex,
     input        ram_store_access_id_ex,
@@ -17,9 +19,9 @@ module InstructionExecute
     input        reg_wen_id_ex,
 
     // 传递给寄存器
-    output logic [ 4:0] reg_waddr,
-    output logic [31:0] reg_wdata,
-    output logic        reg_wen,
+    output logic [         4:0] reg_waddr,
+    output logic [CFG.XLEN-1:0] reg_wdata,
+    output logic                reg_wen,
 
     // 访问控制与状态寄存器
     output logic trap_returned,
@@ -28,7 +30,7 @@ module InstructionExecute
     output logic [11:0] csr_rwaddr,
     output logic [31:0] csr_wdata,
     input [31:0] csr_rdata,
-    input [PC_LEN-1:0] csr_mepc,
+    input [CFG.PC_LEN-1:0] csr_mepc,
 
     // 访存
     output logic ram_load_en,
@@ -210,7 +212,7 @@ module InstructionExecute
               RV32I_FUNCT12_ECALL, RV32I_FUNCT12_EBREAK: ;  //等效于NOP指令
               RV32I_FUNCT12_MRET: begin
                 jump_en_ex = 1;
-                jump_addr_ex = PadPC(csr_mepc);
+                jump_addr_ex = CFG.XLEN'(PadPC(csr_mepc, CFG.PC_ZEROS));
                 trap_returned = 1;
               end
               RV32I_FUNCT12_WFI: wfi = 1;  // WFI(告知内核控制器请求等待)

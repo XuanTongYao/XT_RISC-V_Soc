@@ -21,9 +21,10 @@ module RISC_V_Core
   import CoreConfig::*;
   import Exception_Pkg::*;
 #(
+    parameter core_cfg_t CFG,
     parameter bit INST_FETCH_REG = 0,  // 读取指令时是否已经经过寄存器
     parameter int STALL_REQ_NUM = 1,  // 暂停请求的数量
-    parameter bit [XLEN-1:0] PC_RESET = 0
+    parameter bit [CFG.XLEN-1:0] PC_RESET = 0
 ) (
     input clk,
     input rst_sync,
@@ -69,15 +70,20 @@ module RISC_V_Core
   // 整数寄存器
   wire reg_wen;
   wire [4:0] reg1_raddr, reg2_raddr, reg_waddr;
-  wire [31:0] reg1_rdata, reg2_rdata, reg_wdata;
-  CoreReg u_CoreReg (.*);
+  wire [CFG.XLEN-1:0] reg1_rdata, reg2_rdata, reg_wdata;
+  CoreReg #(.CFG(CFG)) u_CoreReg (.*);
 
   // PC寄存器
   wire [31:0] pc;
   wire [31:0] next_pc;
   wire rvc = 0;
   // wire rvc;
-  PC_Reg #(.PC_RESET(PC_RESET)) u_PC_Reg (.*);
+  PC_Reg #(
+      .CFG(CFG),
+      .PC_RESET(PC_RESET)
+  ) u_PC_Reg (
+      .*
+  );
 
   // 控制状态寄存器
   wire trap_returned;
@@ -90,7 +96,7 @@ module RISC_V_Core
   wire mie_m_only_t csr_mie;
   wire mip_m_only_t csr_mip;
   wire mtvec_t csr_mtvec;
-  wire [PC_LEN-1:0] csr_mepc;
+  wire [CFG.PC_LEN-1:0] csr_mepc;
   wire [31:0] csr_rdata;
 
 
@@ -119,7 +125,7 @@ module RISC_V_Core
   wire exception_t exception_id;
   wire exception_id_raise = exception_id.raise;
   assign next_pc = instruction_addr_id;
-  InstructionDecode u_InstructionDecode (.*);
+  InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
   wire ram_store_access_id_ex, ram_load_access_id_ex;
   wire [31:0] ram_load_addr_id_ex, ram_store_addr_id_ex;
@@ -134,7 +140,9 @@ module RISC_V_Core
   // 目前译码和执行不平衡（执行高占用），某些信号可以在Decode中提前提取
   wire [31:0] jump_addr_ex;
   wire jump_en_ex;
-  InstructionExecute u_InstructionExecute (
+  InstructionExecute #(
+      .CFG(CFG)
+  ) u_InstructionExecute (
       .*,
       // 访存
       .ram_load_en     (access_ram_read),
@@ -150,19 +158,21 @@ module RISC_V_Core
   wire exception_t exception_commit;
   ExceptionPipeLine u_ExceptionPipeLine (.*);
 
-  wire [PC_LEN-1:0] new_mepc;
+  wire [CFG.PC_LEN-1:0] new_mepc;
   wire mcause_t new_mcause;
   // wire [31:0] new_mtval;
   wire any_int_come;
   wire valid_int_req;
   wire trap_occurred;
   wire [31:0] trap_jump_addr;
-  ExceptionCtrl u_ExceptionCtrl (
+  ExceptionCtrl #(
+      .CFG(CFG)
+  ) u_ExceptionCtrl (
       .*,
-      .instruction_addr_id_ex(instruction_addr_id_ex[31:PC_ZEROS]),
-      .jump_addr_ex(jump_addr_ex[31:PC_ZEROS])
+      .instruction_addr_id_ex(instruction_addr_id_ex[CFG.XLEN-1:CFG.PC_ZEROS]),
+      .jump_addr_ex(jump_addr_ex[CFG.XLEN-1:CFG.PC_ZEROS])
   );
   CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
-  CSR u_CSR (.*);  // 控制与状态寄存器
+  CSR #(CFG) u_CSR (.*);  // 控制与状态寄存器
 
 endmodule

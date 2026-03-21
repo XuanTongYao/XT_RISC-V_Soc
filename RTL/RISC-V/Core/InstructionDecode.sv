@@ -1,8 +1,11 @@
 //----------纯组合逻辑----------//
 module InstructionDecode
+  import CoreConfig::*;
   import Exception_Pkg::*;
   import RV32I_Inst_Pkg::*;
-(
+#(
+    parameter core_cfg_t CFG
+) (
     // 来自IF_ID
     input [31:0] instruction_addr_if_id,
     input [31:0] instruction_if_id,
@@ -10,8 +13,8 @@ module InstructionDecode
     // 与寄存器
     output logic [4:0] reg1_raddr,
     output logic [4:0] reg2_raddr,
-    input [31:0] reg1_rdata,
-    input [31:0] reg2_rdata,
+    input [CFG.XLEN-1:0] reg1_rdata,
+    input [CFG.XLEN-1:0] reg2_rdata,
 
     // 传递给ID_EX
     output logic        ram_load_access_id,

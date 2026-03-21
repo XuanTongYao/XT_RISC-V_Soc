@@ -1,5 +1,11 @@
 package SocConfig;
   import XT_HBUS_Pkg::HB_ID_WIDTH;
+  import CoreConfig::*;
+
+  //----------内核配置----------//
+  localparam core_raw_cfg_t CORE_RAW_CFG = '{EXTENSION: '{E: 0, default: 0}, XLEN: 32};
+  localparam core_cfg_t CORE_CFG = ComputeCoreCfg(CORE_RAW_CFG);
+
 
   //----------内存RAM----------//
   // 实际上由IP核决定，这里不一定对

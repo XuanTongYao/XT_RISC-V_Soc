@@ -3,7 +3,9 @@ module ExceptionCtrl
   import CSR_Pkg::*;
   import CoreConfig::*;
   import Exception_Pkg::*;
-(
+#(
+    parameter core_cfg_t CFG
+) (
     input clk,
     input rst_sync,
     input flush,
@@ -13,8 +15,8 @@ module ExceptionCtrl
     // 提交点(只关心指令执行前的一刻)
     input exception_t exception_commit,
 
-    input [PC_LEN-1:0] instruction_addr_id_ex,
-    input [PC_LEN-1:0] jump_addr_ex,
+    input [CFG.PC_LEN-1:0] instruction_addr_id_ex,
+    input [CFG.PC_LEN-1:0] jump_addr_ex,
     input jump_en_ex,
 
     // 访问CSR
@@ -22,7 +24,7 @@ module ExceptionCtrl
     input mie_m_only_t csr_mie,
     input mip_m_only_t csr_mip,
     input mtvec_t csr_mtvec,
-    output logic [PC_LEN-1:0] new_mepc,
+    output logic [CFG.PC_LEN-1:0] new_mepc,
     output mcause_t new_mcause,
     // output logic [31:0] new_mtval,
 
@@ -41,7 +43,7 @@ module ExceptionCtrl
   // 中断需要等本条指令执行完成后再处理
   // 在valid_int_req时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
   logic ready_for_int;
-  logic [PC_LEN-1:0] last_jump_addr;
+  logic [CFG.PC_LEN-1:0] last_jump_addr;
   always_ff @(posedge clk) begin
     if (rst_sync || ready_for_int) begin
       ready_for_int <= 0;

@@ -2,7 +2,9 @@
 module CSR
   import CSR_Pkg::*;
   import CoreConfig::*;
-(
+#(
+    parameter core_cfg_t CFG
+) (
     input clk,
     input rst_sync,
     input stall_n,
@@ -19,11 +21,11 @@ module CSR
     output mie_m_only_t csr_mie,
     output mip_m_only_t csr_mip,
     output mtvec_t csr_mtvec,
-    output logic [PC_LEN-1:0] csr_mepc,
+    output logic [CFG.PC_LEN-1:0] csr_mepc,
 
     input trap_occurred,
     input trap_returned,
-    input [PC_LEN-1:0] new_mepc,
+    input [CFG.PC_LEN-1:0] new_mepc,
     input mcause_t new_mcause,
     // input [31:0] new_mtval,
 
@@ -41,7 +43,7 @@ module CSR
 
   //----------机器模式CSR----------//
   // 信息寄存器
-  // wire [31:0] misa = {2'b01,4'b00,26'h100};  // ISA信息（不实现 只读0）
+  // wire [31:0] misa = {CFG.MXL, {CFG.XLEN - 28{1'b0}}, CFG.EXTENSION};  // ISA信息（不实现 只读0）
   // wire [31:0] mvendorid = 32'h31305458;  //  供应商 ID（不实现 只读0）
   // wire [31:0] marchid = 32'h31305458;  // 微架构 ID（不实现 只读0）
   // wire [31:0] mimpid = 32'h31303030;  // 实现版本ID（不实现 只读0）
@@ -56,7 +58,7 @@ module CSR
   assign mip = {mextern_int, mtimer_int, msoftware_int};
 
   logic [31:0] mscratch;  // 暂存寄存器
-  logic [PC_LEN-1:0] mepc;  // 异常程序地址
+  logic [CFG.PC_LEN-1:0] mepc;  // 异常程序地址
   mcause_t mcause;  // 自陷原因
   // logic [31:0] mtval;  // 自陷额外信息（只读0实现）
 
@@ -120,7 +122,7 @@ module CSR
               8'h05: csr_rdata = mtvec;
 
               8'h40:   csr_rdata = mscratch;
-              8'h41:   csr_rdata = PadPC(mepc);
+              8'h41:   csr_rdata = CFG.XLEN'(PadPC(mepc, CFG.PC_ZEROS));
               8'h42:   csr_rdata = mcause;
               // 8'h43:   csr_rdata = mtval;
               8'h44:   csr_rdata = PadMieMip(mip);
@@ -162,7 +164,7 @@ module CSR
     if (atomic_rw_en) begin
       unique case (short_addr)
         8'h40:   mscratch <= csr_wdata;
-        8'h41:   mepc <= csr_wdata[31:PC_ZEROS];  // (允许软件写入，通常用于ecall)
+        8'h41:   mepc <= csr_wdata[CFG.XLEN-1:CFG.PC_ZEROS];  // (允许软件写入，通常用于ecall)
         // 8'h42: mcause <= csr_wdata;(禁止软件写入)
         // 8'h43: mtval <= csr_wdata;(只读)
         // 8'h44: mip <= csr_wdata;(只读)

@@ -1,7 +1,8 @@
 module PC_Reg
   import CoreConfig::*;
 #(
-    parameter bit [XLEN-1:0] PC_RESET = 0
+    parameter core_cfg_t CFG,
+    parameter bit [CFG.XLEN-1:0] PC_RESET = 0
 ) (
     input clk,
     input rst_sync,
