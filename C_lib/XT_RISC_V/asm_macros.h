@@ -1,5 +1,7 @@
 // 包含了常用的内联汇编宏
 
+#ifndef ASM_MACROS_H
+#define ASM_MACROS_H
 
 #define NOP asm("nop")
 // 环境调用指令
@@ -40,13 +42,13 @@ asm volatile("csrr %0, mepc\n"\
 
 // 下面执行前一定要先使用DISABLE_GLOBAL_MINT关闭全局中断
 #define ENABLE_INT(MASK) ({\
-    unsigned long __tmp=MASK;\
-    SET_CSR(mie, __tmp);\
+    unsigned long riscv__tmp=MASK;\
+    SET_CSR(mie, riscv__tmp);\
 })
 
 #define DISABLE_INT(MASK) ({\
-    unsigned long __tmp=MASK;\
-    CLEAR_CSR(mie, __tmp);\
+    unsigned long riscv__tmp=MASK;\
+    CLEAR_CSR(mie, riscv__tmp);\
 })
 
 #define ENABLE_ALL_MINT ENABLE_INT(ALL_INT_MASK)
@@ -60,3 +62,4 @@ asm volatile("csrr %0, mepc\n"\
 #define DISABLE_MTI DISABLE_INT(MSI_MASK)
 
 
+#endif

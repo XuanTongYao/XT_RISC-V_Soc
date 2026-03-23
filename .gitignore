@@ -13,3 +13,7 @@ RTL/IPs/*/*.vhd
 zlocal_only
 rust_test
 assets/**/.$*.bkp
+
+.settings
+.project
+.library_mapping.xml
