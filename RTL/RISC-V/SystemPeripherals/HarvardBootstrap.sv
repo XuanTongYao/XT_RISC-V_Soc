@@ -48,7 +48,7 @@ module HarvardBootstrap
 
 
   //----------运行模式切换----------//
-  logic [7:0] debug_reg = 0;
+  logic [7:0] debug_reg;
   always_ff @(posedge hb_clk, posedge rst_sync) begin
     if (rst_sync) begin
       debug_reg <= 0;

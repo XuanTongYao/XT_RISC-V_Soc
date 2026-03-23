@@ -15,8 +15,8 @@ module ExceptionPipeLine
     output exception_t exception_commit
 );
 
-  exception_t exception_if_id = 0;
-  exception_t exception_id_ex = 0;
+  exception_t exception_if_id;
+  exception_t exception_id_ex;
   always_ff @(posedge clk) begin
     if (rst_sync || flush) begin
       exception_if_id <= 0;

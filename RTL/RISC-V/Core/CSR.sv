@@ -51,9 +51,9 @@ module CSR
   // wire [31:0] mconfigptr = 32'h0;  // 配置指针（配置数据不存在 只读0）
 
   // 自陷寄存器
-  mstatus_t mstatus = 0;  //状态寄存器
+  mstatus_t mstatus;  //状态寄存器
   mtvec_t mtvec;  //自陷处理函数基地址
-  mie_m_only_t mie = 0;  //中断使能寄存器
+  mie_m_only_t mie;  //中断使能寄存器
   mip_m_only_t mip;  //挂起(待处理)的中断（只读）
   assign mip = {mextern_int, mtimer_int, msoftware_int};
 

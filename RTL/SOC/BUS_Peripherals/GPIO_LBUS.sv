@@ -1,3 +1,5 @@
+// @Deprecated
+// 已弃用
 module GPIO_LBUS
   import XT_LBUS_Pkg::*;
 #(
