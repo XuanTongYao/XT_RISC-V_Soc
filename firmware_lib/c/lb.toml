@@ -1,0 +1,10 @@
+lib_cfg = true
+file_name = 'xtrv32i_lb'
+version = 'v0.1'
+description = '适用于XT_RISC-V_MCU的低速总线外设库'
+lib_name = 'xtlb'
+features = ["sw_key", "af_gpio", "led", "ledsd"]
+[domain_id]
+name = "XT_LB"
+start = 4
+end = 5        # 不包含

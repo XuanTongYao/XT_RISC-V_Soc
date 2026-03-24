@@ -8,6 +8,9 @@ user_paths = ["tests"]
 include_paths = [
     "C_lib/XT_RISC_V",
 ]
+firmware_paths = [
+    "firmware_lib",
+]
 COMPILE_LIST = []
 for p in include_paths:
     COMPILE_LIST.extend([str(f) for f in Path(p).rglob("*.c")])
@@ -38,3 +41,6 @@ for p in include_paths:
         if i.is_dir():
             INCLUDE_PARAMS.append("-I")
             INCLUDE_PARAMS.append(str(i))
+for p in firmware_paths:
+    INCLUDE_PARAMS.append("-I")
+    INCLUDE_PARAMS.append(p)

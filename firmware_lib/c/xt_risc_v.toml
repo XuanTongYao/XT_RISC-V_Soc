@@ -1,0 +1,6 @@
+lib_cfg = true
+file_name = 'xt_riscv_mcu'
+version = 'v0.1'
+description = '适用于XT_RISC-V_MCU的标准库'
+lib_name = 'xtriscv'
+features = ["bootstrap", "eint_ctrl", "mtimer", "uart"]
