@@ -6,8 +6,8 @@ ENTRY(_start)
 
 MEMORY
 {
-INST_RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x1000
-DATA_RAM (rwx) : ORIGIN = 0x00001000, LENGTH = 0x1000
+    INST_RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x1000
+    DATA_RAM (rwx) : ORIGIN = 0x00001000, LENGTH = 0x1000
 }
 PROVIDE(__inst_origin = ORIGIN(INST_RAM));
 PROVIDE(__inst_length = LENGTH(INST_RAM));
@@ -25,8 +25,7 @@ SECTIONS
         KEEP (*(SORT_NONE(.trap.vector)))
         KEEP (*(SORT_NONE(.trap.delete_handler)))
         KEEP (*(SORT_NONE(.trap.error_handler)))
-        *(.text)
-        *(.text.*)
+        *(.text .text.*)
     } > INST_RAM
 
 

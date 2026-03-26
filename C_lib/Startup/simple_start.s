@@ -1,4 +1,4 @@
-.section .init
+.section .init,"ax",@progbits
 .global _start
 _start:
     .option push

@@ -1,4 +1,4 @@
-.section .init
+.section .init,"ax",@progbits
 .global _start
 _start:
     .option push
@@ -23,25 +23,25 @@ _start:
     call main  # jump to main
 
 
-.section .trap.vector
+.section .trap.vector,"ax",@progbits
 # 异常/中断向量表
 _exception:
     j Exception_Handler
 _software_int:
     j ssoftware_IRQ_Handler # 未实现S模式
-    mret
+    .space 4
     j msoftware_IRQ_Handler
-    mret
+    .space 4
 _timer_int:
     j stimer_IRQ_Handler # 未实现S模式
-    mret
+    .space 4
     j mtimer_IRQ_Handler
-    mret
+    .space 4
 _extern_int: # 外部中断由外部中断控制器重定向到自定义中断
     j sextern_IRQ_Handler # 未实现S模式
-    mret
+    .space 4
     j mextern_IRQ_Handler # 由硬件重定向
-    mret
+    .space 4
     nop
     nop
     nop
@@ -79,7 +79,7 @@ _custom_int:
 
 
 # 弃置的自陷处理函数
-.section .trap.delete_handler
+.section .trap.delete_handler,"ax",@progbits
 .global delete_IRQ_handler
 # 标准中断
 ssoftware_IRQ_Handler:
@@ -100,7 +100,7 @@ delete_IRQ_handler:
     mret
 
 
-.section .trap.error_handler
+.section .trap.error_handler,"ax",@progbits
 
 # 极简的内核只有以下这些异常
 .weak   Illegal_inst_ErrorHandler # 2
@@ -117,10 +117,16 @@ Ecall_ErrorHandler:
 UnhandledFault:
     j UnhandledFault
 
+.global Exception_Handler
 .global _Exception_Exit
+.equ eh_stack, 64
 Exception_Handler:
     # 保存"调用者保存寄存器"
-    addi    sp,sp,-48
+    addi    sp,sp,-eh_stack
+    sw t3, 60(sp)
+    sw t4, 56(sp)
+    sw t5, 52(sp)
+    sw t6, 48(sp)
     sw ra, 44(sp)
     sw a0, 40(sp)
     sw a1, 36(sp)
@@ -132,6 +138,7 @@ Exception_Handler:
     sw a7, 12(sp)
     sw t0, 8(sp)
     sw t1, 4(sp)
+    sw t2, 0(sp)
 
     lla ra, _Exception_Exit # 返回地址重定向
     csrr t1, mcause # 读取异常类型
@@ -155,6 +162,10 @@ Exception_Handler:
     j Ecall_ErrorHandler
 
 _Exception_Exit:
+    lw t3, 60(sp)
+    lw t4, 56(sp)
+    lw t5, 52(sp)
+    lw t6, 48(sp)
     lw ra, 44(sp)
     lw a0, 40(sp)
     lw a1, 36(sp)
@@ -166,7 +177,8 @@ _Exception_Exit:
     lw a7, 12(sp)
     lw t0, 8(sp)
     lw t1, 4(sp)
-    addi    sp,sp,48
+    lw t2, 0(sp)
+    addi    sp,sp,eh_stack
     mret
 
 

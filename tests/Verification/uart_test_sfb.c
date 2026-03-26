@@ -1,4 +1,6 @@
-#include "XT_RISC_V.h"
+#define XT_RISCV_MCU_IMPLEMENTATION
+#define XTRISCV_ONLY_UART
+#include "c/xt_riscv_mcu.h"
 
 void echo_test(void);
 void echo_16byte(void);
@@ -8,7 +10,7 @@ void tx_bytes_test(void);
 
 
 void main(void) {
-    while (1) {
+    while (true) {
         uint8_t cmd = rx_block();
         if (cmd == 0x01) {
             echo_test();
@@ -49,10 +51,9 @@ void spam_uint8_test(void) {
     }
 }
 
-// FIXME 一个未知bug，最后一个字符'!'打印不出来(串口接收到0x00)
-// 可能是内存对齐的问题？也可能是UART发送的问题？
+// FIXME 很神奇的bug，!打印不出来
 static const char str[] = "Hello, world!";
 void tx_bytes_test(void) {
-    tx_bytes_block((uint8_t*)str, sizeof(str), 0);
+    tx_bytes_block((uint8_t*)str, sizeof(str), false);
 }
 
