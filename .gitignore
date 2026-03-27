@@ -1,5 +1,7 @@
 .vscode
 build
+target
+target_c
 */__pycache__
 RTL/IPs/*/*.edn
 RTL/IPs/*/*.log
@@ -11,9 +13,10 @@ RTL/IPs/*/*.tcl
 RTL/IPs/*/*.v
 RTL/IPs/*/*.vhd
 zlocal_only
-rust_test
 assets/**/.$*.bkp
 
 .settings
 .project
 .library_mapping.xml
+
+**/Cargo.lock

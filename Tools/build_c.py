@@ -77,18 +77,16 @@ def align_to_page(flat_output: str | Path, output: Path):
     with open(flat_output, "rb") as f, open(page_out, "wb") as out:
         binary_data = f.read()
         out.write(binary_data)
-        if len(binary_data) % 16 != 0:
-            padding = 16 - (len(binary_data) % 16)
-            for _ in range(padding):
-                out.write(b"\x00")
-    # page_txt_output = os.path.join(inc.TXT_DIR, output_name) + "page.mem"
-    # with open(page_out, "rb") as f:
+        padding = (16 - (len(binary_data) % 16)) % 16
+        for _ in range(padding):
+            out.write(b"\x00")
+    # page_txt_output = inc.TXT_DIR / output.with_suffix(".page.mem")
+    # with open(page_out, "rb") as f, open(page_txt_output, "w") as out:
     #     binary_data = f.read()
-    #     with open(page_txt_output, "w") as out:
-    #         for i in range(0, len(binary_data), 16):
-    #             page = binary_data[i : i + 16]
-    #             hex_str = "".join(f"{b:02X}" for b in reversed(page))  # 高位字符在前
-    #             out.write(hex_str + "\n")
+    #     for i in range(0, len(binary_data), 16):
+    #         page = binary_data[i : i + 16]
+    #         hex_str = "".join(f"{b:02X}" for b in reversed(page))  # 高位字符在前
+    #         out.write(hex_str + "\n")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # 用户自定义程序
-user_paths = ["tests"]
+user_paths = ["C_lib/tests"]
 
 
 # 包含相关
@@ -17,7 +17,7 @@ for p in include_paths:
 
 
 # 创建输出文件夹
-OUTPUT_DIR = "build"
+OUTPUT_DIR = "target_c"
 output_types = ["ELFs", "FlatBinary", "FlatBinaryTxt", "FlatPage"]
 output_dirs = [Path(OUTPUT_DIR, i) for i in output_types]
 
