@@ -12,28 +12,19 @@ void set_compare(uint16_t val) {
 }
 
 uint16_t get_top(void) {
-    uint16_t val = 0;
-    val = *TIMER_TOP_L_REG;
-    val |= *TIMER_TOP_H_REG << 8;
-    return val;
+    return ((uint16_t)*TIMER_TOP_H_REG) << 8 | *TIMER_TOP_L_REG;
 }
 
 uint16_t get_compare(void) {
-    uint16_t val = 0;
-    val = *TIMER_COMPARE_L_REG;
-    val |= *TIMER_COMPARE_H_REG << 8;
-    return val;
+    return ((uint16_t)*TIMER_COMPARE_H_REG) << 8 | *TIMER_COMPARE_L_REG;
 }
 
 uint16_t get_counter(void) {
-    uint16_t val = 0;
-    val = *TIMER_CNT_L_REG;
-    val |= *TIMER_CNT_H_REG << 8;
-    return val;
+    return ((uint16_t)*TIMER_CNT_H_REG) << 8 | *TIMER_CNT_L_REG;
 }
 
 uint16_t get_capture(void) {
-    return ((uint16_t)*TIMER_CAPTURE_H_REG << 8) | *TIMER_CNT_L_REG;
+    return ((uint16_t)*TIMER_CAPTURE_H_REG) << 8 | *TIMER_CAPTURE_L_REG;
 }
 
 void set_output_mode(OutputMode mode) {

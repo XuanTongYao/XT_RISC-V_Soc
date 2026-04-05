@@ -5,10 +5,9 @@
 一个极其简易的`RV32I_Zicsr`指令集**单核MCU**，几乎所有用户级与特权级指令支持，仅运行机器模式。
 
 1. [RTL](RTL)包含了所有Verilog代码，顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
-2. [C_lib](C_lib)包含了本MCU的C语言库文件，包括寄存器定义、启动文件等
-3. [Tools](Tools)有c语言编译工具，编译脚本
-4. [Tests](tests)包含了测试用的C语言代码，同时也是编译脚本默认寻找**源文件**的位置
-5. [ACT4](ACT4)包含了架构认证测试相关的内容(最新的ACT4框架)
+2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和`Rust`版本(正在重写)
+3. [demo](C_lib/tests)**暂时**存放了MCU的`C语言`示例程序代码，同时也是`C`编译脚本默认寻找**源文件**的位置
+4. [ACT4](ACT4)包含了架构认证测试相关的内容(最新的ACT4框架)
 
 [RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)
 

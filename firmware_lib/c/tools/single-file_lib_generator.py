@@ -5,7 +5,7 @@ from typing import Any
 from os import chdir
 
 # 改到项目目录
-chdir(Path(__file__).parent.parent.resolve())
+chdir(Path(__file__).parent.parent.parent.parent.resolve())
 
 默认地址域算法 = "#define DOMAIN_BASE(StartID) (0+((StartID)<<(12)))"
 

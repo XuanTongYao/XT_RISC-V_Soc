@@ -2,7 +2,7 @@ import subprocess, os
 from pathlib import Path
 
 # 改到项目目录
-os.chdir(Path(__file__).parent.parent.resolve())
+os.chdir(Path(__file__).parent.parent.parent.parent.resolve())
 import inc
 
 # 旧编译器（更小体积）
@@ -15,13 +15,12 @@ gcc = "riscv-none-elf-gcc"
 objcopy = "riscv-none-elf-objcopy"
 架构 = "-march=rv32i_zicsr -mabi=ilp32"
 
-库参数 = "-nostdlib"
-其他参数 = "-fstrict-volatile-bitfields"
+其他参数 = "-nostdlib -fstrict-volatile-bitfields"
 优化等级 = "-Os"
 其他优化 = "-flto"
-启动文件 = ["C_lib/Startup/start.s"]
-# 启动文件 = ["C_lib/Startup/simple_start.s"]
-链接脚本 = "C_lib/Startup/link.ld"
+启动文件 = "firmware_lib/rust/asm/start.riscv"
+# 启动文件 = "firmware_lib/rust/asm/simple_start.riscv"
+链接脚本 = "firmware_lib/c/link.x"
 
 
 def entry():
@@ -49,8 +48,8 @@ def select_main_file():
 def build(main_file: str | Path, output: Path):
     elf_output = inc.ELF_DIR / output.with_suffix(".elf")
     # 编译链接生成ELF
-    编译参数 = f"{架构} {库参数} {其他参数} {优化等级} {其他优化}".split()
-    源文件 = 启动文件 + [str(main_file)] + inc.COMPILE_LIST
+    编译参数 = f"{架构} {其他参数} {优化等级} {其他优化}".split()
+    源文件 = f"-x assembler {启动文件} -x none {main_file}".split() + inc.COMPILE_LIST
     链接脚本参数 = f"-T {链接脚本}".split()
     输出参数 = f"-o {elf_output}".split()
     编译命令参数 = 编译参数 + inc.INCLUDE_PARAMS + 源文件 + 链接脚本参数 + 输出参数

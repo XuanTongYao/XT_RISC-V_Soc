@@ -1,23 +1,24 @@
-# XT_RV32I_SOC C语言标准库
+# XT_RISC-V_MCU C语言固件库
 
-**@Deprecated 已弃用**
-**./XT_RISC_V中的内容 已弃用**
-请使用新的[单文件固件库](../firmware_lib/c)
+[构建工具和脚本](tools)
+
+可能不再维护C语言固件库，后续会使用`Rust`重写固件库
 
 ## 测试完成情况
 
-### SOC基础功能
+### MCU基础功能
 
 - [x] 地址定义
 - [x] SOC特殊定义，中断及特殊操作汇编宏
 - [x] 标准数据类型定义
 - [x] 自举启动下载程序
 
-### 高速总线外设
+### 系统外设
 
-- [x] UART串口
+- [x] BOOTSTRAP
 - [x] 外部中断控制器
 - [x] 外部机器计时器
+- [x] UART串口
 
 ### WISHBONE总线外设
 
@@ -65,9 +66,6 @@
 ### 低速总线外设
 
 - [x] LED
-- [x] GPIO(**Deprecated**已弃用)
 - [x] LED数码管
 - [x] 开关和按钮
 - [x] 功能复用GPIO
-
-## TODO_List

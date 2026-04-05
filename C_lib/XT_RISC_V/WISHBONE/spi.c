@@ -40,7 +40,7 @@ uint8_t master_transmit_byte_block(uint8_t send_data) {
     while (!SPI_STATUS_REG->RRDY) {}
     uint8_t data = *SPI_RX_DATA_REG;
     SPI_CON2_REG->reg = 0x80;
-    while (!SPI_STATUS_REG->TIP) {}
+    while (SPI_STATUS_REG->TIP) {}
     return data;
 }
 

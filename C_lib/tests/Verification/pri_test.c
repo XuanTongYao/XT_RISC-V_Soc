@@ -8,12 +8,12 @@ void main(void) {
     while (1) {
         for (size_t i = 0; i < 10; i++) {
             *LEDSD_REG = i;
-            DELAY_NOP_SEC(1);
+            DELAY_SEC(1);
         }
         WFI;
-        DELAY_NOP_SEC(1);
+        DELAY_SEC(1);
         ECALL;
-        DELAY_NOP_SEC(1);
+        DELAY_SEC(1);
     }
 }
 

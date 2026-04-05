@@ -2,7 +2,7 @@
 build
 target
 target_c
-*/__pycache__
+**/__pycache__
 RTL/IPs/*/*.edn
 RTL/IPs/*/*.log
 RTL/IPs/*/*.naf

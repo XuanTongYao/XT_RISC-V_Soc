@@ -120,8 +120,6 @@ typedef union
         uint8_t I2CEN : 1;
     };
 }I2C_Control;
-#define I2C_1_CON_REG ((volatile I2C_Control*)(I2C_PRIMARY_BASE + 0))
-#define I2C_2_CON_REG ((volatile I2C_Control*)(I2C_SECONDARY_BASE + 0))
 
 typedef union
 {
@@ -137,22 +135,6 @@ typedef union
         uint8_t STA : 1;
     };
 }I2C_Command;
-#define I2C_1_CMD_REG ((volatile I2C_Command*)(I2C_PRIMARY_BASE + 1))
-#define I2C_2_CMD_REG ((volatile I2C_Command*)(I2C_SECONDARY_BASE + 1))
-
-// 写操作会使I2C复位
-#define I2C_1_BR0_REG ((byte_reg_ptr)(I2C_PRIMARY_BASE + 2))
-// 写操作会使I2C复位
-#define I2C_2_BR0_REG ((byte_reg_ptr)(I2C_SECONDARY_BASE + 2))
-// BR1的高6位不能读写
-// 写操作会使I2C复位
-#define I2C_1_BR1_REG ((byte_reg_ptr)(I2C_PRIMARY_BASE + 3))
-// BR1的高6位不能读写
-// 写操作会使I2C复位
-#define I2C_2_BR1_REG ((byte_reg_ptr)(I2C_SECONDARY_BASE + 3))
-
-#define I2C_1_TX_DATA_REG ((byte_reg_ptr)(I2C_PRIMARY_BASE + 4))
-#define I2C_2_TX_DATA_REG ((byte_reg_ptr)(I2C_SECONDARY_BASE + 4))
 
 typedef union
 {
@@ -169,14 +151,6 @@ typedef union
         uint8_t TIP : 1;
     };
 }I2C_Status;
-#define I2C_1_STATUS_REG ((const volatile I2C_Status*)(I2C_PRIMARY_BASE + 5))
-#define I2C_2_STATUS_REG ((const volatile I2C_Status*)(I2C_SECONDARY_BASE + 5))
-
-#define I2C_1_GENERAL_CALL_REG ((ro_byte_reg_ptr)(I2C_PRIMARY_BASE + 6))
-#define I2C_2_GENERAL_CALL_REG ((ro_byte_reg_ptr)(I2C_SECONDARY_BASE + 6))
-
-#define I2C_1_RX_DATA_REG ((ro_byte_reg_ptr)(I2C_PRIMARY_BASE + 7))
-#define I2C_2_RX_DATA_REG ((ro_byte_reg_ptr)(I2C_SECONDARY_BASE + 7))
 
 typedef union
 {
@@ -190,29 +164,23 @@ typedef union
         uint8_t : 4;
     };
 }I2C_Interrupt;
-// 写1清零
-#define I2C_1_INT_STATUS_REG ((volatile I2C_Interrupt*)(I2C_PRIMARY_BASE + 8))
-#define I2C_2_INT_STATUS_REG ((volatile I2C_Interrupt*)(I2C_SECONDARY_BASE + 8))
-
-#define I2C_1_INT_EN_REG ((volatile I2C_Interrupt*)(I2C_PRIMARY_BASE + 9))
-#define I2C_2_INT_EN_REG ((volatile I2C_Interrupt*)(I2C_SECONDARY_BASE + 9))
 
 
 typedef struct
 {
     volatile I2C_Control CON_REG;
     volatile I2C_Command CMD_REG;
-    volatile uint8_t BR0_REG;
-    volatile uint8_t BR1_REG;
+    volatile uint8_t BR0_REG;// 写操作会使I2C复位
+    volatile uint8_t BR1_REG;// 写操作会使I2C复位 高6位必须为0
     volatile uint8_t TX_DATA_REG;
     volatile const I2C_Status STATUS_REG;
     volatile const uint8_t GENERAL_CALL_REG;
     volatile const uint8_t RX_DATA_REG;
-    volatile I2C_Interrupt INT_STATUS_REG;
+    volatile I2C_Interrupt INT_STATUS_REG;// 写1清零
     volatile I2C_Interrupt INT_EN_REG;
 }I2C;
-#define I2C_1 ((I2C*)(I2C_PRIMARY_BASE))
-#define I2C_2 ((I2C*)(I2C_SECONDARY_BASE))
+#define I2C_1 ((volatile I2C*)(I2C_PRIMARY_BASE))
+#define I2C_2 ((volatile I2C*)(I2C_SECONDARY_BASE))
 
 
 static uint8_t I2C_DATA_BUFF[8];
@@ -235,7 +203,7 @@ static uint16_t get_i2c_prescale(I2C* i2c) {
 
 static void reset_i2c(I2C* i2c) {
     i2c->CON_REG.I2CEN = 0;
-    DELAY_NOP_10US(5);
+    DELAY_US(50);
     i2c->CON_REG.I2CEN = 1;
 }
 
@@ -247,7 +215,7 @@ static void master_i2c_write_addr_only_block(I2C* i2c, const uint8_t addr) {
     i2c->TX_DATA_REG = addr;
     i2c->CMD_REG.reg = 0x94;// 开始条件+发送
     while (!i2c->STATUS_REG.TRRDY) {}
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     i2c->CMD_REG.reg = 0x44;
 }
 
@@ -257,12 +225,12 @@ static void master_i2c_write_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* 
     i2c->TX_DATA_REG = addr & 0xFE;
     i2c->CMD_REG.reg = 0x94;
     while (!i2c->STATUS_REG.TRRDY) {}
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     for (size_t i = 0; i < num; i++) {
         i2c->TX_DATA_REG = data[i];
         i2c->CMD_REG.reg = 0x14;// 发送
         while (!i2c->STATUS_REG.TRRDY) {}
-        DELAY_NOP_10US(4);
+        DELAY_US(40);
     }
     i2c->CMD_REG.reg = 0x44;
 }
@@ -272,12 +240,12 @@ static void master_i2c_read_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* d
     i2c->TX_DATA_REG = addr;
     i2c->CMD_REG.reg = 0x94;
     while (!i2c->STATUS_REG.TRRDY) {}
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     for (size_t i = 0; i < num; i++) {
         i2c->TX_DATA_REG = data[i];
         i2c->CMD_REG.reg = 0x14;// 发送
         while (!i2c->STATUS_REG.TRRDY) {}
-        DELAY_NOP_10US(4);
+        DELAY_US(40);
     }
     i2c->TX_DATA_REG = addr | 0x01;
     i2c->CMD_REG.reg = 0x94;
@@ -288,7 +256,7 @@ static void master_i2c_read_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* d
         while (!i2c->STATUS_REG.TRRDY) {}
         I2C_DATA_BUFF[i] = i2c->RX_DATA_REG;
     }
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     i2c->CMD_REG.reg = 0x6C;
     while (!i2c->STATUS_REG.TRRDY) {}
     I2C_DATA_BUFF[i] = i2c->RX_DATA_REG;
@@ -426,7 +394,7 @@ static uint8_t master_transmit_byte_block(uint8_t send_data) {
     while (!SPI_STATUS_REG->RRDY) {}
     uint8_t data = *SPI_RX_DATA_REG;
     SPI_CON2_REG->reg = 0x80;
-    while (!SPI_STATUS_REG->TIP) {}
+    while (SPI_STATUS_REG->TIP) {}
     return data;
 }
 #endif
@@ -547,28 +515,19 @@ static void set_compare(uint16_t val) {
 }
 
 static uint16_t get_top(void) {
-    uint16_t val = 0;
-    val = *TIMER_TOP_L_REG;
-    val |= *TIMER_TOP_H_REG << 8;
-    return val;
+    return ((uint16_t)*TIMER_TOP_H_REG) << 8 | *TIMER_TOP_L_REG;
 }
 
 static uint16_t get_compare(void) {
-    uint16_t val = 0;
-    val = *TIMER_COMPARE_L_REG;
-    val |= *TIMER_COMPARE_H_REG << 8;
-    return val;
+    return ((uint16_t)*TIMER_COMPARE_H_REG) << 8 | *TIMER_COMPARE_L_REG;
 }
 
 static uint16_t get_counter(void) {
-    uint16_t val = 0;
-    val = *TIMER_CNT_L_REG;
-    val |= *TIMER_CNT_H_REG << 8;
-    return val;
+    return ((uint16_t)*TIMER_CNT_H_REG) << 8 | *TIMER_CNT_L_REG;
 }
 
 static uint16_t get_capture(void) {
-    return ((uint16_t)*TIMER_CAPTURE_H_REG << 8) | *TIMER_CNT_L_REG;
+    return ((uint16_t)*TIMER_CAPTURE_H_REG) << 8 | *TIMER_CAPTURE_L_REG;
 }
 
 typedef enum {
@@ -669,7 +628,6 @@ typedef union
 
 
 //=== 命令定义 ===//
-// LSC和ISC到底指代什么东西，我也不知道，Lattice的手册就是依托答辩
 // 通用命令
 #define LSC_READ_STATUS 0x3C
 #define LSC_CHECK_BUSY 0xF0
@@ -802,7 +760,7 @@ static void reset_flash(void) {
 
 static uint32_t get_flash_id(void) {
     FLASH_CON_REG->reg = 0x80;
-    *FLASH_W_DATA_REG = 0xE0;
+    *FLASH_W_DATA_REG = IDCODE_PUB;
     *FLASH_W_DATA_REG = 0x00;
     *FLASH_W_DATA_REG = 0x00;
     *FLASH_W_DATA_REG = 0x00;

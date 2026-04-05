@@ -24,7 +24,7 @@ uint16_t get_i2c_prescale(I2C* i2c) {
 
 void reset_i2c(I2C* i2c) {
     i2c->CON_REG.I2CEN = 0;
-    DELAY_NOP_10US(5);
+    DELAY_US(50);
     i2c->CON_REG.I2CEN = 1;
 }
 
@@ -32,7 +32,7 @@ void master_i2c_write_addr_only_block(I2C* i2c, const uint8_t addr) {
     i2c->TX_DATA_REG = addr;
     i2c->CMD_REG.reg = 0x94;// 开始条件+发送
     while (!i2c->STATUS_REG.TRRDY) {}
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     i2c->CMD_REG.reg = 0x44;
 }
 
@@ -41,12 +41,12 @@ void master_i2c_write_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, c
     i2c->TX_DATA_REG = addr & 0xFE;
     i2c->CMD_REG.reg = 0x94;
     while (!i2c->STATUS_REG.TRRDY) {}
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     for (size_t i = 0; i < num; i++) {
         i2c->TX_DATA_REG = data[i];
         i2c->CMD_REG.reg = 0x14;// 发送
         while (!i2c->STATUS_REG.TRRDY) {}
-        DELAY_NOP_10US(4);
+        DELAY_US(40);
     }
     i2c->CMD_REG.reg = 0x44;
 }
@@ -55,12 +55,12 @@ void master_i2c_read_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, co
     i2c->TX_DATA_REG = addr;
     i2c->CMD_REG.reg = 0x94;
     while (!i2c->STATUS_REG.TRRDY) {}
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     for (size_t i = 0; i < num; i++) {
         i2c->TX_DATA_REG = data[i];
         i2c->CMD_REG.reg = 0x14;// 发送
         while (!i2c->STATUS_REG.TRRDY) {}
-        DELAY_NOP_10US(4);
+        DELAY_US(40);
     }
     i2c->TX_DATA_REG = addr | 0x01;
     i2c->CMD_REG.reg = 0x94;
@@ -71,7 +71,7 @@ void master_i2c_read_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, co
         while (!i2c->STATUS_REG.TRRDY) {}
         I2C_DATA_BUFF[i] = i2c->RX_DATA_REG;
     }
-    DELAY_NOP_10US(4);
+    DELAY_US(40);
     i2c->CMD_REG.reg = 0x6C;
     while (!i2c->STATUS_REG.TRRDY) {}
     I2C_DATA_BUFF[i] = i2c->RX_DATA_REG;

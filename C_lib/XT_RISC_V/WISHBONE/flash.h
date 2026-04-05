@@ -81,7 +81,6 @@ typedef union
 
 
 //----------命令定义----------//
-// LSC和ISC到底指代什么东西，我也不知道，Lattice的手册就是依托答辩
 // 通用命令
 #define LSC_READ_STATUS 0x3C
 #define LSC_CHECK_BUSY 0xF0

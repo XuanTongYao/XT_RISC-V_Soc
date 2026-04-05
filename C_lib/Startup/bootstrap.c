@@ -156,7 +156,7 @@ void __command_frame(const CMD_OP operand_num, const CMD_LEN data_len, const CMD
 
 void __wait_not_busy(void) {
     // 直接等250us
-    DELAY_NOP_10US(25);
+    DELAY_US(250);
 }
 
 void __enable_transparent_UFM(void) {
@@ -191,7 +191,7 @@ void __erase_UFM(void) {
     __SET_CMD_OPERANDS_BE(LSC_ERASE_TAG, 0);
     __command_frame(CMD_PARAM(LSC_ERASE_TAG));
     // 直接等1000ms
-    DELAY_NOP_MS(1200);
+    DELAY_MS(1200);
 }
 
 
