@@ -1,0 +1,15 @@
+[workspace]
+resolver = "3"
+members = ["./firmware_lib/rust"]
+
+# [profile.release.package."*"]
+# debug = false
+# opt-level = "z"
+# panic = "abort"
+
+[profile.release]
+debug = false
+opt-level = "z"
+lto = "fat"
+strip = "debuginfo"
+panic = "abort"

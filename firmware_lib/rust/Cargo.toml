@@ -1,0 +1,21 @@
+[package]
+name = "xt-riscv-mcu"
+version = "0.1.0"
+edition = "2024"
+authors = ["XunTongYao"]
+license = "Apache-2.0"
+description = "适用于XT_RISC-V_MCU的标准库，针对一个自制的嵌入式/MCU系统"
+
+[features]
+default = ["start_asm"]
+start_asm = []                # _start汇编 完整初始化，使用向量中断模式
+no_trap_start = ["start_asm"] # _start汇编 完整初始化，不含自陷功能
+bare_start = ["start_asm"]    # _start汇编 仅初始化gp与sp
+
+[dependencies]
+bitfield-struct = "0.12.1"
+bitflags = "2.11.0"
+paste = "1.0.15"
+riscv = { version = "0.16.0" }
+volatile-register = "0.2.2"
+xt-riscv-mcu-macros = { path = "./macros" }

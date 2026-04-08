@@ -20,7 +20,7 @@ objcopy = "riscv-none-elf-objcopy"
 其他优化 = "-flto"
 启动文件 = "firmware_lib/rust/asm/start.riscv"
 # 启动文件 = "firmware_lib/rust/asm/simple_start.riscv"
-链接脚本 = "firmware_lib/c/link.x"
+链接脚本 = ["firmware_lib/c/link.x", "firmware_lib/c/trap_handler.x"]
 
 
 def entry():
@@ -50,7 +50,7 @@ def build(main_file: str | Path, output: Path):
     # 编译链接生成ELF
     编译参数 = f"{架构} {其他参数} {优化等级} {其他优化}".split()
     源文件 = f"-x assembler {启动文件} -x none {main_file}".split() + inc.COMPILE_LIST
-    链接脚本参数 = f"-T {链接脚本}".split()
+    链接脚本参数 = [x for ld in 链接脚本 for x in ("-T", ld)]
     输出参数 = f"-o {elf_output}".split()
     编译命令参数 = 编译参数 + inc.INCLUDE_PARAMS + 源文件 + 链接脚本参数 + 输出参数
     subprocess.run([gcc] + 编译命令参数, check=True)

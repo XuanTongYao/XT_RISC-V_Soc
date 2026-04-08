@@ -1,0 +1,26 @@
+.section .init,"ax",@progbits
+.global _start
+_start:
+    .option push
+    .option norelax
+1:  auipc gp, %pcrel_hi(__global_pointer$)
+    addi gp, gp, %pcrel_lo(1b)
+    .option pop
+    lla sp, _sstack # 初始化栈指针
+    # 清空 未初始化段
+    lla a0, __BSS_START__
+	lla a1, __BSS_END__
+	bgeu a0, a1, 2f
+1:
+	sw x0, (a0)
+	addi a0, a0, 4
+	bltu a0, a1, 1b
+2:
+    call main  # jump to main
+
+
+.section .trap.error_handler,"ax",@progbits
+# 未处理(致命)错误死循环
+.global UnhandledFault
+UnhandledFault:
+    j UnhandledFault

@@ -1,0 +1,29 @@
+[target.riscv32i-unknown-none-elf]
+runner = "my-emulator"
+rustflags = [
+    "-C",
+    "link-arg=--relax-gp",
+    "-C",
+    "target-feature=+zicsr,+relax",
+    "-C",
+    "link-arg=-Tfirmware_lib/rust/link.x",
+    "-C",
+    "link-arg=-Tfirmware_lib/rust/trap_handler.x",
+]
+
+[build]
+target = "riscv32i-unknown-none-elf"
+
+
+[alias]
+rb = "run --bin"
+rrb = "run --release --bin"
+
+# bb = "build --release --bin"
+# bb_debug = "build --bin"
+
+# objdb = "objdump --release --bin"
+# objdbb_debug = "objdump --bin"
+
+dumpex = "objdump --example"
+dumprex = "objdump --release --example"

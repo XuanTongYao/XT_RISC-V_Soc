@@ -1,0 +1,11 @@
+[package]
+name = "xt-riscv-mcu-macros"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.45"
+syn = "2.0.117"

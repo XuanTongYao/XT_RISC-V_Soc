@@ -1,0 +1,15 @@
+[target.riscv32i-unknown-none-elf]
+runner = "my-emulator"
+rustflags = [
+    "-C",
+    "link-arg=--relax-gp",
+    "-C",
+    "target-feature=+zicsr,+relax",
+    "-C",
+    "link-arg=-Tfirmware_lib/rust/link.x",
+    "-C",
+    "link-arg=-Tfirmware_lib/rust/trap_handler.x",
+]
+
+[build]
+target = "riscv32i-unknown-none-elf"
