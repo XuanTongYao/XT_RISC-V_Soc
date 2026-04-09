@@ -2,7 +2,7 @@ module ExceptionPipeLine
   import Exception_Pkg::*;
 (
     input clk,
-    input rst_sync,
+    input rst,
     input flush,
     input stall_n,
 
@@ -17,8 +17,8 @@ module ExceptionPipeLine
 
   exception_t exception_if_id;
   exception_t exception_id_ex;
-  always_ff @(posedge clk) begin
-    if (rst_sync || flush) begin
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst || flush) begin
       exception_if_id <= 0;
       exception_id_ex <= 0;
     end else if (stall_n) begin

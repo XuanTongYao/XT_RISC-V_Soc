@@ -8,7 +8,7 @@ module SystemPeripheral
     parameter int EXTERNAL_INT_NUM   = 13,
     parameter int UART_OVER_SAMPLING = 16
 ) (
-    input rst_sync,
+    input rst,
     // 总线接口部分
     input hb_clk,
     input hb_slave_t xt_hb,
@@ -146,7 +146,7 @@ module SystemPeripheral
       .OVER_SAMPLING(UART_OVER_SAMPLING)
   ) u_UART (
       .*,
-      .rst  (rst_sync),
+      .rst  (rst),
       .sel  (sp_sel[IDX_UART]),
       .rdata(sp_data_in[IDX_UART])
   );
@@ -154,8 +154,8 @@ module SystemPeripheral
   // 最高位为激活中断，低15位可作为中断原因
   wire sel_t sel_soft_int = sp_sel[IDX_SOFTWARE_INT];
   logic [15:0] msoftware_int_reg;
-  always_ff @(posedge hb_clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge hb_clk, posedge rst) begin
+    if (rst) begin
       msoftware_int <= 0;
       msoftware_int_reg <= 0;
     end else if (sel_soft_int.wen && sys_share.waddr == 'd0) begin

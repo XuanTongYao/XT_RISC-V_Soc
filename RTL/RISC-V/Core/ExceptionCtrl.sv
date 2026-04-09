@@ -7,7 +7,7 @@ module ExceptionCtrl
     parameter core_cfg_t CFG
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input flush,
     input stall_n,
     input jump_pending,
@@ -44,8 +44,8 @@ module ExceptionCtrl
   // 在valid_int_req时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
   logic ready_for_int;
   logic [CFG.PC_LEN-1:0] last_jump_addr;
-  always_ff @(posedge clk) begin
-    if (rst_sync || ready_for_int) begin
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst || ready_for_int) begin
       ready_for_int <= 0;
     end else if (stall_n) begin
       ready_for_int <= valid_int_req;

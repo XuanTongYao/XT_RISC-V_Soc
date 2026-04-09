@@ -7,7 +7,7 @@ module XT_LB
 ) (
     // 与高速总线桥接
     input hb_clk,
-    input rst_sync,
+    input rst,
     input hb_slave_t xt_hb,
     input sel_t sel,
     output logic [31:0] rdata,
@@ -61,10 +61,10 @@ module XT_LB
   ) u_CDC_MCP_Formulation (
       .*,
       .clk_send(hb_clk),
-      .rst_send(rst_sync),
+      .rst_send(rst),
 
       .clk_receive(lb_clk),
-      .rst_receive(rst_sync),
+      .rst_receive(rst),
 
       .data_in (truncated_xt_hb),
       .data_out({ren, wen, raddr, waddr, wdata, write_width})
@@ -92,8 +92,8 @@ module XT_LB
   assign bus.wdata = wdata;
   assign bus.write_width = write_width;
   logic read_before_write;
-  always_ff @(posedge lb_clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge lb_clk, posedge rst) begin
+    if (rst) begin
       lb_state <= IDLE;
       receive  <= 0;
     end else begin

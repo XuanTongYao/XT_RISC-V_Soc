@@ -5,7 +5,7 @@ module External_INT_Ctrl
 #(
     parameter int INT_NUM = 32
 ) (
-    input rst_sync,
+    input rst,
     input hb_clk,
     input sys_peripheral_t sys_share,
     input sel_t sel,
@@ -22,8 +22,8 @@ module External_INT_Ctrl
 
   logic [INT_NUM-1:0] INT_enable_reg;
   logic [INT_NUM-1:0] INT_pending_reg;
-  always_ff @(posedge hb_clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge hb_clk, posedge rst) begin
+    if (rst) begin
       INT_enable_reg  <= 0;
       INT_pending_reg <= 0;
     end else begin

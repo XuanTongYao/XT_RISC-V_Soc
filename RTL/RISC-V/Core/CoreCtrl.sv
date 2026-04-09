@@ -2,7 +2,7 @@ module CoreCtrl #(
     parameter int STALL_REQ_NUM = 1
 ) (
     input clk,
-    input rst_sync,
+    input rst,
 
     // 来自外部控制
     input [STALL_REQ_NUM-1:0] stall_req,
@@ -49,8 +49,8 @@ module CoreCtrl #(
   assign instruction_retire = !(flushing_pipeline || trap_occurred) && (jump || stall_n);
   logic [1:0] nop_cnt;
   assign flushing_pipeline = nop_cnt != 0;
-  always_ff @(posedge clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst) begin
       nop_cnt <= 0;
       jump_pending <= 0;
     end else if (flush) begin

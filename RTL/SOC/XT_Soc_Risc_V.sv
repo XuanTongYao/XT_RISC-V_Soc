@@ -64,12 +64,12 @@ module XT_Soc_Risc_V
       .LOCK(pll_lock)
   );
 
-  wire rst_sync_n;
-  wire rst_sync = ~rst_sync_n;
+  wire rst_n;
+  wire rst = ~rst_n;
   SyncAsyncReset u_SyncAsyncReset (
-      .clk       (clk),
-      .rst_n     (pll_lock),
-      .rst_sync_n(rst_sync_n)
+      .clk    (clk),
+      .rst_i_n(pll_lock),
+      .rst_o_n(rst_n)
   );
 
 

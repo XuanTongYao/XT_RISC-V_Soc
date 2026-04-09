@@ -4,7 +4,7 @@ module CoreReg
     parameter core_cfg_t CFG
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input stall_n,
 
     // 读取
@@ -44,7 +44,7 @@ module CoreReg
   end
 
   always_ff @(posedge clk) begin
-    if (!rst_sync) begin
+    if (!rst) begin
       if (stall_n && reg_wen && reg_waddr != 0) begin
         core_reg[reg_waddr] <= reg_wdata;
       end

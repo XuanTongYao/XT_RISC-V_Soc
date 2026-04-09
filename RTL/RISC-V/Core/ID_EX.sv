@@ -3,7 +3,7 @@ module ID_EX
   import RV32I_Inst_Pkg::*;
 (
     input        clk,
-    input        rst_sync,
+    input        rst,
     input        flush,
     input        stall_n,
     // 来自ID
@@ -42,8 +42,11 @@ module ID_EX
       operand1 <= operand1_id;
       operand2 <= operand2_id;
     end
+  end
+
+  always_ff @(posedge clk, posedge rst) begin
     // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
-    if (rst_sync || flush || (exception_id_raise && stall_n)) begin
+    if (rst || flush || (exception_id_raise && stall_n)) begin
       ram_load_access_id_ex <= 0;
       ram_store_access_id_ex <= 0;
       instruction_id_ex <= INST_NOP;

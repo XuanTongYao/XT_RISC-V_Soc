@@ -6,7 +6,7 @@ module CSR
     parameter core_cfg_t CFG
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input stall_n,
     input instruction_retire,
 
@@ -79,8 +79,8 @@ module CSR
   // wire [31:0] mhpmevent_N = 0;  // 事件选择器(只读0实现)
   // wire [31:0] mcountinhibit = 0;  // 计数器抑制(不实现)
 
-  always_ff @(posedge clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst) begin
       mcycle_all <= 0;
     end else begin
       mcycle_all <= mcycle_all + 1'b1;
@@ -135,8 +135,8 @@ module CSR
   end
 
 
-  always_ff @(posedge clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst) begin
       mstatus <= 0;
       mie <= 0;
       mtvec <= 0;

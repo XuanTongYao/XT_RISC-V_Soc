@@ -11,7 +11,7 @@
 //
 // <<< 端 口 >>> //
 // clk:            时钟信号
-// rst_sync:       同步复位信号
+// rst:            复位信号
 // stall_req:      流水线暂停请求(适用于IO需要等待时)
 
 
@@ -27,7 +27,7 @@ module RISC_V_Core
     parameter bit [CFG.XLEN-1:0] PC_RESET = 0
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input [STALL_REQ_NUM-1:0] stall_req,
     output logic core_stall_n,
 

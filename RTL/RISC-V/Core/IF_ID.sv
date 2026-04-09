@@ -6,7 +6,7 @@ module IF_ID
     parameter bit INST_DELAY_1TICK = 1
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input flush,
     input stall_n,
 
@@ -30,8 +30,8 @@ module IF_ID
 
   generate
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
-      always_ff @(posedge clk) begin
-        if (rst_sync || flush || exception_if_raise) begin
+      always_ff @(posedge clk, posedge rst) begin
+        if (rst || flush || exception_if_raise) begin
           instruction_if_id <= INST_NOP;
         end else if (stall_n) begin
           instruction_if_id <= instruction_if;
@@ -39,8 +39,9 @@ module IF_ID
       end
     end else begin : gen_none_delay
       logic clear;
-      always_ff @(posedge clk) begin
-        clear <= rst_sync || flush || exception_if_raise;
+      always_ff @(posedge clk, posedge rst) begin
+        if (rst) clear <= 1;
+        else clear <= flush || exception_if_raise;
       end
       assign instruction_if_id = clear ? INST_NOP : instruction_if;
     end

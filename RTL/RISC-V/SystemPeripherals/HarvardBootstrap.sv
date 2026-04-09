@@ -4,7 +4,7 @@ module HarvardBootstrap
   import Utils_Pkg::sel_t;
   import SystemPeripheral_Pkg::*;
 (
-    input rst_sync,
+    input rst,
     // 指令选择
     input [31:0] bootloader_instruction,
     input [31:0] user_instruction,
@@ -49,8 +49,8 @@ module HarvardBootstrap
 
   //----------运行模式切换----------//
   logic [7:0] debug_reg;
-  always_ff @(posedge hb_clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge hb_clk, posedge rst) begin
+    if (rst) begin
       debug_reg <= 0;
     end else if (sel.wen && w_debug) begin
       debug_reg <= sys_share.wdata[7:0];
@@ -59,8 +59,8 @@ module HarvardBootstrap
 
   logic normal_mode;
   assign instruction = normal_mode ? user_instruction : bootloader_instruction;
-  always_ff @(posedge hb_clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge hb_clk, posedge rst) begin
+    if (rst) begin
       normal_mode <= 0;
     end else if (!normal_mode && debug_reg == 8'hF0) begin
       normal_mode <= 1;

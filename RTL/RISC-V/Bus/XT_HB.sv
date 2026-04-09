@@ -16,7 +16,7 @@ module XT_HB
     parameter bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[DEVICE_NUM-1]
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input core_stall_n,
 
     // 高速总线(读写可以被不同不冲突的主设备占用，全双工)

@@ -5,7 +5,7 @@ module PC_Reg
     parameter bit [CFG.XLEN-1:0] PC_RESET = 0
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input stall_n,
     input rvc,
 
@@ -23,8 +23,8 @@ module PC_Reg
     end
   end
 
-  always_ff @(posedge clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst) begin
       pc <= PC_RESET;
     end else if (jump) begin
       pc <= jump_addr;

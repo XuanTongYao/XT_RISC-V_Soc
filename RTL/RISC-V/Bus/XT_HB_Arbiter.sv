@@ -2,7 +2,7 @@ module XT_HB_Arbiter #(
     parameter int DEVICE_NUM = 4
 ) (
     input clk,
-    input rst_sync,
+    input rst,
     input [DEVICE_NUM-1:0] read_req,
     input [DEVICE_NUM-1:0] write_req,
     output logic [DEVICE_NUM-1:0] read_grant,
@@ -25,7 +25,7 @@ module XT_HB_Arbiter #(
       // 死锁自动重置
       wire dead_locked = read_busy && write_busy && (reading_index != writing_index) && read_req[writing_index] &&
           write_req[reading_index];
-      wire rst_arbiter = dead_locked || rst_sync;
+      wire rst_arbiter = dead_locked || rst;
 
       RoundRobinArbiter #(
           .DEVICE_NUM(DEVICE_NUM)
