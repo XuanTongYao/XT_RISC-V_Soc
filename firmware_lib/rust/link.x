@@ -46,7 +46,7 @@ SECTIONS
         *(.sdata .sdata.* .sdata2 .sdata2.*)
     } > DATA_RAM
 
-    . = ALIGN(ALIGNOF(.sbss));
+    . = ALIGN(ALIGNOF(.bss));
     __BSS_START__ = .;
     .bss :
     {
