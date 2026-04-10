@@ -12,19 +12,19 @@ fn main() -> ! {
         let key = key_switch.key();
         let sw = key_switch.switch();
         if bit_is_1(key, 0) {
-            ledsd.display(0x00);
+            ledsd.set_data(0x00);
         } else if bit_is_1(key, 1) {
-            ledsd.display(0x01);
+            ledsd.set_data(0x01);
         } else if bit_is_1(key, 2) {
-            ledsd.display(0x02);
+            ledsd.set_data(0x02);
         } else if bit_is_1(key, 3) {
-            ledsd.display(0x03);
+            ledsd.set_data(0x03);
         } else if bit_is_1(sw, 0) {
-            ledsd.display(0x10);
+            ledsd.set_data(0x10);
         } else if bit_is_1(sw, 1) {
-            ledsd.display(0x20);
+            ledsd.set_data(0x20);
         } else if bit_is_1(sw, 2) {
-            ledsd.display(0x30);
+            ledsd.set_data(0x30);
         }
     }
 }

@@ -4,14 +4,14 @@
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
 use xt_riscv_mcu::lb::{LED, LEDSD};
-use xt_riscv_mcu::rv_core::{enable_global_interrupt, enable_interrupt};
-use xt_riscv_mcu::system_peripheral::{EintController, EintMask, Mtime, Uart};
+use xt_riscv_mcu::rv_core::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
+use xt_riscv_mcu::system_peripheral::{EintController, Mtime, Uart};
 
 #[entry]
 fn main() -> ! {
     let mut eint = EintController::SINGLETON;
     unsafe {
-        eint.set_enable(EintMask::UART.bits());
+        eint.set_enable(ExternalInterrupt::Uart.into_mask());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }
@@ -24,7 +24,7 @@ fn main() -> ! {
 unsafe extern "C" fn UART_RX_IRQ_Handler() {
     let mut ledsd = LEDSD::SINGLETON;
     let mut uart = Uart::SINGLETON;
-    ledsd.display(unsafe { uart.rx_forced() });
+    ledsd.set_data(unsafe { uart.rx_forced() });
 }
 
 static mut TIMER: u32 = 0;
@@ -40,7 +40,7 @@ unsafe extern "C" fn mtimer_IRQ_Handler() {
     let mut ledsd = LEDSD::SINGLETON;
     let mut led = LED::SINGLETON;
     unsafe {
-        ledsd.display(TIMER as u8);
+        ledsd.set_data(TIMER as u8);
         led.set_data(TIMER as u8);
     }
 }

@@ -16,6 +16,17 @@ const fn lb_base(offset: usize) -> usize {
 
 pub const FREQ_HZ: u32 = crate::rv_core::CORE_FREQ_HZ;
 
+macro_rules! get_u16_from_2_u8 {
+    ($(#[$doc:meta])* $name:ident, [$reg_h:ident, $reg_l:ident]) => {
+        $(#[$doc])*
+        #[inline(always)]
+        pub fn $name(&self) -> u16 {
+            let low = self.reg().$reg_l.read() as u16;
+            ((self.reg().$reg_h.read() as u16) << 8) | low
+        }
+    };
+}
+
 pub mod regs {
     use bitfield_struct::{bitenum, bitfield};
     use volatile_register::{RO, RW, WO};
@@ -384,11 +395,7 @@ impl I2cInner {
     crate::getset_value!(int_status, int_status, regs::I2cInterrupt);
     crate::getset_value!(int_en, int_en, regs::I2cInterrupt);
 
-    #[inline(always)]
-    pub fn prescale(&self) -> u16 {
-        let low = self.reg().br0.read() as u16;
-        ((self.reg().br1.read() as u16) << 8) | low
-    }
+    get_u16_from_2_u8!(prescale, [br1, br0]);
 
     /// 设置预分频为 `div`，实际频率为`WISHBONE/(div*4)`
     /// - **主机**模式时，范围 `[0,1023]`
@@ -680,26 +687,10 @@ pub type Timer = Peripheral<regs::Timer, { lb_base(TIMER_OFFSET) }>;
 pub use regs::{TimerClkSel, TimerCounterMode, TimerDivider, TimerOutputMode};
 impl Timer {
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
-    #[inline]
-    pub fn top(&self) -> u16 {
-        let val = self.reg().topl.read() as u16;
-        ((self.reg().toph.read() as u16) << 8) | val
-    }
-    #[inline]
-    pub fn compare(&self) -> u16 {
-        let val = self.reg().comparel.read() as u16;
-        ((self.reg().compareh.read() as u16) << 8) | val
-    }
-    #[inline]
-    pub fn counter(&self) -> u16 {
-        let val = self.reg().counterl.read() as u16;
-        ((self.reg().counterh.read() as u16) << 8) | val
-    }
-    #[inline]
-    pub fn capture(&self) -> u16 {
-        let val = self.reg().capturel.read() as u16;
-        ((self.reg().captureh.read() as u16) << 8) | val
-    }
+    get_u16_from_2_u8!(top, [toph, topl]);
+    get_u16_from_2_u8!(compare, [compareh, comparel]);
+    get_u16_from_2_u8!(counter, [counterh, counterl]);
+    get_u16_from_2_u8!(capture, [captureh, capturel]);
 
     #[inline(always)]
     pub fn set_top(&mut self, value: u16) {

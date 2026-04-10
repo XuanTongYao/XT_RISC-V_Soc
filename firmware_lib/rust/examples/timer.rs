@@ -1,11 +1,12 @@
 #![no_std]
 #![no_main]
 
+use AfControlSel::{Sel6, Sel7};
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
-use xt_riscv_mcu::lb::{AfGpio, GpioAlternateFunction, OutAF};
-use xt_riscv_mcu::rv_core::{enable_global_interrupt, enable_interrupt};
-use xt_riscv_mcu::system_peripheral::{EintController, EintMask, Uart};
+use xt_riscv_mcu::lb::{AfControlSel, AfGpio, GpioAlternateFunction, OutAF};
+use xt_riscv_mcu::rv_core::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
+use xt_riscv_mcu::system_peripheral::{EintController, Uart};
 use xt_riscv_mcu::wisbone::Timer;
 
 const TIMER_AF: GpioAlternateFunction = GpioAlternateFunction::Output(OutAF::TimerOutput);
@@ -15,7 +16,7 @@ const SPI_AF: GpioAlternateFunction = GpioAlternateFunction::Output(OutAF::SpiCs
 fn main() -> ! {
     let mut eint = EintController::SINGLETON;
     unsafe {
-        eint.set_enable(EintMask::TIMER.bits());
+        eint.set_enable(ExternalInterrupt::Timer.into_mask());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }
@@ -36,9 +37,9 @@ fn main() -> ! {
             // TODO set_af_control 函数感觉还能优化
             0x06 => gpio.set_af_control(TIMER_AF, None, Some(false)), // 关闭定时器复用
             0x07 => gpio.set_af_control(TIMER_AF, None, Some(true)),  // 开启定时器复用
-            0x08 => gpio.set_af_control(TIMER_AF, Some(7), None),     // 红色LED
-            0x09 => gpio.set_af_control(TIMER_AF, Some(6), None),     // 绿色LED
-            0x0a => gpio.set_af_control(SPI_AF, Some(6), Some(true)), // 开启SPI复用
+            0x08 => gpio.set_af_control(TIMER_AF, Some(Sel7), None),  // 红色LED
+            0x09 => gpio.set_af_control(TIMER_AF, Some(Sel6), None),  // 绿色LED
+            0x0a => gpio.set_af_control(SPI_AF, Some(Sel6), Some(true)), // 开启SPI复用
             0x0b => gpio.set_af_control(SPI_AF, None, Some(false)),   // 关闭SPI复用
             _ => (),
         }
@@ -89,7 +90,7 @@ static mut COMPARE: u16 = 0;
 static mut ADD: bool = false;
 
 fn breathing_light(timer: &mut Timer, gpio: &mut AfGpio) {
-    gpio.set_af_control(TIMER_AF, Some(7), Some(true));
+    gpio.set_af_control(TIMER_AF, Some(Sel7), Some(true));
 
     let control0 = TimerControl0::new()
         .with_prescale(Div256)

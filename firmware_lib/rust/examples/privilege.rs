@@ -4,21 +4,23 @@
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
 use xt_riscv_mcu::lb::LEDSD;
-use xt_riscv_mcu::rv_core::{delay_sec, enable_global_interrupt, enable_interrupt};
-use xt_riscv_mcu::system_peripheral::{EintController, EintMask, Uart};
+use xt_riscv_mcu::rv_core::{
+    ExternalInterrupt, delay_sec, enable_global_interrupt, enable_interrupt,
+};
+use xt_riscv_mcu::system_peripheral::{EintController, Uart};
 
 #[entry]
 fn main() -> ! {
     let mut ledsd = LEDSD::SINGLETON;
     let mut eint = EintController::SINGLETON;
     unsafe {
-        eint.set_enable(EintMask::UART.bits());
+        eint.set_enable(ExternalInterrupt::Uart.into_mask());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }
     loop {
         for i in 0..10 {
-            ledsd.display(i as u8);
+            ledsd.set_data(i as u8);
             delay_sec(1);
         }
         riscv::asm::wfi();
@@ -53,13 +55,13 @@ unsafe extern "C" fn UART_RX_IRQ_Handler() {
 unsafe extern "C" fn uart_rx_irq_handler() {
     let mut ledsd = LEDSD::SINGLETON;
     let mut uart = Uart::SINGLETON;
-    ledsd.display(unsafe { uart.rx_forced() });
+    ledsd.set_data(unsafe { uart.rx_forced() });
 }
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn Ecall_ErrorHandler() {
     let mut ledsd = LEDSD::SINGLETON;
-    ledsd.display(0xEC);
+    ledsd.set_data(0xEC);
     let mut mepc = riscv::register::mepc::read();
     mepc += 4;
     unsafe { riscv::register::mepc::write(mepc) }

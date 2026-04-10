@@ -61,14 +61,10 @@ pub mod regs {
 
     #[bitfield(u32)]
     pub struct UartStatus {
-        #[bits(access = RO)]
         pub tx_ready: bool,
-        #[bits(access = RO)]
         pub rx_end: bool,
-        #[bits(access = RO)]
         pub tx_empty: bool, // 发送缓冲区空
-        #[bits(access = RO)]
-        pub rx_full: bool, // 接收缓冲区已满
+        pub rx_full: bool,  // 接收缓冲区已满
         #[bits(28)]
         __: u32,
     }
@@ -86,7 +82,10 @@ impl Bootstrap {
     const INTO_NORMAL_MODE: u32 = 0xF0;
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
 
-    crate::set_value!(unsafe preload_str_addr,preload_str_addr,u32);
+    crate::set_value!(
+        /// # Safety 
+        /// 写入无效地址会导致preload寄存器硬件失效
+        unsafe preload_str_addr,preload_str_addr,u32);
 
     #[inline(always)]
     pub fn get_preload_str_u8(&mut self) -> u8 {
@@ -107,19 +106,7 @@ impl Bootstrap {
 
 pub type EintController =
     Peripheral<regs::EintController, { sp_base(PeripheralId::EintController) }>;
-
-bitflags::bitflags! {
-    #[derive(Copy, Clone)]
-    pub struct EintMask:u32{
-        const UART      = 0x0001;
-        const I2C1      = 0x0100;
-        const I2C2      = 0x0200;
-        const SPI       = 0x0400;
-        const TIMER     = 0x0800;
-        const WBC_UFM   = 0x1000;
-    }
-}
-
+use crate::rv_core::ExternalInterrupt;
 impl EintController {
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
 
@@ -128,12 +115,21 @@ impl EintController {
     crate::get_value!(pending, pending, u32);
 
     #[inline(always)]
-    pub unsafe fn enable_mask(&mut self, mask: EintMask) {
-        unsafe { self.reg().enable.modify(|enable| enable | mask.bits()) }
+    pub unsafe fn enable_interrupt(&mut self, int: ExternalInterrupt) {
+        unsafe { self.enable_interrupt_mask(int.into_mask()) }
     }
     #[inline(always)]
-    pub fn disable_mask(&mut self, mask: EintMask) {
-        unsafe { self.reg().enable.modify(|enable| enable & (!mask).bits()) }
+    pub fn disable_interrupt(&mut self, int: ExternalInterrupt) {
+        self.disable_interrupt_mask(int.into_mask())
+    }
+
+    #[inline(always)]
+    pub unsafe fn enable_interrupt_mask(&mut self, mask: u32) {
+        unsafe { self.reg().enable.modify(|enable| enable | mask) }
+    }
+    #[inline(always)]
+    pub fn disable_interrupt_mask(&mut self, mask: u32) {
+        unsafe { self.reg().enable.modify(|enable| enable & (!mask)) }
     }
 }
 

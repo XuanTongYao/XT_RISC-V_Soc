@@ -39,6 +39,47 @@ pub fn disable_global_interrupt() {
     unsafe { core::arch::asm!("csrci mstatus, 0x8") }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[repr(usize)]
+pub enum ExternalInterrupt {
+    Uart = 0,
+    I2c1 = 8,
+    I2c2 = 9,
+    Spi = 10,
+    Timer = 11,
+    Wbcufm = 12,
+}
+
+unsafe impl riscv::InterruptNumber for ExternalInterrupt {
+    const MAX_INTERRUPT_NUMBER: usize = Self::Wbcufm as usize + 16;
+
+    #[inline]
+    fn number(self) -> usize {
+        self as usize + 16
+    }
+
+    #[inline]
+    fn from_number(value: usize) -> riscv::result::Result<Self> {
+        match value {
+            val if val == Self::Uart as usize + 16 => Ok(Self::Uart),
+            val if val == Self::I2c1 as usize + 16 => Ok(Self::I2c1),
+            val if val == Self::I2c2 as usize + 16 => Ok(Self::I2c2),
+            val if val == Self::Spi as usize + 16 => Ok(Self::Spi),
+            val if val == Self::Timer as usize + 16 => Ok(Self::Timer),
+            val if val == Self::Wbcufm as usize + 16 => Ok(Self::Wbcufm),
+            _ => Err(riscv::result::Error::InvalidVariant(value)),
+        }
+    }
+}
+
+unsafe impl riscv::ExternalInterruptNumber for ExternalInterrupt {}
+
+impl ExternalInterrupt {
+    pub const fn into_mask(self) -> u32 {
+        1u32 << (self as u32)
+    }
+}
+
 /// csrw/csrs/csrc伪指令立即数支持
 #[macro_export]
 #[doc(hidden)]
