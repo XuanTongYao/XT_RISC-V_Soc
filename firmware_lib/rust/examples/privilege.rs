@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(abi_riscv_interrupt)]
 
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
@@ -31,35 +32,14 @@ fn main() -> ! {
 }
 
 #[unsafe(no_mangle)]
-#[unsafe(naked)]
-unsafe extern "C" fn UART_RX_IRQ_Handler() {
-    core::arch::naked_asm!(
-        "addi sp, sp, -16",
-        "sw ra, 12(sp)",
-        "sw a0, 8(sp)",
-        "sw a1, 4(sp)",
-
-        "call {}",
-
-        "lw a1, 4(sp)",
-        "lw a0, 8(sp)",
-        "lw ra, 12(sp)",
-        "addi sp, sp, 16",
-        "mret",
-        sym uart_rx_irq_handler,
-    );
-}
-
-/// # FIXME
-/// 中断不能正常工作，能工作就是巧合
-unsafe extern "C" fn uart_rx_irq_handler() {
+unsafe extern "riscv-interrupt-m" fn UART_RX_IRQ_Handler() {
     let mut ledsd = LEDSD::SINGLETON;
     let mut uart = Uart::SINGLETON;
     ledsd.set_data(unsafe { uart.rx_forced() });
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "C" fn Ecall_ErrorHandler() {
+unsafe extern "riscv-interrupt-m" fn Ecall_ErrorHandler() {
     let mut ledsd = LEDSD::SINGLETON;
     ledsd.set_data(0xEC);
     let mut mepc = riscv::register::mepc::read();

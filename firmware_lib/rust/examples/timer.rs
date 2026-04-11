@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(abi_riscv_interrupt)]
 
 use AfControlSel::{Sel6, Sel7};
 use riscv::interrupt::Interrupt;
@@ -34,7 +35,6 @@ fn main() -> ! {
             0x03 => clkdiv_down(&mut timer),
             0x04 => breathing_light(&mut timer, &mut gpio),
             0x05 => exit_breathing_light(&mut timer),
-            // TODO set_af_control 函数感觉还能优化
             0x06 => gpio.set_af_control(TIMER_AF, None, Some(false)), // 关闭定时器复用
             0x07 => gpio.set_af_control(TIMER_AF, None, Some(true)),  // 开启定时器复用
             0x08 => gpio.set_af_control(TIMER_AF, Some(Sel7), None),  // 红色LED
@@ -114,15 +114,14 @@ fn exit_breathing_light(timer: &mut Timer) {
     }
 }
 
-/// # FIXME
-/// 中断不能正常工作，能工作就是巧合
 #[unsafe(no_mangle)]
-unsafe extern "C" fn Timer_IRQ_Handler() {
+unsafe extern "riscv-interrupt-m" fn Timer_IRQ_Handler() {
     let mut timer = Timer::SINGLETON;
     let int_status = timer.reg().int_status.read();
-    if int_status.irqovf() {
-        unsafe { timer.reg().int_status.write(int_status) }
+    if !int_status.irqovf() {
+        return;
     }
+    unsafe { timer.reg().int_status.write(int_status) }
 
     unsafe {
         if COMPARE == 460 || COMPARE == 0 {
