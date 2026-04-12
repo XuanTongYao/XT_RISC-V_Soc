@@ -7,8 +7,7 @@ module InstructionDecode
     parameter core_cfg_t CFG
 ) (
     // 来自IF_ID
-    input [31:0] instruction_addr_if_id,
-    input [31:0] instruction_if_id,
+    instruction_if.from_prev if_id_inst,
 
     // 与寄存器
     output logic [4:0] reg1_raddr,
@@ -22,8 +21,6 @@ module InstructionDecode
     output logic [31:0] ram_load_addr_id,
     output logic [31:0] ram_store_addr_id,
     output logic [31:0] ram_store_data_id,
-    output logic [31:0] instruction_addr_id,
-    output logic [31:0] instruction_id,
     output logic [31:0] operand1_id,
     output logic [31:0] operand2_id,
     output logic        reg_wen_id,
@@ -32,11 +29,8 @@ module InstructionDecode
     output exception_t exception_id
 );
 
-  assign instruction_addr_id = instruction_addr_if_id;
-  assign instruction_id = instruction_if_id;
-
   //----------指令信息提取----------//
-  wire [31:0] inst = instruction_if_id;
+  wire [31:0] inst = if_id_inst.inst;
   wire [ 6:0] opcode = inst[6:0];
   wire [ 2:0] funct3 = inst[14:12];
   wire [ 6:0] funct7 = inst[31:25];
@@ -83,12 +77,12 @@ module InstructionDecode
       end
       RV32I_OP_AUIPC: begin
         reg_wen_id  = 1;
-        operand1_id = instruction_addr_if_id;
+        operand1_id = if_id_inst.addr;
         operand2_id = imm_u;
       end
       RV32I_OP_JAL: begin
         reg_wen_id  = 1;
-        operand1_id = instruction_addr_if_id;
+        operand1_id = if_id_inst.addr;
         operand2_id = imm_j;
       end
       RV32I_OP_JALR: begin

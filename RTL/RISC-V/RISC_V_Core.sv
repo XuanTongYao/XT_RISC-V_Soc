@@ -32,8 +32,7 @@ module RISC_V_Core
     output logic core_stall_n,
 
     // 访问指令存储器
-    input [31:0] instruction,
-    output logic [31:0] instruction_addr,
+    instruction_if.requestor core_inst_if,
 
     // 与高速总线相连
     output logic access_ram_read,
@@ -101,16 +100,13 @@ module RISC_V_Core
 
 
   //----------流水线----------//
-
-  wire [31:0] instruction_addr_if;
-  wire [31:0] instruction_if;
+  instruction_if if_inst ();
   wire exception_t exception_if;
   wire exception_if_raise = exception_if.raise;
   InstructionFetch u_InstructionFetch (.*);
 
 
-  wire [31:0] instruction_addr_if_id;
-  wire [31:0] instruction_if_id;
+  instruction_if if_id_inst ();
   // 为了适应不同速度的指令存储器，可以选择指令是否打一拍
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
@@ -118,20 +114,17 @@ module RISC_V_Core
   wire ram_store_access_id, ram_load_access_id;
   wire [31:0] ram_load_addr_id, ram_store_addr_id;
   wire [31:0] ram_store_data_id;
-  wire [31:0] instruction_addr_id;
-  wire [31:0] instruction_id;
   wire [31:0] operand1_id, operand2_id;
   wire reg_wen_id;
   wire exception_t exception_id;
   wire exception_id_raise = exception_id.raise;
-  assign next_pc = instruction_addr_id;
+  assign next_pc = if_id_inst.addr;
   InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
+  instruction_if id_ex_inst ();
   wire ram_store_access_id_ex, ram_load_access_id_ex;
   wire [31:0] ram_load_addr_id_ex, ram_store_addr_id_ex;
   wire [31:0] ram_store_data_id_ex;
-  wire [31:0] instruction_addr_id_ex;
-  wire [31:0] instruction_id_ex;
   wire [31:0] operand1, operand2;
   wire reg_wen_id_ex;
   ID_EX u_ID_EX (.*);
@@ -169,7 +162,7 @@ module RISC_V_Core
       .CFG(CFG)
   ) u_ExceptionCtrl (
       .*,
-      .instruction_addr_id_ex(instruction_addr_id_ex[CFG.XLEN-1:CFG.PC_ZEROS]),
+      .instruction_addr_id_ex(id_ex_inst.addr[CFG.XLEN-1:CFG.PC_ZEROS]),
       .jump_addr_ex(jump_addr_ex[CFG.XLEN-1:CFG.PC_ZEROS])
   );
   CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);

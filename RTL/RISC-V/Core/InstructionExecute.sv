@@ -6,17 +6,16 @@ module InstructionExecute
     parameter core_cfg_t CFG
 ) (
     // 来自ID_EX
-    input        ram_load_access_id_ex,
-    input        ram_store_access_id_ex,
+    instruction_if.from_prev id_ex_inst,
+    input ram_load_access_id_ex,
+    input ram_store_access_id_ex,
     input [31:0] ram_load_addr_id_ex,
     input [31:0] ram_store_addr_id_ex,
     input [31:0] ram_store_data_id_ex,
-    input [31:0] instruction_addr_id_ex,
-    input [31:0] next_pc,                 // 下一个PC其实就存在IF_ID里面，不需要单独寄存
-    input [31:0] instruction_id_ex,
+    input [31:0] next_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
     input [31:0] operand1,
     input [31:0] operand2,
-    input        reg_wen_id_ex,
+    input reg_wen_id_ex,
 
     // 传递给寄存器
     output logic [         4:0] reg_waddr,
@@ -47,10 +46,10 @@ module InstructionExecute
     output logic wfi
 );
   // TODO实际上这个地方应该有异常判断
-  wire [31:0] inst = instruction_id_ex;
 
 
   //----------指令信息提取----------//
+  wire [31:0] inst = id_ex_inst.inst;
   wire [6:0] opcode = inst[6:0];
   wire [2:0] funct3 = inst[14:12];
   wire [6:0] funct7 = inst[31:25];
@@ -78,19 +77,16 @@ module InstructionExecute
   wire [31:0] alu_shift_left = operand1 << operand2[4:0];
   wire [31:0] alu_shift_right_l = operand1 >> operand2[4:0];
   wire [31:0] alu_shift_right_a = $signed(operand1) >>> operand2[4:0];
-  wire [31:0] alu_base_addr_offset = instruction_addr_id_ex + imm_b;
+  wire [31:0] alu_base_addr_offset = id_ex_inst.addr + imm_b;
 
   wire alu_equal = operand1 == operand2;
   wire alu_less_signed = $signed(operand1) < $signed(operand2);
   wire alu_less_unsigned = operand1 < operand2;
   logic alu_less;
   always_comb begin
-    unique case (funct3)
-      RV32I_SLT, RV32I_SLTI: begin
-        alu_less = alu_less_signed;
-      end
-      default: alu_less = alu_less_unsigned;
-    endcase
+    // 实际上SLT和SLTI的funct3相同
+    if (funct3 == RV32I_SLT || funct3 == RV32I_SLTI) alu_less = alu_less_signed;
+    else alu_less = alu_less_unsigned;
   end
 
   // Load指令访存数据的高位扩展

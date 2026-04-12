@@ -2,18 +2,20 @@ module ID_EX
   import Exception_Pkg::*;
   import RV32I_Inst_Pkg::*;
 (
-    input        clk,
-    input        rst,
-    input        flush,
-    input        stall_n,
+    input clk,
+    input rst,
+    input flush,
+    input stall_n,
+
+    instruction_if.from_prev if_id_inst,
+    instruction_if.to_next   id_ex_inst,
+
     // 来自ID
     input        ram_load_access_id,
     input        ram_store_access_id,
     input [31:0] ram_load_addr_id,
     input [31:0] ram_store_addr_id,
     input [31:0] ram_store_data_id,
-    input [31:0] instruction_addr_id,
-    input [31:0] instruction_id,
     input [31:0] operand1_id,
     input [31:0] operand2_id,
     input        reg_wen_id,
@@ -25,8 +27,6 @@ module ID_EX
     output logic [31:0] ram_load_addr_id_ex,
     output logic [31:0] ram_store_addr_id_ex,
     output logic [31:0] ram_store_data_id_ex,
-    output logic [31:0] instruction_addr_id_ex,
-    output logic [31:0] instruction_id_ex,
     output logic [31:0] operand1,
     output logic [31:0] operand2,
     output logic        reg_wen_id_ex
@@ -35,7 +35,7 @@ module ID_EX
   // 都是NOP指令了，指令地址 不需要清零，对处理异常也有好处(中断处理)
   always_ff @(posedge clk) begin
     if (stall_n) begin
-      instruction_addr_id_ex <= instruction_addr_id;
+      id_ex_inst.addr <= if_id_inst.addr;
       ram_load_addr_id_ex <= ram_load_addr_id;
       ram_store_addr_id_ex <= ram_store_addr_id;
       ram_store_data_id_ex <= ram_store_data_id;
@@ -49,12 +49,12 @@ module ID_EX
     if (rst || flush || (exception_id_raise && stall_n)) begin
       ram_load_access_id_ex <= 0;
       ram_store_access_id_ex <= 0;
-      instruction_id_ex <= INST_NOP;
+      id_ex_inst.inst <= INST_NOP;
       reg_wen_id_ex <= 0;
     end else if (stall_n) begin
       ram_load_access_id_ex <= ram_load_access_id;
       ram_store_access_id_ex <= ram_store_access_id;
-      instruction_id_ex <= instruction_id;
+      id_ex_inst.inst <= if_id_inst.inst;
       reg_wen_id_ex <= reg_wen_id;
     end
   end

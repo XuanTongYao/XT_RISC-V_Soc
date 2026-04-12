@@ -11,30 +11,25 @@ module IF_ID
     input stall_n,
 
     // 中间传递
-    input [31:0] instruction_addr_if,
-    input [31:0] instruction_if,
+    instruction_if.from_prev if_inst,
+    instruction_if.to_next   if_id_inst,
 
-    input exception_if_raise,
-
-    output logic [31:0] instruction_addr_if_id,
-    output logic [31:0] instruction_if_id
+    input exception_if_raise
 );
 
   // 指令地址一定会停一个周期
   // 都是NOP指令了，指令地址 不需要清零，对处理异常也有好处
   always_ff @(posedge clk) begin
-    if (stall_n) begin
-      instruction_addr_if_id <= instruction_addr_if;
-    end
+    if (stall_n) if_id_inst.addr <= if_inst.addr;
   end
 
   generate
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
       always_ff @(posedge clk, posedge rst) begin
         if (rst || flush || exception_if_raise) begin
-          instruction_if_id <= INST_NOP;
+          if_id_inst.inst <= INST_NOP;
         end else if (stall_n) begin
-          instruction_if_id <= instruction_if;
+          if_id_inst.inst <= if_inst.inst;
         end
       end
     end else begin : gen_none_delay
@@ -43,7 +38,7 @@ module IF_ID
         if (rst) clear <= 1;
         else clear <= flush || exception_if_raise;
       end
-      assign instruction_if_id = clear ? INST_NOP : instruction_if;
+      assign if_id_inst.inst = clear ? INST_NOP : if_inst.inst;
     end
   endgenerate
 

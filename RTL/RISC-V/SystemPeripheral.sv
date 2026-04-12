@@ -22,7 +22,7 @@ module SystemPeripheral
     // BOOTLOADER
     input [31:0] bootloader_instruction,
     input [31:0] user_instruction,
-    output logic [31:0] instruction,
+    instruction_if.responder core_inst_if,
     input download_mode,
     // EINT_CTRL
     input [EXTERNAL_INT_NUM-1:0] irq_source,

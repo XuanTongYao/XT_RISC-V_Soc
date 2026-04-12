@@ -8,7 +8,7 @@ module HarvardBootstrap
     // 指令选择
     input [31:0] bootloader_instruction,
     input [31:0] user_instruction,
-    output logic [31:0] instruction,
+    instruction_if.responder core_inst_if,
 
     // 总线接口
     input hb_clk,
@@ -58,7 +58,7 @@ module HarvardBootstrap
   end
 
   logic normal_mode;
-  assign instruction = normal_mode ? user_instruction : bootloader_instruction;
+  assign core_inst_if.inst = normal_mode ? user_instruction : bootloader_instruction;
   always_ff @(posedge hb_clk, posedge rst) begin
     if (rst) begin
       normal_mode <= 0;

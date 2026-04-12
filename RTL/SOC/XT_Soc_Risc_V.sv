@@ -93,8 +93,7 @@ module XT_Soc_Risc_V
 
 
   // 直连RAM/ROM(指令读取)
-  wire [31:0] instruction_addr;
-  wire [31:0] instruction;
+  instruction_if core_inst_if ();
   wire core_stall_n;
 
   // 与高速总线相连
@@ -170,7 +169,7 @@ module XT_Soc_Risc_V
   localparam int ROM_DEPTH = 256;
   localparam int ROM_ADDR_WIDTH = $clog2(ROM_DEPTH * 4);
   rom_boot u_ROM (
-      .Address(instruction_addr[ROM_ADDR_WIDTH-1:2]),
+      .Address(core_inst_if.addr[ROM_ADDR_WIDTH-1:2]),
       .OutClock(clk),
       .OutClockEn(core_stall_n),
       .Reset(1'b0),
@@ -194,7 +193,7 @@ module XT_Soc_Risc_V
       .ram_data_write_finish(write_finish[IDX_DATA_RAM]),
       // 指令RAM
       .ram_inst_sel         (device_sel[IDX_INST_RAM]),
-      .inst_fetch_addr      (instruction_addr),
+      .inst_fetch_addr      (core_inst_if.addr),
       .inst_fetch           (user_instruction),
       .ram_inst_read_finish (read_finish[IDX_INST_RAM]),
       .ram_inst_write_finish(write_finish[IDX_INST_RAM])
