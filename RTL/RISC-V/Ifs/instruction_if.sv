@@ -1,7 +1,9 @@
-interface instruction_if;
+interface instruction_if #(
+    int XLEN = 32
+);
 
-  logic [31:0] addr;
-  logic [31:0] inst;
+  logic [XLEN-1:0] addr;
+  logic [XLEN-1:0] inst;
   modport requestor(output addr, input inst);
   modport responder(input addr, output inst);
 

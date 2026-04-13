@@ -10,23 +10,18 @@ module ID_EX
     instruction_if.from_prev if_id_inst,
     instruction_if.to_next   id_ex_inst,
 
+    exception_if.observer id_exception,
+
     // 来自ID
-    input        ram_load_access_id,
-    input        ram_store_access_id,
-    input [31:0] ram_load_addr_id,
-    input [31:0] ram_store_addr_id,
-    input [31:0] ram_store_data_id,
+    memory_access_if.from_prev id_memory,
+
     input [31:0] operand1_id,
     input [31:0] operand2_id,
     input        reg_wen_id,
-    input        exception_id_raise,
 
     // 传递给EX
-    output logic        ram_load_access_id_ex,
-    output logic        ram_store_access_id_ex,
-    output logic [31:0] ram_load_addr_id_ex,
-    output logic [31:0] ram_store_addr_id_ex,
-    output logic [31:0] ram_store_data_id_ex,
+    memory_access_if.to_next id_ex_memory,
+
     output logic [31:0] operand1,
     output logic [31:0] operand2,
     output logic        reg_wen_id_ex
@@ -36,9 +31,9 @@ module ID_EX
   always_ff @(posedge clk) begin
     if (stall_n) begin
       id_ex_inst.addr <= if_id_inst.addr;
-      ram_load_addr_id_ex <= ram_load_addr_id;
-      ram_store_addr_id_ex <= ram_store_addr_id;
-      ram_store_data_id_ex <= ram_store_data_id;
+      id_ex_memory.load_addr <= id_memory.load_addr;
+      id_ex_memory.store_addr <= id_memory.store_addr;
+      id_ex_memory.store_data <= id_memory.store_data;
       operand1 <= operand1_id;
       operand2 <= operand2_id;
     end
@@ -46,14 +41,14 @@ module ID_EX
 
   always_ff @(posedge clk, posedge rst) begin
     // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
-    if (rst || flush || (exception_id_raise && stall_n)) begin
-      ram_load_access_id_ex <= 0;
-      ram_store_access_id_ex <= 0;
+    if (rst || flush || (id_exception.raise && stall_n)) begin
+      id_ex_memory.load <= 0;
+      id_ex_memory.store <= 0;
       id_ex_inst.inst <= INST_NOP;
       reg_wen_id_ex <= 0;
     end else if (stall_n) begin
-      ram_load_access_id_ex <= ram_load_access_id;
-      ram_store_access_id_ex <= ram_store_access_id;
+      id_ex_memory.load <= id_memory.load;
+      id_ex_memory.store <= id_memory.store;
       id_ex_inst.inst <= if_id_inst.inst;
       reg_wen_id_ex <= reg_wen_id;
     end

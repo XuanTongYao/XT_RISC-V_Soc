@@ -7,28 +7,18 @@ module InstructionExecute
 ) (
     // 来自ID_EX
     instruction_if.from_prev id_ex_inst,
-    input ram_load_access_id_ex,
-    input ram_store_access_id_ex,
-    input [31:0] ram_load_addr_id_ex,
-    input [31:0] ram_store_addr_id_ex,
-    input [31:0] ram_store_data_id_ex,
+    memory_access_if.from_prev id_ex_memory,
     input [31:0] next_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
     input [31:0] operand1,
     input [31:0] operand2,
     input reg_wen_id_ex,
 
-    // 传递给寄存器
-    output logic [         4:0] reg_waddr,
-    output logic [CFG.XLEN-1:0] reg_wdata,
-    output logic                reg_wen,
+    // 写入目的寄存器
+    reg_w_if.core write_rd,
 
     // 访问控制与状态寄存器
+    csr_rw_if.core csr_rw,
     output logic trap_returned,
-    output logic csr_ren,
-    output logic csr_wen,
-    output logic [11:0] csr_rwaddr,
-    output logic [31:0] csr_wdata,
-    input [31:0] csr_rdata,
     input [CFG.PC_LEN-1:0] csr_mepc,
 
     // 访存
@@ -105,32 +95,32 @@ module InstructionExecute
   // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
   // 立即数imm一定与操作数2 operand2_id绑定
   always_comb begin
-    ram_load_en = ram_load_access_id_ex;
-    ram_store_en = ram_store_access_id_ex;
-    ram_load_addr = ram_load_addr_id_ex;
-    ram_store_addr = ram_store_addr_id_ex;
-    ram_store_data = ram_store_data_id_ex;
+    ram_load_en = id_ex_memory.load;
+    ram_store_en = id_ex_memory.store;
+    ram_load_addr = id_ex_memory.load_addr;
+    ram_store_addr = id_ex_memory.store_addr;
+    ram_store_data = id_ex_memory.store_data;
     ram_access_width = funct3[1:0];
     add_sub = 1;
 
-    reg_wen = reg_wen_id_ex;
-    reg_waddr = rd;
-    reg_wdata = 'x;
+    write_rd.en = reg_wen_id_ex;
+    write_rd.addr = rd;
+    write_rd.data = 'x;
     jump_addr_ex = 'x;
     jump_en_ex = 0;
 
     trap_returned = 0;
-    csr_ren = 0;
-    csr_wen = 0;
-    csr_rwaddr = inst[31:20];
-    csr_wdata = 'x;
+    csr_rw.ren = 0;
+    csr_rw.wen = 0;
+    csr_rw.addr = inst[31:20];
+    csr_rw.wdata = 'x;
 
     wfi = 0;
     unique case (opcode)
-      RV32I_OP_LUI:   reg_wdata = alu_add;
-      RV32I_OP_AUIPC: reg_wdata = alu_add;
+      RV32I_OP_LUI:   write_rd.data = alu_add;
+      RV32I_OP_AUIPC: write_rd.data = alu_add;
       RV32I_OP_JAL, RV32I_OP_JALR: begin
-        reg_wdata = next_pc;
+        write_rd.data = next_pc;
         jump_addr_ex = {alu_add[31:1], 1'b0};
         jump_en_ex = 1;
       end
@@ -149,28 +139,28 @@ module InstructionExecute
       end
       RV32I_OP_L: begin
         unique case (funct3)
-          RV32I_LB, RV32I_LBU: reg_wdata = extension_byte;
-          RV32I_LH, RV32I_LHU: reg_wdata = extension_halfword;
-          RV32I_LW:            reg_wdata = ram_load_data;
+          RV32I_LB, RV32I_LBU: write_rd.data = extension_byte;
+          RV32I_LH, RV32I_LHU: write_rd.data = extension_halfword;
+          RV32I_LW:            write_rd.data = ram_load_data;
           default:             ;
         endcase
       end
       RV32I_OP_S:     ;  // 已经在译码阶段完成处理
       RV32I_OP_I: begin
         unique case (funct3)
-          RV32I_ADDI:              reg_wdata = alu_add;
-          RV32I_SLTI, RV32I_SLTIU: reg_wdata = CFG.XLEN'(alu_less);
-          RV32I_XORI:              reg_wdata = alu_xor;
-          RV32I_ORI:               reg_wdata = alu_or;
-          RV32I_ANDI:              reg_wdata = alu_and;
-          RV32I_SLLI:              reg_wdata = alu_shift_left;
+          RV32I_ADDI:              write_rd.data = alu_add;
+          RV32I_SLTI, RV32I_SLTIU: write_rd.data = CFG.XLEN'(alu_less);
+          RV32I_XORI:              write_rd.data = alu_xor;
+          RV32I_ORI:               write_rd.data = alu_or;
+          RV32I_ANDI:              write_rd.data = alu_and;
+          RV32I_SLLI:              write_rd.data = alu_shift_left;
           RV32I_SRLI_SRAI: begin
             if (funct7[5] == 1'b1) begin
               //SRAI
-              reg_wdata = alu_shift_right_a;
+              write_rd.data = alu_shift_right_a;
             end else begin
               //SRLI
-              reg_wdata = alu_shift_right_l;
+              write_rd.data = alu_shift_right_l;
             end
           end
         endcase
@@ -181,27 +171,27 @@ module InstructionExecute
             if (funct7[5] == 1'b1) begin
               add_sub = 0;
             end
-            reg_wdata = alu_add;
+            write_rd.data = alu_add;
           end
-          RV32I_SLT, RV32I_SLTU: reg_wdata = CFG.XLEN'(alu_less);
-          RV32I_XOR:             reg_wdata = alu_xor;
-          RV32I_OR:              reg_wdata = alu_or;
-          RV32I_AND:             reg_wdata = alu_and;
-          RV32I_SLL:             reg_wdata = alu_shift_left;
+          RV32I_SLT, RV32I_SLTU: write_rd.data = CFG.XLEN'(alu_less);
+          RV32I_XOR:             write_rd.data = alu_xor;
+          RV32I_OR:              write_rd.data = alu_or;
+          RV32I_AND:             write_rd.data = alu_and;
+          RV32I_SLL:             write_rd.data = alu_shift_left;
           RV32I_SRL_SRA: begin
             if (funct7[5] == 1'b1) begin
               //SRA
-              reg_wdata = alu_shift_right_a;
+              write_rd.data = alu_shift_right_a;
             end else begin
               //SRL
-              reg_wdata = alu_shift_right_l;
+              write_rd.data = alu_shift_right_l;
             end
           end
         endcase
       end
       RV32I_OP_SYSTEM: begin
         // CSR指令都是原子指令
-        reg_wdata = csr_rdata;
+        write_rd.data = csr_rw.rdata;
         unique case (funct3)
           RV32I_PRIVILEGED: begin
             unique case (funct12)
@@ -216,19 +206,19 @@ module InstructionExecute
             endcase
           end
           ZICSR_CSRRW, ZICSR_CSRRWI: begin
-            csr_ren   = rd != 5'd0;
-            csr_wen   = 1;
-            csr_wdata = operand1;
+            csr_rw.ren   = rd != 5'd0;
+            csr_rw.wen   = 1;
+            csr_rw.wdata = operand1;
           end
           ZICSR_CSRRS, ZICSR_CSRRSI: begin
-            csr_ren   = 1;
-            csr_wen   = rs1 != 5'd0;
-            csr_wdata = operand1 | csr_rdata;
+            csr_rw.ren   = 1;
+            csr_rw.wen   = rs1 != 5'd0;
+            csr_rw.wdata = operand1 | csr_rw.rdata;
           end
           ZICSR_CSRRC, ZICSR_CSRRCI: begin
-            csr_ren   = 1;
-            csr_wen   = rs1 != 5'd0;
-            csr_wdata = ~operand1 & csr_rdata;
+            csr_rw.ren   = 1;
+            csr_rw.wen   = rs1 != 5'd0;
+            csr_rw.wdata = ~operand1 & csr_rw.rdata;
           end
           default: ;
         endcase

@@ -14,7 +14,7 @@ module IF_ID
     instruction_if.from_prev if_inst,
     instruction_if.to_next   if_id_inst,
 
-    input exception_if_raise
+    exception_if.observer if_exception
 );
 
   // 指令地址一定会停一个周期
@@ -26,7 +26,7 @@ module IF_ID
   generate
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
       always_ff @(posedge clk, posedge rst) begin
-        if (rst || flush || exception_if_raise) begin
+        if (rst || flush || if_exception.raise) begin
           if_id_inst.inst <= INST_NOP;
         end else if (stall_n) begin
           if_id_inst.inst <= if_inst.inst;
@@ -36,7 +36,7 @@ module IF_ID
       logic clear;
       always_ff @(posedge clk, posedge rst) begin
         if (rst) clear <= 1;
-        else clear <= flush || exception_if_raise;
+        else clear <= flush || if_exception.raise;
       end
       assign if_id_inst.inst = clear ? INST_NOP : if_inst.inst;
     end

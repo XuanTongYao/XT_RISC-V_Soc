@@ -10,6 +10,12 @@ package CSR_Pkg;
   } privilege_levels_t;
 
   typedef struct packed {
+    logic [1:0] mode;
+    logic [1:0] privilege_level;
+    logic [7:0] short_addr;
+  } csr_addr_t;
+
+  typedef struct packed {
     logic sd;
     logic [5:0] wpri_3;
     logic sdt;

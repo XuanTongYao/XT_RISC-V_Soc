@@ -10,23 +10,18 @@ module InstructionDecode
     instruction_if.from_prev if_id_inst,
 
     // 与寄存器
-    output logic [4:0] reg1_raddr,
-    output logic [4:0] reg2_raddr,
-    input [CFG.XLEN-1:0] reg1_rdata,
-    input [CFG.XLEN-1:0] reg2_rdata,
+    reg_r_if.core read_rs1,
+    reg_r_if.core read_rs2,
 
     // 传递给ID_EX
-    output logic        ram_load_access_id,
-    output logic        ram_store_access_id,
-    output logic [31:0] ram_load_addr_id,
-    output logic [31:0] ram_store_addr_id,
-    output logic [31:0] ram_store_data_id,
+    memory_access_if.to_next id_memory,
+
     output logic [31:0] operand1_id,
     output logic [31:0] operand2_id,
     output logic        reg_wen_id,
 
     // 异常处理
-    output exception_t exception_id
+    exception_if.source id_exception
 );
 
   //----------指令信息提取----------//
@@ -54,21 +49,21 @@ module InstructionDecode
   always_comb begin
     // 寄存器读取地址直接赋值就行了
     // 刚好5bit不会越界，不同指令自己会选择是否读寄存器的
-    reg1_raddr = rs1;
-    reg2_raddr = rs2;
+    read_rs1.addr = rs1;
+    read_rs2.addr = rs2;
     operand1_id = 'x;
     operand2_id = 'x;
     reg_wen_id = 0;
 
-    // ram_load_addr有ram_load_access控制，大胆赋值即可
-    ram_load_access_id = 0;
-    ram_store_access_id = 0;
-    ram_load_addr_id = reg1_rdata + imm_i;
-    ram_store_addr_id = reg1_rdata + imm_s;
-    ram_store_data_id = reg2_rdata;
+    // load_addr 有 load 控制，大胆赋值即可
+    id_memory.load = 0;
+    id_memory.store = 0;
+    id_memory.load_addr = read_rs1.data + imm_i;
+    id_memory.store_addr = read_rs1.data + imm_s;
+    id_memory.store_data = read_rs2.data;
 
-    exception_id.raise = 0;
-    exception_id.code = ILLEGAL_INST;
+    id_exception.raise = 0;
+    id_exception.code = ILLEGAL_INST;
     unique case (opcode)
       RV32I_OP_LUI: begin
         reg_wen_id  = 1;
@@ -87,14 +82,14 @@ module InstructionDecode
       end
       RV32I_OP_JALR: begin
         reg_wen_id  = 1;
-        operand1_id = reg1_rdata;
+        operand1_id = read_rs1.data;
         operand2_id = imm_i;
       end
       RV32I_OP_B: begin
         unique case (funct3)
           RV32I_BEQ, RV32I_BNE, RV32I_BLT, RV32I_BGE, RV32I_BLTU, RV32I_BGEU: begin
-            operand1_id = reg1_rdata;
-            operand2_id = reg2_rdata;
+            operand1_id = read_rs1.data;
+            operand2_id = read_rs2.data;
           end
           default: ;
         endcase
@@ -103,7 +98,7 @@ module InstructionDecode
         unique case (funct3)
           RV32I_LB, RV32I_LH, RV32I_LW, RV32I_LBU, RV32I_LHU: begin
             reg_wen_id = 1;
-            ram_load_access_id = 1;
+            id_memory.load = 1;
           end
           default: ;
         endcase
@@ -111,7 +106,7 @@ module InstructionDecode
       RV32I_OP_S: begin
         unique case (funct3)
           RV32I_SB, RV32I_SH, RV32I_SW: begin
-            ram_store_access_id = 1;
+            id_memory.store = 1;
           end
           default: ;
         endcase
@@ -120,7 +115,7 @@ module InstructionDecode
         unique case (funct3)
           RV32I_ADDI, RV32I_SLTI, RV32I_SLTIU, RV32I_XORI, RV32I_ORI, RV32I_ANDI, RV32I_SLLI, RV32I_SRLI_SRAI: begin
             reg_wen_id  = 1;
-            operand1_id = reg1_rdata;
+            operand1_id = read_rs1.data;
             operand2_id = imm_i;
           end
         endcase
@@ -129,8 +124,8 @@ module InstructionDecode
         unique case (funct3)
           RV32I_ADD_SUB, RV32I_SLL, RV32I_SLT, RV32I_SLTU, RV32I_XOR, RV32I_SRL_SRA, RV32I_OR, RV32I_AND: begin
             reg_wen_id  = 1;
-            operand1_id = reg1_rdata;
-            operand2_id = reg2_rdata;
+            operand1_id = read_rs1.data;
+            operand2_id = read_rs2.data;
           end
         endcase
       end
@@ -139,20 +134,20 @@ module InstructionDecode
           RV32I_PRIVILEGED: begin
             unique case (funct12)
               RV32I_FUNCT12_ECALL, RV32I_FUNCT12_EBREAK: begin
-                exception_id.raise = 1;
-                exception_id.code  = funct12[0] ? BREAKPOINT : ECALL_FROM_M_MODE;
+                id_exception.raise = 1;
+                id_exception.code  = funct12[0] ? BREAKPOINT : ECALL_FROM_M_MODE;
               end
               RV32I_FUNCT12_MRET: ;  // 不需要额外处理
               RV32I_FUNCT12_WFI:  ;  // WFI(在执行阶段处理)
               default: begin
-                exception_id.raise = 1;
-                exception_id.code  = ILLEGAL_INST;
+                id_exception.raise = 1;
+                id_exception.code  = ILLEGAL_INST;
               end
             endcase
           end
           ZICSR_CSRRW, ZICSR_CSRRS, ZICSR_CSRRC: begin
             reg_wen_id  = 1;
-            operand1_id = reg1_rdata;
+            operand1_id = read_rs1.data;
           end
           ZICSR_CSRRWI, ZICSR_CSRRSI, ZICSR_CSRRCI: begin
             reg_wen_id  = 1;
@@ -164,8 +159,8 @@ module InstructionDecode
       // 不执行，等效于NOP指令
       RV32I_OP_FENCE: ;
       default: begin
-        exception_id.raise = 1;
-        exception_id.code  = ILLEGAL_INST;
+        id_exception.raise = 1;
+        id_exception.code  = ILLEGAL_INST;
       end
     endcase
   end

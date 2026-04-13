@@ -49,7 +49,7 @@ module RISC_V_Core
     input mtimer_int,
     input [30:0] custom_int_code
 );
-
+  localparam int XLEN = CFG.XLEN;
 
   //----------核心控制器----------//
   wire [31:0] jump_addr;
@@ -67,9 +67,9 @@ module RISC_V_Core
 
   //----------寄存器----------//
   // 整数寄存器
-  wire reg_wen;
-  wire [4:0] reg1_raddr, reg2_raddr, reg_waddr;
-  wire [CFG.XLEN-1:0] reg1_rdata, reg2_rdata, reg_wdata;
+  reg_r_if #(.DATA_LEN(XLEN)) read_rs1 ();
+  reg_r_if #(.DATA_LEN(XLEN)) read_rs2 ();
+  reg_w_if #(.DATA_LEN(XLEN)) write_rd ();
   CoreReg #(.CFG(CFG)) u_CoreReg (.*);
 
   // PC寄存器
@@ -85,46 +85,37 @@ module RISC_V_Core
   );
 
   // 控制状态寄存器
+  csr_rw_if csr_rw ();
   wire trap_returned;
-  wire csr_ren;
-  wire csr_wen;
-  wire [11:0] csr_rwaddr;
-  wire [31:0] csr_wdata;
 
   wire mstatus_t csr_mstatus;
   wire mie_m_only_t csr_mie;
   wire mip_m_only_t csr_mip;
   wire mtvec_t csr_mtvec;
   wire [CFG.PC_LEN-1:0] csr_mepc;
-  wire [31:0] csr_rdata;
 
 
   //----------流水线----------//
-  instruction_if if_inst ();
-  wire exception_t exception_if;
-  wire exception_if_raise = exception_if.raise;
+  instruction_if #(.XLEN(XLEN)) if_inst ();
+  exception_if if_exception ();
   InstructionFetch u_InstructionFetch (.*);
 
 
-  instruction_if if_id_inst ();
+  instruction_if #(.XLEN(XLEN)) if_id_inst ();
   // 为了适应不同速度的指令存储器，可以选择指令是否打一拍
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
 
-  wire ram_store_access_id, ram_load_access_id;
-  wire [31:0] ram_load_addr_id, ram_store_addr_id;
-  wire [31:0] ram_store_data_id;
   wire [31:0] operand1_id, operand2_id;
   wire reg_wen_id;
-  wire exception_t exception_id;
-  wire exception_id_raise = exception_id.raise;
   assign next_pc = if_id_inst.addr;
+  memory_access_if #(.XLEN(XLEN)) id_memory ();
+  exception_if id_exception ();
   InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
-  instruction_if id_ex_inst ();
-  wire ram_store_access_id_ex, ram_load_access_id_ex;
-  wire [31:0] ram_load_addr_id_ex, ram_store_addr_id_ex;
-  wire [31:0] ram_store_data_id_ex;
+
+  instruction_if #(.XLEN(XLEN)) id_ex_inst ();
+  memory_access_if #(.XLEN(XLEN)) id_ex_memory ();
   wire [31:0] operand1, operand2;
   wire reg_wen_id_ex;
   ID_EX u_ID_EX (.*);
@@ -166,6 +157,9 @@ module RISC_V_Core
       .jump_addr_ex(jump_addr_ex[CFG.XLEN-1:CFG.PC_ZEROS])
   );
   CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
-  CSR #(CFG) u_CSR (.*);  // 控制与状态寄存器
+  CSR #(CFG) u_CSR (
+      .*,
+      .rw(csr_rw)
+  );  // 控制与状态寄存器
 
 endmodule
