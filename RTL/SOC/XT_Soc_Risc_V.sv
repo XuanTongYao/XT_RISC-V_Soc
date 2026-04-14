@@ -95,10 +95,16 @@ module XT_Soc_Risc_V
   instruction_if core_inst_if ();
   wire core_stall_n;
 
+  // 内核直接访存接口
+  memory_direct_if memory_core ();
   // 与高速总线相连
-  wire [31:0] access_ram_raddr, access_ram_waddr;
-  assign master_in[0].raddr = access_ram_raddr[HB_ADDR_WIDTH-1:0];
-  assign master_in[0].waddr = access_ram_waddr[HB_ADDR_WIDTH-1:0];
+  assign master_in[0].read = memory_core.read;
+  assign master_in[0].write = memory_core.write;
+  assign master_in[0].write_width = memory_core.write_size;
+  assign master_in[0].raddr = memory_core.raddr[HB_ADDR_WIDTH-1:0];
+  assign master_in[0].waddr = memory_core.waddr[HB_ADDR_WIDTH-1:0];
+  assign memory_core.rdata = hb_rdata;
+  assign master_in[0].wdata = memory_core.wdata;
   // 中断相关
   wire mextern_int;
   wire msoftware_int;
@@ -109,13 +115,8 @@ module XT_Soc_Risc_V
       .INST_FETCH_REG(1)
   ) u_RISC_V_Core (
       .*,
-      // 与高速总线相连
-      .access_ram_read (master_in[0].read),
-      .access_ram_write(master_in[0].write),
-      .access_ram_width(master_in[0].write_width),
-      .access_ram_rdata(hb_rdata),
-      .access_ram_wdata(master_in[0].wdata),
-      .stall_req       (stall_req[0])
+      .memory   (memory_core),
+      .stall_req(stall_req[0])
   );
 
 

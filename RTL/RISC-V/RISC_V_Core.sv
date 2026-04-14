@@ -34,14 +34,8 @@ module RISC_V_Core
     // 访问指令存储器
     instruction_if.requestor core_inst_if,
 
-    // 与高速总线相连
-    output logic access_ram_read,
-    output logic access_ram_write,
-    output logic [1:0] access_ram_width,  // 访问的大小 字节、半字、字
-    output logic [31:0] access_ram_raddr,
-    output logic [31:0] access_ram_waddr,
-    input [31:0] access_ram_rdata,
-    output logic [31:0] access_ram_wdata,
+    // 直接访存接口
+    memory_direct_if.master memory,
 
     // 访问中断控制器
     input mextern_int,
@@ -124,19 +118,7 @@ module RISC_V_Core
   // 目前译码和执行不平衡（执行高占用），某些信号可以在Decode中提前提取
   wire [31:0] jump_addr_ex;
   wire jump_en_ex;
-  InstructionExecute #(
-      .CFG(CFG)
-  ) u_InstructionExecute (
-      .*,
-      // 访存
-      .ram_load_en     (access_ram_read),
-      .ram_load_addr   (access_ram_raddr),
-      .ram_load_data   (access_ram_rdata),
-      .ram_store_en    (access_ram_write),
-      .ram_store_addr  (access_ram_waddr),
-      .ram_store_data  (access_ram_wdata),
-      .ram_access_width(access_ram_width)
-  );
+  InstructionExecute #(.CFG(CFG)) u_InstructionExecute (.*);
 
 
   wire exception_t exception_commit;

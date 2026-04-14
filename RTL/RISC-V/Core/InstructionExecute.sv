@@ -22,13 +22,7 @@ module InstructionExecute
     input [CFG.PC_LEN-1:0] csr_mepc,
 
     // 访存
-    output logic ram_load_en,
-    output logic ram_store_en,
-    output logic [31:0] ram_load_addr,
-    output logic [31:0] ram_store_addr,
-    input [31:0] ram_load_data,
-    output logic [31:0] ram_store_data,
-    output logic [1:0] ram_access_width,
+    memory_direct_if.master memory,
 
     // 传递给核心控制器
     output logic [31:0] jump_addr_ex,
@@ -83,24 +77,25 @@ module InstructionExecute
   logic extension_bit;
   always_comb begin
     unique case (funct3)
-      RV32I_LB: extension_bit = ram_load_data[7];
-      RV32I_LH: extension_bit = ram_load_data[15];
+      RV32I_LB: extension_bit = memory.rdata[7];
+      RV32I_LH: extension_bit = memory.rdata[15];
       default:  extension_bit = 0;
     endcase
   end
-  wire [31:0] extension_byte = {{24{extension_bit}}, ram_load_data[7:0]};
-  wire [31:0] extension_halfword = {{16{extension_bit}}, ram_load_data[15:0]};
+  wire [31:0] extension_byte = {{24{extension_bit}}, memory.rdata[7:0]};
+  wire [31:0] extension_halfword = {{16{extension_bit}}, memory.rdata[15:0]};
 
   // 源寄存器1的数据reg_src1_data一定和操作数1 operand1_id绑定
   // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
   // 立即数imm一定与操作数2 operand2_id绑定
   always_comb begin
-    ram_load_en = id_ex_memory.load;
-    ram_store_en = id_ex_memory.store;
-    ram_load_addr = id_ex_memory.load_addr;
-    ram_store_addr = id_ex_memory.store_addr;
-    ram_store_data = id_ex_memory.store_data;
-    ram_access_width = funct3[1:0];
+    memory.read = id_ex_memory.load;
+    memory.write = id_ex_memory.store;
+    memory.read_size = funct3[1:0];
+    memory.write_size = funct3[1:0];
+    memory.raddr = id_ex_memory.load_addr;
+    memory.waddr = id_ex_memory.store_addr;
+    memory.wdata = id_ex_memory.store_data;
     add_sub = 1;
 
     write_rd.en = reg_wen_id_ex;
@@ -141,7 +136,7 @@ module InstructionExecute
         unique case (funct3)
           RV32I_LB, RV32I_LBU: write_rd.data = extension_byte;
           RV32I_LH, RV32I_LHU: write_rd.data = extension_halfword;
-          RV32I_LW:            write_rd.data = ram_load_data;
+          RV32I_LW:            write_rd.data = memory.rdata;
           default:             ;
         endcase
       end
