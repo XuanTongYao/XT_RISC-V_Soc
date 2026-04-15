@@ -5,9 +5,7 @@
 // 4-7    DATA
 // 8-11   AF_IN
 // 12-15  AF_OUT
-module AF_GPIO_LBUS
-  import XT_LBUS_Pkg::*;
-#(
+module AF_GPIO_LBUS #(
     parameter int NUM = 10,
     // 输入/输出功能数量(最多6个)
     parameter int FUNCT_IN_NUM = 1,
@@ -18,10 +16,7 @@ module AF_GPIO_LBUS
     parameter bit [31:0] FUNCT_OUT_MASK[FUNCT_OUT_NUM]
 ) (
     input gpio_clk,
-    input lb_clk,
-    input lb_slave_t xt_lb,
-    input wsel,
-    output logic [31:0] rdata,
+    xt_lbus_slave_if.port lb,
 
     // funct_in、funct_out非压缩数组,左索引是0
     output logic funct_in[FUNCT_IN_NUM],
@@ -128,32 +123,32 @@ module AF_GPIO_LBUS
 
 
   // 写寄存器
-  always_ff @(posedge lb_clk) begin
-    if (wsel) begin
-      if (xt_lb.addr[3:0] == BASE_ADDR_DIR) begin
-        gpio_dir_reg <= xt_lb.wdata;
-      end else if (xt_lb.addr[3:0] == BASE_ADDR_DATA) begin
-        gpio_out_data_reg <= xt_lb.wdata;
-      end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_IN) begin
-        funct_in_af_reg <= xt_lb.wdata;
-      end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
-        funct_out_af_reg <= xt_lb.wdata;
+  always_ff @(posedge lb.clk) begin
+    if (lb.wen) begin
+      if (lb.addr[3:0] == BASE_ADDR_DIR) begin
+        gpio_dir_reg <= lb.wdata;
+      end else if (lb.addr[3:0] == BASE_ADDR_DATA) begin
+        gpio_out_data_reg <= lb.wdata;
+      end else if (lb.addr[3:0] == BASE_ADDR_AF_IN) begin
+        funct_in_af_reg <= lb.wdata;
+      end else if (lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
+        funct_out_af_reg <= lb.wdata;
       end
     end
   end
 
   // 读寄存器
   always_comb begin
-    if (xt_lb.addr[3:0] == BASE_ADDR_DIR) begin
-      rdata = gpio_dir_reg;
-    end else if (xt_lb.addr[3:0] == BASE_ADDR_DATA) begin
-      rdata = gpio_in_reg;
-    end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_IN) begin
-      rdata = funct_in_af_reg;
-    end else if (xt_lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
-      rdata = funct_out_af_reg;
+    if (lb.addr[3:0] == BASE_ADDR_DIR) begin
+      lb.rdata = gpio_dir_reg;
+    end else if (lb.addr[3:0] == BASE_ADDR_DATA) begin
+      lb.rdata = gpio_in_reg;
+    end else if (lb.addr[3:0] == BASE_ADDR_AF_IN) begin
+      lb.rdata = funct_in_af_reg;
+    end else if (lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
+      lb.rdata = funct_out_af_reg;
     end else begin
-      rdata = 0;
+      lb.rdata = 0;
     end
   end
 

@@ -10,13 +10,13 @@ module InstructionFetch
     instruction_if.to_next if_inst,
 
     // 异常处理
-    output exception_t exception_if
+    exception_if.source if_exception
 );
 
   assign core_inst_if.addr = pc;
   assign if_inst.addr = pc;
   assign if_inst.inst = core_inst_if.inst;
-  assign exception_if.raise = 0;
-  assign exception_if.code = 0;
+  assign if_exception.raise = 0;
+  assign if_exception.code = 0;
 
 endmodule

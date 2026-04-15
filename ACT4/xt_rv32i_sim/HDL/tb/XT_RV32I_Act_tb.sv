@@ -13,16 +13,12 @@ module XT_RV32I_Act_tb #(
   wire stall_req = 0;
   wire core_stall_n;
 
-  logic [31:0] instruction;
-  wire [31:0] instruction_addr;
+  instruction_if core_inst_if ();
 
-  wire access_ram_read;
-  wire access_ram_write;
-  wire [1:0] access_ram_width;
-  wire [31:0] access_ram_raddr;
-  logic [31:0] access_ram_rdata;
-  wire [31:0] access_ram_wdata;
-  wire [31:0] access_ram_waddr;
+  memory_direct_if #(
+      .DATA_WIDTH(32),
+      .ADDR_WIDTH(32)
+  ) memory ();
 
   wire mextern_int = 0;
   wire msoftware_int = 0;
@@ -44,21 +40,21 @@ module XT_RV32I_Act_tb #(
   logic [31:0] addr[2];
   logic [31:0] wdata[2];
   wire [31:0] rdata[2];
-  wire core_access_ram_read = access_ram_read & AccessRAM(access_ram_raddr);
-  wire core_access_ram_write = access_ram_write & AccessRAM(access_ram_waddr);
+  wire core_access_ram_read = memory.read & AccessRAM(memory.raddr);
+  wire core_access_ram_write = memory.write & AccessRAM(memory.waddr);
   always_comb begin
     read = '{1'b1, core_access_ram_read};
     write = '{1'b0, core_access_ram_write};
-    width = '{2'b10, access_ram_width};
-    addr[0] = instruction_addr - RAM_BASE_ADDR;
-    if (access_ram_read) begin
-      addr[1] = access_ram_raddr - RAM_BASE_ADDR;
+    width = '{2'b10, memory.write_size};
+    addr[0] = core_inst_if.addr - RAM_BASE_ADDR;
+    if (memory.read) begin
+      addr[1] = memory.raddr - RAM_BASE_ADDR;
     end else begin
-      addr[1] = access_ram_waddr - RAM_BASE_ADDR;
+      addr[1] = memory.waddr - RAM_BASE_ADDR;
     end
-    wdata = '{32'b0, access_ram_wdata};
-    instruction = rdata[0];
-    access_ram_rdata = rdata[1];
+    wdata = '{32'b0, memory.wdata};
+    core_inst_if.inst = rdata[0];
+    memory.rdata = rdata[1];
   end
   ActRam #(.WORD_DEPTH(RAM_WORD_DEPTH)) u_ActRam (.*);
 
@@ -81,7 +77,7 @@ module XT_RV32I_Act_tb #(
     if (rst_sync) begin
       htif.check_halt <= 0;
     end else begin
-      htif.capture_write(access_ram_write, access_ram_waddr, access_ram_wdata);
+      htif.capture_write(memory.write, memory.waddr, memory.wdata);
     end
   end
 

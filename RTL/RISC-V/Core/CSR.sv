@@ -10,11 +10,8 @@ module CSR
     input stall_n,
     input instruction_retire,
 
-    input csr_ren,
-    input csr_wen,
-    input [11:0] csr_rwaddr,
-    input [31:0] csr_wdata,
-    output logic [31:0] csr_rdata,
+    // 读写接口
+    csr_rw_if.csr rw,
 
     // 与异常/中断控制器连接
     output mstatus_t csr_mstatus,
@@ -34,11 +31,9 @@ module CSR
     input msoftware_int,
     input mtimer_int
 );
-  wire [1:0] rw_mode = csr_rwaddr[11:10];
-  wire [1:0] privilege_level = csr_rwaddr[9:8];
-  wire [7:0] short_addr = csr_rwaddr[7:0];
-  wire atomic_rw_en = csr_wen && stall_n && privilege_level == MACHINE && rw_mode == 2'b00;
-  // wire atomic_counter_rw_en = csr_wen && stall_n && privilege_level == MACHINE && rw_mode == 2'b10;
+  wire [7:0] short_addr = rw.addr.short_addr;
+  wire atomic_rw_en = rw.wen && stall_n && rw.addr.privilege_level == MACHINE && rw.addr.mode == 2'b00;
+  // wire atomic_counter_rw_en = csr_wen && stall_n && rw.addr.privilege_level == MACHINE && rw.addr.mode == 2'b10;
 
 
   //----------机器模式CSR----------//
@@ -94,39 +89,39 @@ module CSR
   // 调试模式（不实现）
 
   always_comb begin
-    unique case (privilege_level)
-      USER, SUPERVISOR, HYPERVISOR: csr_rdata = 32'b0;
+    unique case (rw.addr.privilege_level)
+      USER, SUPERVISOR, HYPERVISOR: rw.rdata = 32'b0;
       MACHINE: begin
-        unique case (rw_mode)
+        unique case (rw.addr.mode)
           READONLY: begin
             unique case (short_addr)
-              8'h14:   csr_rdata = mhartid;
+              8'h14:   rw.rdata = mhartid;
               // 8'h15:   csr_rdata = mconfigptr;
-              default: csr_rdata = 32'b0;
+              default: rw.rdata = 32'b0;
             endcase
           end
           2'b10: begin
             unique case (short_addr)
-              8'h00: csr_rdata = mcycle;
-              8'h80: csr_rdata = mcycleh;
+              8'h00: rw.rdata = mcycle;
+              8'h80: rw.rdata = mcycleh;
 
               // 8'h02:   csr_rdata = minstret;
               // 8'h82:   csr_rdata = minstreth;
-              default: csr_rdata = 32'b0;
+              default: rw.rdata = 32'b0;
             endcase
           end
           default: begin
             unique case (short_addr)
-              8'h00: csr_rdata = mstatus;
-              8'h04: csr_rdata = PadMieMip(mie);
-              8'h05: csr_rdata = mtvec;
+              8'h00: rw.rdata = mstatus;
+              8'h04: rw.rdata = PadMieMip(mie);
+              8'h05: rw.rdata = mtvec;
 
-              8'h40:   csr_rdata = mscratch;
-              8'h41:   csr_rdata = CFG.XLEN'(PadPC(mepc, CFG.PC_ZEROS));
-              8'h42:   csr_rdata = mcause;
+              8'h40:   rw.rdata = mscratch;
+              8'h41:   rw.rdata = CFG.XLEN'(PadPC(mepc, CFG.PC_ZEROS));
+              8'h42:   rw.rdata = mcause;
               // 8'h43:   csr_rdata = mtval;
-              8'h44:   csr_rdata = PadMieMip(mip);
-              default: csr_rdata = 32'b0;
+              8'h44:   rw.rdata = PadMieMip(mip);
+              default: rw.rdata = 32'b0;
             endcase
           end
         endcase
@@ -143,9 +138,9 @@ module CSR
     end else begin
       if (atomic_rw_en) begin
         unique case (short_addr)
-          8'h00:   mstatus <= {24'b0, csr_wdata[7], 3'b0, csr_wdata[3], 3'b0};
-          8'h04:   mie <= {csr_wdata[11], csr_wdata[7], csr_wdata[3]};
-          8'h05:   mtvec <= csr_wdata;
+          8'h00:   mstatus <= {24'b0, rw.wdata[7], 3'b0, rw.wdata[3], 3'b0};
+          8'h04:   mie <= {rw.wdata[11], rw.wdata[7], rw.wdata[3]};
+          8'h05:   mtvec <= rw.wdata;
           default: ;
         endcase
       end else if (trap_occurred) begin
@@ -163,8 +158,8 @@ module CSR
   always_ff @(posedge clk) begin
     if (atomic_rw_en) begin
       unique case (short_addr)
-        8'h40:   mscratch <= csr_wdata;
-        8'h41:   mepc <= csr_wdata[CFG.XLEN-1:CFG.PC_ZEROS];  // (允许软件写入，通常用于ecall)
+        8'h40:   mscratch <= rw.wdata;
+        8'h41:   mepc <= rw.wdata[CFG.XLEN-1:CFG.PC_ZEROS];  // (允许软件写入，通常用于ecall)
         // 8'h42: mcause <= csr_wdata;(禁止软件写入)
         // 8'h43: mtval <= csr_wdata;(只读)
         // 8'h44: mip <= csr_wdata;(只读)

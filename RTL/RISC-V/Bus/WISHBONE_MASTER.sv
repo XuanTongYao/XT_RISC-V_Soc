@@ -1,10 +1,9 @@
-// hb_clk和wb_clk_i实际上是同一个时钟
+// hb.clk和wb_clk_i实际上是同一个时钟
 // 仅支持单次读写，有原子指令再考虑支持RMW，正在思考正确的RMW如何实现
 // Q:如果有多个设备(比如DMA)要使用WISHBONE资源怎么办？
 // A:给每个设备单独配一个主机，避开访问冲突问题。
 module WISHBONE_MASTER
   import Utils_Pkg::sel_t;
-  import XT_HBUS_Pkg::*;
 #(
     parameter int PORT_SIZE = 8
 ) (
@@ -22,18 +21,12 @@ module WISHBONE_MASTER
     output logic [PORT_SIZE-1:0] wb_adr_o,
 
     // 与XT_HB总线
-    input hb_clk,
-    input hb_slave_t xt_hb,
-    input sel_t sel,
-    output logic [31:0] rdata,
-    // 停止等待
-    output logic read_finish,
-    output logic write_finish
+    xt_hbus_device_if.port hb
 );
-
+  // 停止等待
   logic rw_finish;
-  assign read_finish  = rw_finish;
-  assign write_finish = rw_finish;
+  assign hb.read_finish  = rw_finish;
+  assign hb.write_finish = rw_finish;
   always_ff @(posedge wb_clk_i) begin
     if (rw_finish) begin
       rw_finish <= 0;
@@ -46,7 +39,7 @@ module WISHBONE_MASTER
   // 启动读写控制
   // 这里等一个周期，等HB的主机走到下一条指令
   logic hb_ready;
-  wire  start_rw = hb_ready && (sel.ren || sel.wen);
+  wire  start_rw = hb_ready && (hb.sel.ren || hb.sel.wen);
   always_ff @(posedge wb_clk_i) begin
     if (wb_cyc_o) begin
       hb_ready <= 0;
@@ -77,17 +70,17 @@ module WISHBONE_MASTER
     if (wb_cyc_o) begin  // 进行中
       if (wb_ack_i) begin
         if (!wb_we_o) begin  // 读周期
-          rdata <= {24'b0, wb_dat_i};
+          hb.rdata <= {24'b0, wb_dat_i};
         end
       end
     end else if (start_rw) begin  // 空闲
-      if (sel.ren) begin
+      if (hb.sel.ren) begin
         wb_we_o  <= 0;
-        wb_adr_o <= xt_hb.raddr[7:0];
+        wb_adr_o <= hb.raddr[7:0];
       end else begin
         wb_we_o  <= 1;
-        wb_adr_o <= xt_hb.waddr[7:0];
-        wb_dat_o <= xt_hb.wdata[7:0];
+        wb_adr_o <= hb.waddr[7:0];
+        wb_dat_o <= hb.wdata[7:0];
       end
     end
   end

@@ -8,7 +8,7 @@
 // 0.4更新 放弃旧的地址域映射，使用设备识别符+地址偏移的MMIO
 module XT_HB
   import Utils_Pkg::sel_t;
-  import XT_HBUS_Pkg::*;
+  import SocConfig::HB_ID_WIDTH;
 #(
     parameter int MASTER_NUM = 1,  // 总线上主设备的数量
     parameter int DEVICE_NUM = 2,  // 总线上IO设备的数量
@@ -22,18 +22,38 @@ module XT_HB
     // 高速总线(读写可以被不同不冲突的主设备占用，全双工)
     // 内核的读写请求为最高优先级
     // 高速总线读写
-    input hb_master_in_t master_in[MASTER_NUM],
-    input [31:0] device_data_in[DEVICE_NUM],
-    input [DEVICE_NUM-1:0] read_finish,
-    input [DEVICE_NUM-1:0] write_finish,
+    memory_direct_if.slave master[MASTER_NUM],
+    xt_hbus_if.bus bus,
 
-    output logic [31:0] hb_rdata,
-    output hb_slave_t bus,
-    output sel_t device_sel[DEVICE_NUM],
     output logic [MASTER_NUM-1:0] read_grant,
     output logic [MASTER_NUM-1:0] write_grant,
     output logic [MASTER_NUM-1:0] stall_req  // 仲裁失败或读写等待，停顿请求
 );
+  // 提前声明
+  logic [31:0] hb_rdata;
+
+  //----------解包接口----------//
+  // 访问接口数组必须使用“常量”，循环变量i都不行
+  // 所以必须解包成结构体
+  typedef struct packed {
+    logic read, write;
+    logic [1:0] read_size, write_size;
+    logic [bus.ADDR_WIDTH-1:0] raddr, waddr;
+    logic [31:0] wdata;
+  } master_in_t;
+  master_in_t master_in[MASTER_NUM];
+  generate
+    for (genvar i = 0; i < MASTER_NUM; ++i) begin : gen_unpack_if
+      assign master_in[i].read = master[i].read;
+      assign master_in[i].write = master[i].write;
+      assign master_in[i].read_size = master[i].read_size;
+      assign master_in[i].write_size = master[i].write_size;
+      assign master_in[i].raddr = master[i].raddr[bus.ADDR_WIDTH-1:0];
+      assign master_in[i].waddr = master[i].waddr[bus.ADDR_WIDTH-1:0];
+      assign master_in[i].wdata = master[i].wdata;
+      assign master[i].rdata = hb_rdata;
+    end
+  endgenerate
 
 
   //----------访问等待控制器----------//
@@ -75,7 +95,7 @@ module XT_HB
 
   // 主设备总线复用器
   logic hb_ren, hb_wen;
-  logic [HB_ADDR_WIDTH-1:0] raddr_mux, waddr_mux;
+  logic [bus.ADDR_WIDTH-1:0] raddr_mux, waddr_mux;
   assign bus.raddr = raddr_mux;
   assign bus.waddr = waddr_mux;
   always_comb begin
@@ -84,7 +104,7 @@ module XT_HB
     raddr_mux = 0;
     waddr_mux = 0;
     bus.wdata = 0;
-    bus.write_width = 0;
+    bus.write_size = 0;
     // 读通道复用器
     for (int i = 0; i < MASTER_NUM; ++i) begin
       if (read_grant[i]) begin
@@ -99,7 +119,7 @@ module XT_HB
         hb_wen = master_in[i].write;
         waddr_mux = master_in[i].waddr;
         bus.wdata = master_in[i].wdata;
-        bus.write_width = master_in[i].write_width;
+        bus.write_size = master_in[i].write_size;
         break;
       end
     end
@@ -109,10 +129,10 @@ module XT_HB
 
   // 地址映射与片选生成
   logic [DEVICE_NUM-1:0] sel[2];
-  wire [HB_ID_WIDTH-1:0] raddr_mux_id = HB_GetID(raddr_mux);
-  wire [HB_ID_WIDTH-1:0] waddr_mux_id = HB_GetID(raddr_mux);
+  wire [bus.ID_WIDTH-1:0] raddr_mux_id = raddr_mux[bus.ADDR_WIDTH-1:bus.OFFSET_WIDTH];
+  wire [bus.ID_WIDTH-1:0] waddr_mux_id = waddr_mux[bus.ADDR_WIDTH-1:bus.OFFSET_WIDTH];
   MMIO #(
-      .ID_WIDTH(HB_ID_WIDTH),
+      .ID_WIDTH(bus.ID_WIDTH),
       .ADDR_NUM(2),
       .DEVICE_NUM(DEVICE_NUM),
       .BASE_ID(DEVICE_BASE_ID)
@@ -124,14 +144,14 @@ module XT_HB
   wire [DEVICE_NUM-1:0] slave_wsel = hb_wen ? sel[1] : 0;
   generate
     for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_slaves_sel
-      assign device_sel[i].ren = slave_rsel[i];
-      assign device_sel[i].wen = slave_wsel[i];
+      assign bus.device_sel[i].ren = slave_rsel[i];
+      assign bus.device_sel[i].wen = slave_wsel[i];
     end
   endgenerate
 
   // 读写等待控制
-  wire read_wait_finish = hb_ren ? ((read_finish & slave_rsel) != 0) : 1;
-  wire write_wait_finish = hb_wen ? ((write_finish & slave_wsel) != 0) : 1;
+  wire read_wait_finish = hb_ren ? ((bus.read_finish & slave_rsel) != 0) : 1;
+  wire write_wait_finish = hb_wen ? ((bus.write_finish & slave_wsel) != 0) : 1;
   assign read_stall  = !read_wait_finish;
   assign write_stall = !write_wait_finish;
 
@@ -141,7 +161,7 @@ module XT_HB
     hb_rdata = 0;
     for (int i = 0; i < DEVICE_NUM; ++i) begin
       if (sel[0][i]) begin
-        hb_rdata = device_data_in[i];
+        hb_rdata = bus.device_data[i];
         break;
       end
     end

@@ -1,8 +1,6 @@
 // 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
   import Utils_Pkg::sel_t;
-  import XT_HBUS_Pkg::*;
-  import XT_LBUS_Pkg::*;
   import SocConfig::*;
 #(
     parameter int GPIO_NUM = 32,
@@ -77,15 +75,17 @@ module XT_Soc_Risc_V
   // 在SocConfig中配置
 
   // 高速总线
-  wire hb_master_in_t master_in[HB_MASTER_NUM];  // 主机输入
-  wire [31:0] device_data_in[HB_DEVICE_NUM];
-  wire [HB_DEVICE_NUM-1:0] read_finish;
-  wire [HB_DEVICE_NUM-1:0] write_finish;
-  // 总线扇出
+  // 0 - 内核, 1 -
+  memory_direct_if hb_master[HB_MASTER_NUM] ();
+  // 总线接口
+  xt_hbus_if #(
+      .ADDR_WIDTH(HB_ADDR_WIDTH),
+      .ID_WIDTH  (HB_ID_WIDTH),
+      .DEVICE_NUM(HB_DEVICE_NUM)
+  ) xt_hb (
+      .clk(clk)
+  );
   wire hb_clk = clk;
-  wire hb_slave_t xt_hb;
-  wire [31:0] hb_rdata;
-  wire sel_t device_sel[HB_DEVICE_NUM];
   wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
   // 总线IO设备
   //   wire [31:0] hb_data_in[HB_SLAVE_NUM];
@@ -96,10 +96,6 @@ module XT_Soc_Risc_V
   instruction_if core_inst_if ();
   wire core_stall_n;
 
-  // 与高速总线相连
-  wire [31:0] access_ram_raddr, access_ram_waddr;
-  assign master_in[0].raddr = access_ram_raddr[HB_ADDR_WIDTH-1:0];
-  assign master_in[0].waddr = access_ram_waddr[HB_ADDR_WIDTH-1:0];
   // 中断相关
   wire mextern_int;
   wire msoftware_int;
@@ -110,13 +106,8 @@ module XT_Soc_Risc_V
       .INST_FETCH_REG(1)
   ) u_RISC_V_Core (
       .*,
-      // 与高速总线相连
-      .access_ram_read (master_in[0].read),
-      .access_ram_write(master_in[0].write),
-      .access_ram_width(master_in[0].write_width),
-      .access_ram_rdata(hb_rdata),
-      .access_ram_wdata(master_in[0].wdata),
-      .stall_req       (stall_req[0])
+      .memory   (hb_master[0]),
+      .stall_req(stall_req[0])
   );
 
 
@@ -127,8 +118,8 @@ module XT_Soc_Risc_V
       .DEVICE_BASE_ID(DEVICE_BASE_ID)
   ) u_XT_HB (
       .*,
+      .master(hb_master),
       .bus(xt_hb),
-      .device_sel(device_sel),
       .stall_req(stall_req)
   );
 
@@ -140,17 +131,15 @@ module XT_Soc_Risc_V
   localparam int EXTERNAL_INT_NUM = 13;
   wire [EXTERNAL_INT_NUM-1:0] irq_source;
   assign irq_source[7:1] = 7'b0;
+  xt_hbus_device_if #(.ID(IDX_SYS_P)) system_peripheral_if (.*);
   SystemPeripheral #(
       .EXTERNAL_INT_NUM  (EXTERNAL_INT_NUM),
       .UART_OVER_SAMPLING(8)
   ) u_SystemPeripheral (
       .*,
-      .sel         (device_sel[IDX_SYS_P]),
-      .read_finish (read_finish[IDX_SYS_P]),
-      .write_finish(write_finish[IDX_SYS_P]),
-      .rdata       (device_data_in[IDX_SYS_P]),
+      .hb    (system_peripheral_if),
       // 系统外设特殊部分
-      .rx_irq      (irq_source[0])
+      .rx_irq(irq_source[0])
   );
 
   // 高速总线本地地址域
@@ -179,24 +168,21 @@ module XT_Soc_Risc_V
 
 
   // 系统RAM
+  xt_hbus_device_if #(.ID(IDX_DATA_RAM)) ram_data_if (.*);
+  xt_hbus_device_if #(.ID(IDX_INST_RAM)) ram_inst_if (.*);
   HarvardSystemRAM_BUS #(
       // 字深度(最大为2^30对应4GB字节)
       .DATA_RAM_DEPTH(DATA_RAM_DEPTH),
       .INST_RAM_DEPTH(INST_RAM_DEPTH)
   ) u_HarvardSystemRAM (
       .*,
-      .inst_fetch_clk_en    (core_stall_n),
+      .inst_fetch_clk_en(core_stall_n),
       // 数据RAM
-      .ram_data_sel         (device_sel[IDX_DATA_RAM]),
-      .ram_data_rdata       (device_data_in[IDX_DATA_RAM]),
-      .ram_data_read_finish (read_finish[IDX_DATA_RAM]),
-      .ram_data_write_finish(write_finish[IDX_DATA_RAM]),
+      .hb               (ram_data_if),
+      .ram_inst         (ram_inst_if),
       // 指令RAM
-      .ram_inst_sel         (device_sel[IDX_INST_RAM]),
-      .inst_fetch_addr      (core_inst_if.addr),
-      .inst_fetch           (user_instruction),
-      .ram_inst_read_finish (read_finish[IDX_INST_RAM]),
-      .ram_inst_write_finish(write_finish[IDX_INST_RAM])
+      .inst_fetch_addr  (core_inst_if.addr),
+      .inst_fetch       (user_instruction)
   );
 
 
@@ -213,23 +199,21 @@ module XT_Soc_Risc_V
   wire [7:0] wb_dat_o, wb_dat_i;
   wire wb_cyc_i, wb_stb_i, wb_we_i;
   wire [7:0] wb_adr_i;
+  xt_hbus_device_if #(.ID(IDX_WISHBONE)) wishbone_master_if (.*);
   WISHBONE_MASTER #(
       .PORT_SIZE(8)
   ) u_WISHBONE_MASTER (
       .*,
       // 与从设备
-      .wb_ack_i    (wb_ack_o),
-      .wb_dat_i    (wb_dat_o),
-      .wb_dat_o    (wb_dat_i),
-      .wb_cyc_o    (wb_cyc_i),
-      .wb_stb_o    (wb_stb_i),
-      .wb_we_o     (wb_we_i),
-      .wb_adr_o    (wb_adr_i),
+      .wb_ack_i(wb_ack_o),
+      .wb_dat_i(wb_dat_o),
+      .wb_dat_o(wb_dat_i),
+      .wb_cyc_o(wb_cyc_i),
+      .wb_stb_o(wb_stb_i),
+      .wb_we_o (wb_we_i),
+      .wb_adr_o(wb_adr_i),
       // 与XT_HB总线
-      .sel         (device_sel[IDX_WISHBONE]),
-      .read_finish (read_finish[IDX_WISHBONE]),
-      .write_finish(write_finish[IDX_WISHBONE]),
-      .rdata       (device_data_in[IDX_WISHBONE])
+      .hb      (wishbone_master_if)
   );
 
   localparam int ALL_CSN_NUM = 3;
@@ -253,24 +237,19 @@ module XT_Soc_Risc_V
 
   //----------低速总线及其外设----------//
   localparam int LB_SLAVE_NUM = 4;
-  wire [31:0] lb_data_in[LB_SLAVE_NUM];
-  wire lb_slave_t xt_lb;
-  wire lb_wsel[LB_SLAVE_NUM];
-  XT_LB #(
-      .SLAVE_NUM(LB_SLAVE_NUM)
-  ) u_XT_LB (
+  xt_lbus_if #(.SLAVE_NUM(LB_SLAVE_NUM)) xt_lb (.*);
+  xt_hbus_device_if #(.ID(IDX_XT_LB)) xt_lb_if (.*);
+  XT_LB u_XT_LB (
       .*,
-      .sel         (device_sel[IDX_XT_LB]),
-      .read_finish (read_finish[IDX_XT_LB]),
-      .write_finish(write_finish[IDX_XT_LB]),
-      .rdata       (device_data_in[IDX_XT_LB]),
+      .hb (xt_lb_if),
       // 低速总线部分
-      .bus         (xt_lb)
+      .bus(xt_lb)
   );
 
+  xt_lbus_slave_if #(.ID(0)) sw_key_if (.*);
   SW_KEY_LBUS u_SW_KEY_LBUS (
       .*,
-      .rdata (lb_data_in[0][15:0]),
+      .lb(sw_key_if),
       .sw_raw({sw_raw, download_mode})
   );
 
@@ -278,6 +257,7 @@ module XT_Soc_Risc_V
   wire funct_in[AF_FUNCT_IN_NUM];
   assign tc_rst = funct_in[0];
   assign tc_ic  = funct_in[1];
+  xt_lbus_slave_if #(.ID(1)) af_gpio_if (.*);
   AF_GPIO_LBUS #(
       .NUM           (GPIO_NUM),
       .FUNCT_IN_NUM  (AF_FUNCT_IN_NUM),
@@ -287,26 +267,23 @@ module XT_Soc_Risc_V
   ) u_AF_GPIO_LBUS (
       .*,
       .gpio_clk (clk),
-      .wsel     (lb_wsel[1]),
-      .rdata    (lb_data_in[1]),
+      .lb       (af_gpio_if),
       .funct_in (funct_in),
       .funct_out({tc_oc, af_spi_csn}),
       .gpio     (gpio)
   );
 
+  xt_lbus_slave_if #(.ID(2)) led_if (.*);
   LED_LBUS #(
       .LED_NUM(8)
   ) u_LED_LBUS (
-      .*,
-      .wsel (lb_wsel[2]),
-      .rdata(lb_data_in[2][7:0]),
-      .led  (led)
+      .lb (led_if),
+      .led(led)
   );
 
+  xt_lbus_slave_if #(.ID(3)) ledsd_if (.*);
   LEDSD_Direct_LBUS u_LEDSD_Direct_BUS (
-      .*,
-      .wsel (lb_wsel[3]),
-      .rdata(lb_data_in[3][7:0]),
+      .lb(ledsd_if),
       .ledsd(ledsd)
   );
 

@@ -8,46 +8,38 @@ module CoreReg
     input stall_n,
 
     // 读取
-    input [4:0] reg1_raddr,
-    input [4:0] reg2_raddr,
-    output logic [CFG.XLEN-1:0] reg1_rdata,
-    output logic [CFG.XLEN-1:0] reg2_rdata,
-
+    reg_r_if.regs read_rs1,
+    reg_r_if.regs read_rs2,
     // 写入
-    input [4:0] reg_waddr,
-    input [CFG.XLEN-1:0] reg_wdata,
-    input reg_wen
-
+    reg_w_if.regs write_rd
 );
   // 0号寄存器X0固定为0
   logic [CFG.XLEN-1:0] core_reg[CFG.REG_NUMS];
 
   //----------数据控制----------//
   always_comb begin
-    if (reg1_raddr == 0) begin
-      reg1_rdata = 0;
-    end else if (reg_wen && reg1_raddr == reg_waddr) begin
-      reg1_rdata = reg_wdata;
+    if (read_rs1.addr == 0) begin
+      read_rs1.data = 0;
+    end else if (write_rd.en && read_rs1.addr == write_rd.addr) begin
+      read_rs1.data = write_rd.data;
     end else begin
-      reg1_rdata = core_reg[reg1_raddr];
+      read_rs1.data = core_reg[read_rs1.addr];
     end
   end
 
   always_comb begin
-    if (reg2_raddr == 0) begin
-      reg2_rdata = 0;
-    end else if (reg_wen && reg2_raddr == reg_waddr) begin
-      reg2_rdata = reg_wdata;
+    if (read_rs2.addr == 0) begin
+      read_rs2.data = 0;
+    end else if (write_rd.en && read_rs2.addr == write_rd.addr) begin
+      read_rs2.data = write_rd.data;
     end else begin
-      reg2_rdata = core_reg[reg2_raddr];
+      read_rs2.data = core_reg[read_rs2.addr];
     end
   end
 
   always_ff @(posedge clk) begin
-    if (!rst) begin
-      if (stall_n && reg_wen && reg_waddr != 0) begin
-        core_reg[reg_waddr] <= reg_wdata;
-      end
+    if (!rst && stall_n && write_rd.en && write_rd.addr != 0) begin
+      core_reg[write_rd.addr] <= write_rd.data;
     end
   end
 
