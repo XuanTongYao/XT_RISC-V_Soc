@@ -1,18 +1,12 @@
 module XT_LB
   import Utils_Pkg::sel_t;
-  import XT_HBUS_Pkg::*;
 (
-    // 与高速总线桥接
-    input hb_clk,
     input rst,
-    input hb_slave_t xt_hb,
-    input sel_t sel,
-    output logic [31:0] rdata,
+    // 与高速总线桥接
+    xt_hbus_device_if.port hb,
 
     // 低速总线部分
-    xt_lbus_if.master bus,
-    output logic read_finish,
-    output logic write_finish
+    xt_lbus_if.master bus
 );
 
   logic [31:0] rdata_buffer;
@@ -20,13 +14,13 @@ module XT_LB
 
   // HB时钟部分
   logic send_ready_delay, finish;
-  wire send = (sel.ren || sel.wen) && send_ready_delay;
+  wire send = (hb.sel.ren || hb.sel.wen) && send_ready_delay;
   wire send_ready;
   wire ack;
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb.clk) begin
     send_ready_delay <= send_ready;
     if (ack) begin
-      rdata <= rdata_buffer;
+      hb.rdata <= rdata_buffer;
     end
 
     if (finish) begin
@@ -35,11 +29,11 @@ module XT_LB
       finish <= 1;
     end
   end
-  assign read_finish  = finish;
-  assign write_finish = finish;
+  assign hb.read_finish  = finish;
+  assign hb.write_finish = finish;
   localparam int TRUNCATED_WIDTH = 2 * bus.ADDR_WIDTH + 32 + 2 + 2;
   wire [TRUNCATED_WIDTH-1:0] truncated_xt_hb = {
-    sel.ren, sel.wen, xt_hb.raddr[bus.ADDR_WIDTH-1:0], xt_hb.waddr[bus.ADDR_WIDTH-1:0], xt_hb.wdata, xt_hb.write_width
+    hb.sel.ren, hb.sel.wen, hb.raddr[bus.ADDR_WIDTH-1:0], hb.waddr[bus.ADDR_WIDTH-1:0], hb.wdata, hb.write_size
   };
 
 
@@ -54,7 +48,7 @@ module XT_LB
       .CDC_DATA_WIDTH(TRUNCATED_WIDTH)
   ) u_CDC_MCP_Formulation (
       .*,
-      .clk_send(hb_clk),
+      .clk_send(hb.clk),
       .rst_send(rst),
 
       .clk_receive(bus.clk),

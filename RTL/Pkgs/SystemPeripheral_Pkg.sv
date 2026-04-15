@@ -1,8 +1,8 @@
 package SystemPeripheral_Pkg;
   import Utils_Pkg::sel_t;
 
-  import XT_HBUS_Pkg::HB_ADDR_WIDTH;
-  import XT_HBUS_Pkg::HB_OFFSET_WIDTH;
+  import SocConfig::HB_ADDR_WIDTH;
+  import SocConfig::HB_OFFSET_WIDTH;
 
   localparam int SP_ADDR_LEN = 5;
   localparam int SP_ID_LEN = 3;
@@ -25,7 +25,4 @@ package SystemPeripheral_Pkg;
     return sys.waddr === addr;
   endfunction
 
-  // 真实操了蛋了，Synplify Pro不支持export
-  // So, Synplify Pro FUCK YOU!
-  // export Utils_Pkg::sel_t;
 endpackage

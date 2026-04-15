@@ -2,21 +2,15 @@
 // 比如内存映射CSR，外部中断控制器，自举启动和DMA等
 module SystemPeripheral
   import Utils_Pkg::sel_t;
-  import XT_HBUS_Pkg::*;
   import SystemPeripheral_Pkg::*;
 #(
     parameter int EXTERNAL_INT_NUM   = 13,
     parameter int UART_OVER_SAMPLING = 16
 ) (
     input rst,
-    // 总线接口部分
-    input hb_clk,
-    input hb_slave_t xt_hb,
-    input sel_t sel,
+    // 高速总线接口
+    xt_hbus_device_if.port hb,
 
-    output logic read_finish,
-    output logic write_finish,
-    output logic [31:0] rdata,
     // 系统外设特殊部分
 
     // BOOTLOADER
@@ -40,21 +34,22 @@ module SystemPeripheral
     output logic msoftware_int
 
 );
+  wire hb_clk = hb.clk;
   // 所有外设必须能在一个时钟周期内完成写入
   // 在两个时钟周期内完成读取
   // SystemPeripheral简称SP
-  always_ff @(posedge hb_clk) begin
-    if (read_finish) begin
-      read_finish <= 0;
-    end else if (sel.ren) begin
-      read_finish <= 1;
+  always_ff @(posedge hb.clk) begin
+    if (hb.read_finish) begin
+      hb.read_finish <= 0;
+    end else if (hb.sel.ren) begin
+      hb.read_finish <= 1;
     end
   end
-  assign write_finish = 1;
+  assign hb.write_finish = 1;
 
   // 完整地址
-  wire [SP_ADDR_LEN-1:0] raddr_full = xt_hb.raddr[SP_ADDR_LEN+2-1:2];
-  wire [SP_ADDR_LEN-1:0] waddr_full = xt_hb.waddr[SP_ADDR_LEN+2-1:2];
+  wire [SP_ADDR_LEN-1:0] raddr_full = hb.raddr[SP_ADDR_LEN+2-1:2];
+  wire [SP_ADDR_LEN-1:0] waddr_full = hb.waddr[SP_ADDR_LEN+2-1:2];
   // 偏移量地址（外设只需要这部分）
   wire [SP_OFFSET_LEN-1:0] raddr = raddr_full[SP_OFFSET_LEN-1:0];
   wire [SP_OFFSET_LEN-1:0] waddr = waddr_full[SP_OFFSET_LEN-1:0];
@@ -86,10 +81,10 @@ module SystemPeripheral
 
   logic [31:0] sp_data_in[SP_NUM];
   always_comb begin
-    rdata = 0;
+    hb.rdata = 0;
     for (int i = 0; i < SP_NUM; ++i) begin
       if (raddr_sel[i]) begin
-        rdata = sp_data_in[i];
+        hb.rdata = sp_data_in[i];
         break;
       end
     end
@@ -97,8 +92,8 @@ module SystemPeripheral
 
 
   sel_t sp_sel[SP_NUM];
-  wire [SP_NUM-1:0] enable_rsel = sel.ren && !read_finish ? raddr_sel : 0;
-  wire [SP_NUM-1:0] enable_wsel = sel.wen ? waddr_sel : 0;
+  wire [SP_NUM-1:0] enable_rsel = hb.sel.ren && !hb.read_finish ? raddr_sel : 0;
+  wire [SP_NUM-1:0] enable_wsel = hb.sel.wen ? waddr_sel : 0;
   generate
     for (genvar i = 0; i < SP_NUM; ++i) begin : gen_sel
       assign sp_sel[i].ren = enable_rsel[i];
@@ -110,7 +105,7 @@ module SystemPeripheral
   always_comb begin
     sys_share.raddr = raddr;
     sys_share.waddr = waddr;
-    sys_share.wdata = xt_hb.wdata;
+    sys_share.wdata = hb.wdata;
   end
 
 
@@ -154,7 +149,7 @@ module SystemPeripheral
   // 最高位为激活中断，低15位可作为中断原因
   wire sel_t sel_soft_int = sp_sel[IDX_SOFTWARE_INT];
   logic [15:0] msoftware_int_reg;
-  always_ff @(posedge hb_clk, posedge rst) begin
+  always_ff @(posedge hb.clk, posedge rst) begin
     if (rst) begin
       msoftware_int <= 0;
       msoftware_int_reg <= 0;
@@ -165,7 +160,7 @@ module SystemPeripheral
   end
   logic [15:0] soft_int_rdata;
   assign sp_data_in[IDX_SOFTWARE_INT] = {16'b0, soft_int_rdata};
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb.clk) begin
     if (sel_soft_int.ren && sys_share.raddr == 'd0) begin
       soft_int_rdata <= msoftware_int_reg;
     end
