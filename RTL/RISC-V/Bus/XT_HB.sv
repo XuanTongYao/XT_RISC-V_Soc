@@ -6,6 +6,7 @@
 // 0.2更新 整合总线信号为结构体
 // 0.3更新 轮询仲裁器，完全ACK访问，读/写独立，地址域映射
 // 0.4更新 放弃旧的地址域映射，使用设备识别符+地址偏移的MMIO
+// 0.5更新 使用接口作为总线信号
 module XT_HB
   import Utils_Pkg::sel_t;
   import SocConfig::HB_ID_WIDTH;

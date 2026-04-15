@@ -13,6 +13,6 @@ module LED_LBUS #(
     end
   end
 
-  assign lb.rdata = led;
+  assign lb.rdata = 8'(led);
 
 endmodule

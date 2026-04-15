@@ -23,9 +23,9 @@ module SW_KEY_LBUS (
   //----------读取----------//
   always_comb begin
     if (lb.addr[1:0] == 'd0) begin
-      lb.rdata = {12'b0, ~key_reg};
+      lb.rdata = 16'(~key_reg);
     end else begin
-      lb.rdata = {13'b0, switch_reg};
+      lb.rdata = 16'(switch_reg);
     end
   end
 

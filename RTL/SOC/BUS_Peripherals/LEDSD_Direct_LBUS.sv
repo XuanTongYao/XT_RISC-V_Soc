@@ -30,9 +30,9 @@ module LEDSD_Direct_LBUS #(
 
   always_comb begin
     if (lb.addr[0] == 'd0) begin
-      lb.rdata = display_data;
+      lb.rdata = 8'(display_data);
     end else begin
-      lb.rdata = {{(8 - (2 * NUM)) {1'b0}}, ledsd_control};
+      lb.rdata = 8'(ledsd_control);
     end
   end
 

@@ -236,9 +236,9 @@ module UART_BUS
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
       if (sys_share.raddr == 'd0) begin
-        rdata <= {24'b0, rx_fifo_q};
+        rdata <= 32'(rx_fifo_q);
       end else begin
-        rdata <= {24'b0, 4'b0, state};
+        rdata <= 32'(state);
       end
     end
   end
