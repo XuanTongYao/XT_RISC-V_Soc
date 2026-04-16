@@ -100,18 +100,14 @@ module RISC_V_Core
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
 
-  wire [31:0] operand1_id, operand2_id;
-  wire reg_wen_id;
   assign next_pc = if_id_inst.addr;
-  memory_access_if #(.XLEN(XLEN)) id_memory ();
+  id_to_ex_if #(.XLEN(XLEN)) id_out ();
   exception_if id_exception ();
   InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
 
   instruction_if #(.XLEN(XLEN)) id_ex_inst ();
-  memory_access_if #(.XLEN(XLEN)) id_ex_memory ();
-  wire [31:0] operand1, operand2;
-  wire reg_wen_id_ex;
+  id_to_ex_if #(.XLEN(XLEN)) id_ex_out ();
   ID_EX u_ID_EX (.*);
 
 

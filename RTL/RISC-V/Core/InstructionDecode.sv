@@ -14,11 +14,7 @@ module InstructionDecode
     reg_r_if.core read_rs2,
 
     // 传递给ID_EX
-    memory_access_if.to_next id_memory,
-
-    output logic [31:0] operand1_id,
-    output logic [31:0] operand2_id,
-    output logic        reg_wen_id,
+    id_to_ex_if.to_next id_out,
 
     // 异常处理
     exception_if.source id_exception
@@ -51,45 +47,45 @@ module InstructionDecode
     // 刚好5bit不会越界，不同指令自己会选择是否读寄存器的
     read_rs1.addr = rs1;
     read_rs2.addr = rs2;
-    operand1_id = 'x;
-    operand2_id = 'x;
-    reg_wen_id = 0;
+    id_out.operand1 = 'x;
+    id_out.operand2 = 'x;
+    id_out.reg_wen = 0;
 
     // load_addr 有 load 控制，大胆赋值即可
-    id_memory.load = 0;
-    id_memory.store = 0;
-    id_memory.load_addr = read_rs1.data + imm_i;
-    id_memory.store_addr = read_rs1.data + imm_s;
-    id_memory.store_data = read_rs2.data;
+    id_out.load = 0;
+    id_out.store = 0;
+    id_out.load_addr = read_rs1.data + imm_i;
+    id_out.store_addr = read_rs1.data + imm_s;
+    id_out.store_data = read_rs2.data;
 
     id_exception.raise = 0;
     id_exception.code = ILLEGAL_INST;
     unique case (opcode)
       RV32I_OP_LUI: begin
-        reg_wen_id  = 1;
-        operand1_id = 0;
-        operand2_id = imm_u;
+        id_out.reg_wen  = 1;
+        id_out.operand1 = 0;
+        id_out.operand2 = imm_u;
       end
       RV32I_OP_AUIPC: begin
-        reg_wen_id  = 1;
-        operand1_id = if_id_inst.addr;
-        operand2_id = imm_u;
+        id_out.reg_wen  = 1;
+        id_out.operand1 = if_id_inst.addr;
+        id_out.operand2 = imm_u;
       end
       RV32I_OP_JAL: begin
-        reg_wen_id  = 1;
-        operand1_id = if_id_inst.addr;
-        operand2_id = imm_j;
+        id_out.reg_wen  = 1;
+        id_out.operand1 = if_id_inst.addr;
+        id_out.operand2 = imm_j;
       end
       RV32I_OP_JALR: begin
-        reg_wen_id  = 1;
-        operand1_id = read_rs1.data;
-        operand2_id = imm_i;
+        id_out.reg_wen  = 1;
+        id_out.operand1 = read_rs1.data;
+        id_out.operand2 = imm_i;
       end
       RV32I_OP_B: begin
         unique case (funct3)
           RV32I_BEQ, RV32I_BNE, RV32I_BLT, RV32I_BGE, RV32I_BLTU, RV32I_BGEU: begin
-            operand1_id = read_rs1.data;
-            operand2_id = read_rs2.data;
+            id_out.operand1 = read_rs1.data;
+            id_out.operand2 = read_rs2.data;
           end
           default: ;
         endcase
@@ -97,8 +93,8 @@ module InstructionDecode
       RV32I_OP_L: begin
         unique case (funct3)
           RV32I_LB, RV32I_LH, RV32I_LW, RV32I_LBU, RV32I_LHU: begin
-            reg_wen_id = 1;
-            id_memory.load = 1;
+            id_out.reg_wen = 1;
+            id_out.load = 1;
           end
           default: ;
         endcase
@@ -106,7 +102,7 @@ module InstructionDecode
       RV32I_OP_S: begin
         unique case (funct3)
           RV32I_SB, RV32I_SH, RV32I_SW: begin
-            id_memory.store = 1;
+            id_out.store = 1;
           end
           default: ;
         endcase
@@ -114,18 +110,18 @@ module InstructionDecode
       RV32I_OP_I: begin
         unique case (funct3)
           RV32I_ADDI, RV32I_SLTI, RV32I_SLTIU, RV32I_XORI, RV32I_ORI, RV32I_ANDI, RV32I_SLLI, RV32I_SRLI_SRAI: begin
-            reg_wen_id  = 1;
-            operand1_id = read_rs1.data;
-            operand2_id = imm_i;
+            id_out.reg_wen  = 1;
+            id_out.operand1 = read_rs1.data;
+            id_out.operand2 = imm_i;
           end
         endcase
       end
       RV32I_OP_R: begin
         unique case (funct3)
           RV32I_ADD_SUB, RV32I_SLL, RV32I_SLT, RV32I_SLTU, RV32I_XOR, RV32I_SRL_SRA, RV32I_OR, RV32I_AND: begin
-            reg_wen_id  = 1;
-            operand1_id = read_rs1.data;
-            operand2_id = read_rs2.data;
+            id_out.reg_wen  = 1;
+            id_out.operand1 = read_rs1.data;
+            id_out.operand2 = read_rs2.data;
           end
         endcase
       end
@@ -146,12 +142,12 @@ module InstructionDecode
             endcase
           end
           ZICSR_CSRRW, ZICSR_CSRRS, ZICSR_CSRRC: begin
-            reg_wen_id  = 1;
-            operand1_id = read_rs1.data;
+            id_out.reg_wen  = 1;
+            id_out.operand1 = read_rs1.data;
           end
           ZICSR_CSRRWI, ZICSR_CSRRSI, ZICSR_CSRRCI: begin
-            reg_wen_id  = 1;
-            operand1_id = imm_sys;
+            id_out.reg_wen  = 1;
+            id_out.operand1 = imm_sys;
           end
           default: ;
         endcase

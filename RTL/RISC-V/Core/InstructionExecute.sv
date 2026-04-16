@@ -7,11 +7,8 @@ module InstructionExecute
 ) (
     // 来自ID_EX
     instruction_if.from_prev id_ex_inst,
-    memory_access_if.from_prev id_ex_memory,
+    id_to_ex_if.from_prev id_ex_out,
     input [31:0] next_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
-    input [31:0] operand1,
-    input [31:0] operand2,
-    input reg_wen_id_ex,
 
     // 写入目的寄存器
     reg_w_if.core write_rd,
@@ -52,6 +49,8 @@ module InstructionExecute
 
 
   //----------算术逻辑单元----------//
+  wire [CFG.XLEN-1:0] operand1 = id_ex_out.operand1;
+  wire [CFG.XLEN-1:0] operand2 = id_ex_out.operand2;
   // 大多数器件都支持加/减法器同时实现(消耗少量额外资源)
   logic add_sub;
   wire [31:0] alu_add = add_sub ? operand1 + operand2 : operand1 - operand2;
@@ -89,16 +88,16 @@ module InstructionExecute
   // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
   // 立即数imm一定与操作数2 operand2_id绑定
   always_comb begin
-    memory.read = id_ex_memory.load;
-    memory.write = id_ex_memory.store;
+    memory.read = id_ex_out.load;
+    memory.write = id_ex_out.store;
     memory.read_size = funct3[1:0];
     memory.write_size = funct3[1:0];
-    memory.raddr = id_ex_memory.load_addr;
-    memory.waddr = id_ex_memory.store_addr;
-    memory.wdata = id_ex_memory.store_data;
+    memory.raddr = id_ex_out.load_addr;
+    memory.waddr = id_ex_out.store_addr;
+    memory.wdata = id_ex_out.store_data;
     add_sub = 1;
 
-    write_rd.en = reg_wen_id_ex;
+    write_rd.en = id_ex_out.reg_wen;
     write_rd.addr = rd;
     write_rd.data = 'x;
     jump_addr_ex = 'x;

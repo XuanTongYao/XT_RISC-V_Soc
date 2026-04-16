@@ -40,15 +40,17 @@ interface exception_if;
   modport observer(input raise, code);
 endinterface
 
-interface memory_access_if #(
+interface id_to_ex_if #(
     int XLEN = 32
 );
 
   logic load, store;
   logic [XLEN-1:0] load_addr, store_addr;
   logic [XLEN-1:0] store_data;
-  modport to_next(output load, store, load_addr, store_addr, store_data);
-  modport from_prev(input load, store, load_addr, store_addr, store_data);
+  logic [XLEN-1:0] operand1, operand2;
+  logic reg_wen;
+  modport to_next(output load, store, load_addr, store_addr, store_data, operand1, operand2, reg_wen);
+  modport from_prev(input load, store, load_addr, store_addr, store_data, operand1, operand2, reg_wen);
 
 endinterface
 

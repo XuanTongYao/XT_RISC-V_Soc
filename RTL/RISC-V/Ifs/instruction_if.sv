@@ -3,7 +3,7 @@ interface instruction_if #(
 );
 
   logic [XLEN-1:0] addr;
-  logic [XLEN-1:0] inst;
+  logic [31:0] inst;
   modport requestor(output addr, input inst);
   modport responder(input addr, output inst);
 
