@@ -108,22 +108,14 @@ module InstructionDecode
         endcase
       end
       RV32I_OP_I: begin
-        unique case (funct3)
-          RV32I_ADDI, RV32I_SLTI, RV32I_SLTIU, RV32I_XORI, RV32I_ORI, RV32I_ANDI, RV32I_SLLI, RV32I_SRLI_SRAI: begin
-            id_out.reg_wen  = 1;
-            id_out.operand1 = read_rs1.data;
-            id_out.operand2 = imm_i;
-          end
-        endcase
+        id_out.reg_wen  = 1;
+        id_out.operand1 = read_rs1.data;
+        id_out.operand2 = imm_i;
       end
       RV32I_OP_R: begin
-        unique case (funct3)
-          RV32I_ADD_SUB, RV32I_SLL, RV32I_SLT, RV32I_SLTU, RV32I_XOR, RV32I_SRL_SRA, RV32I_OR, RV32I_AND: begin
-            id_out.reg_wen  = 1;
-            id_out.operand1 = read_rs1.data;
-            id_out.operand2 = read_rs2.data;
-          end
-        endcase
+        id_out.reg_wen  = 1;
+        id_out.operand1 = read_rs1.data;
+        id_out.operand2 = read_rs2.data;
       end
       RV32I_OP_SYSTEM: begin
         unique case (funct3)
