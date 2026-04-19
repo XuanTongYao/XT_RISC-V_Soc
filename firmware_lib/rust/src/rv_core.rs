@@ -39,6 +39,20 @@ pub fn disable_global_interrupt() {
     unsafe { core::arch::asm!("csrci mstatus, 0x8") }
 }
 
+#[inline]
+pub fn free<F: FnOnce() -> R, R>(f: F) -> R {
+    let mstatus = riscv::register::mstatus::read();
+    disable_global_interrupt();
+
+    let r = f();
+
+    if mstatus.mie() {
+        unsafe { enable_global_interrupt() };
+    }
+
+    r
+}
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(usize)]
 pub enum ExternalInterrupt {
