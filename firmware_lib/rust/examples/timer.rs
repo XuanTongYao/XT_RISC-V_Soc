@@ -3,12 +3,13 @@
 #![feature(abi_riscv_interrupt)]
 
 use AfControlSel::{Sel6, Sel7};
+use core::sync::atomic::{AtomicU16, Ordering};
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
 use xt_riscv_mcu::lb::{AfControlSel, AfGpio, GpioAlternateFunction, OutAF};
-use xt_riscv_mcu::rv_core::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
 use xt_riscv_mcu::system_peripheral::{EintController, Uart};
 use xt_riscv_mcu::wisbone::Timer;
+use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
 
 const TIMER_AF: GpioAlternateFunction = GpioAlternateFunction::Output(OutAF::TimerOutput);
 const SPI_AF: GpioAlternateFunction = GpioAlternateFunction::Output(OutAF::SpiCs2);
@@ -86,8 +87,7 @@ fn clkdiv_down(timer: &mut Timer) {
     }
 }
 
-static mut COMPARE: u16 = 0;
-static mut ADD: bool = false;
+static COMPARE: AtomicU16 = AtomicU16::new(0);
 
 fn breathing_light(timer: &mut Timer, gpio: &mut AfGpio) {
     gpio.set_af_control(TIMER_AF, Some(Sel7), Some(true));
@@ -100,8 +100,8 @@ fn breathing_light(timer: &mut Timer, gpio: &mut AfGpio) {
     timer.set_control1(control1);
     timer.set_top(468);
     unsafe {
-        COMPARE = 0;
-        timer.set_compare(COMPARE);
+        COMPARE.store(0, Ordering::Relaxed);
+        timer.set_compare(0);
         // 开启溢出中断
         timer.reg().int_en.modify(|reg| reg.with_irqovf(true));
     }
@@ -116,6 +116,7 @@ fn exit_breathing_light(timer: &mut Timer) {
 
 #[unsafe(no_mangle)]
 unsafe extern "riscv-interrupt-m" fn Timer_IRQ_Handler() {
+    static mut ADD: bool = false;
     let mut timer = Timer::SINGLETON;
     let int_status = timer.reg().int_status.read();
     if !int_status.irqovf() {
@@ -123,15 +124,19 @@ unsafe extern "riscv-interrupt-m" fn Timer_IRQ_Handler() {
     }
     unsafe { timer.reg().int_status.write(int_status) }
 
+    let mut compare = COMPARE.load(Ordering::Relaxed);
     unsafe {
-        if COMPARE == 460 || COMPARE == 0 {
-            ADD = !ADD
+        if compare == 0 {
+            ADD = true;
+        } else if compare == 460 {
+            ADD = false;
         }
         if ADD {
-            COMPARE += 1
+            compare += 1;
         } else {
-            COMPARE -= 1
+            compare -= 1;
         }
-        timer.set_compare(COMPARE);
     }
+    COMPARE.store(compare, Ordering::Relaxed);
+    timer.set_compare(compare);
 }
