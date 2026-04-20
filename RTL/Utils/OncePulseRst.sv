@@ -9,8 +9,10 @@
 //
 // <<< 端 口 >>> //
 // clk:            时钟信号
+// rst:            复位信号
 // ctrl:           控制信号
 // pulse:          生成的高脉冲信号
+// q:              最后一个寄存器的输出
 
 module OncePulseRst #(
     parameter int DELAY = 1,
@@ -19,7 +21,8 @@ module OncePulseRst #(
     input clk,
     input rst,
     input ctrl,
-    output logic pulse
+    output logic pulse,
+    output logic q
 );
   localparam int REG_NUM = DELAY + 1;
   localparam bit REG_INIT_VAL = TRIGGER == 2'b01 ? 1'b1 : 1'b0;
@@ -29,6 +32,7 @@ module OncePulseRst #(
   logic detect;  // 倒数第二个移位寄存器/控制信号
   logic detect_delay;  // 最后一个移位寄存器
 
+  assign q = detect_delay;
   assign detect_delay = shift[REG_NUM-1];
   generate
     if (DELAY == 0) begin : gen_single_reg

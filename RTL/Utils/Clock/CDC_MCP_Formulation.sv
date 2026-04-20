@@ -36,7 +36,8 @@ module CDC_MCP_Formulation #(
       .clk  (clk_send),
       .rst  (rst_send),
       .ctrl (ack_receive_tff),
-      .pulse(ack)
+      .pulse(ack),
+      .q    ()
   );
   StopAndWaitFSM #(
       .RST_READY(1)
@@ -73,7 +74,8 @@ module CDC_MCP_Formulation #(
       .clk  (clk_receive),
       .rst  (rst_receive),
       .ctrl (data_en_send_tff),
-      .pulse(data_en)
+      .pulse(data_en),
+      .q    ()
   );
   StopAndWaitFSM u_StopAndWaitFSM_receive (
       .clk(clk_receive),
