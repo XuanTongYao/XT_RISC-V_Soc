@@ -81,8 +81,8 @@ module InstructionExecute
       default:  extension_bit = 0;
     endcase
   end
-  wire [31:0] extension_byte = {{24{extension_bit}}, memory.rdata[7:0]};
-  wire [31:0] extension_halfword = {{16{extension_bit}}, memory.rdata[15:0]};
+  wire [31:0] extended_byte = {{(CFG.XLEN - 8) {extension_bit}}, memory.rdata[7:0]};
+  wire [31:0] extended_halfword = {{(CFG.XLEN - 16) {extension_bit}}, memory.rdata[15:0]};
 
   // 源寄存器1的数据reg_src1_data一定和操作数1 operand1_id绑定
   // 源寄存器2的数据reg_src2_data一定和操作数2 operand2_id绑定
@@ -111,8 +111,7 @@ module InstructionExecute
 
     wfi = 0;
     unique case (opcode)
-      RV32I_OP_LUI:   write_rd.data = alu_add;
-      RV32I_OP_AUIPC: write_rd.data = alu_add;
+      RV32I_OP_LUI, RV32I_OP_AUIPC: write_rd.data = alu_add;
       RV32I_OP_JAL, RV32I_OP_JALR: begin
         write_rd.data = next_pc;
         jump_addr_ex = {alu_add[31:1], 1'b0};
@@ -133,13 +132,13 @@ module InstructionExecute
       end
       RV32I_OP_L: begin
         unique case (funct3)
-          RV32I_LB, RV32I_LBU: write_rd.data = extension_byte;
-          RV32I_LH, RV32I_LHU: write_rd.data = extension_halfword;
+          RV32I_LB, RV32I_LBU: write_rd.data = extended_byte;
+          RV32I_LH, RV32I_LHU: write_rd.data = extended_halfword;
           RV32I_LW:            write_rd.data = memory.rdata;
           default:             ;
         endcase
       end
-      RV32I_OP_S:     ;  // 已经在译码阶段完成处理
+      RV32I_OP_S:                   ;  // 已经在译码阶段完成处理
       RV32I_OP_I: begin
         unique case (funct3)
           RV32I_ADDI:              write_rd.data = alu_add;
@@ -149,11 +148,9 @@ module InstructionExecute
           RV32I_ANDI:              write_rd.data = alu_and;
           RV32I_SLLI:              write_rd.data = alu_shift_left;
           RV32I_SRLI_SRAI: begin
-            if (funct7[5] == 1'b1) begin
-              //SRAI
+            if (funct7[5]) begin  // SRAI
               write_rd.data = alu_shift_right_a;
-            end else begin
-              //SRLI
+            end else begin  // SRLI
               write_rd.data = alu_shift_right_l;
             end
           end
@@ -162,9 +159,7 @@ module InstructionExecute
       RV32I_OP_R: begin
         unique case (funct3)
           RV32I_ADD_SUB: begin
-            if (funct7[5] == 1'b1) begin
-              add_sub = 0;
-            end
+            if (funct7[5]) add_sub = 0;
             write_rd.data = alu_add;
           end
           RV32I_SLT, RV32I_SLTU: write_rd.data = CFG.XLEN'(alu_less);
@@ -173,11 +168,9 @@ module InstructionExecute
           RV32I_AND:             write_rd.data = alu_and;
           RV32I_SLL:             write_rd.data = alu_shift_left;
           RV32I_SRL_SRA: begin
-            if (funct7[5] == 1'b1) begin
-              //SRA
+            if (funct7[5]) begin  // SRA
               write_rd.data = alu_shift_right_a;
-            end else begin
-              //SRL
+            end else begin  // SRL
               write_rd.data = alu_shift_right_l;
             end
           end
@@ -218,8 +211,8 @@ module InstructionExecute
         endcase
       end
       // 不执行，等效于NOP指令
-      RV32I_OP_FENCE: ;
-      default:        ;
+      RV32I_OP_FENCE:               ;
+      default:                      ;
     endcase
 
   end

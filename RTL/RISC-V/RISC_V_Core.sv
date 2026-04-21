@@ -61,8 +61,7 @@ module RISC_V_Core
 
   //----------寄存器----------//
   // 整数寄存器
-  reg_r_if #(.DATA_LEN(XLEN)) read_rs1 ();
-  reg_r_if #(.DATA_LEN(XLEN)) read_rs2 ();
+  reg_r_if #(.DATA_LEN(XLEN)) read_rs1 (), read_rs2 ();
   reg_w_if #(.DATA_LEN(XLEN)) write_rd ();
   CoreReg #(.CFG(CFG)) u_CoreReg (.*);
 
@@ -90,26 +89,20 @@ module RISC_V_Core
 
 
   //----------流水线----------//
-  instruction_if #(.XLEN(XLEN)) if_inst ();
-  exception_if if_exception ();
+  instruction_if #(.XLEN(XLEN)) if_inst (), if_id_inst (), id_ex_inst ();  // 指令传输
+  exception_if if_exception (), id_exception ();  // 异常
+
   InstructionFetch u_InstructionFetch (.*);
 
-
-  instruction_if #(.XLEN(XLEN)) if_id_inst ();
   // 为了适应不同速度的指令存储器，可以选择指令是否打一拍
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
-
   assign next_pc = if_id_inst.addr;
   id_to_ex_if #(.XLEN(XLEN)) id_out ();
-  exception_if id_exception ();
   InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
-
-  instruction_if #(.XLEN(XLEN)) id_ex_inst ();
   id_to_ex_if #(.XLEN(XLEN)) id_ex_out ();
   ID_EX u_ID_EX (.*);
-
 
   // 目前译码和执行不平衡（执行高占用），某些信号可以在Decode中提前提取
   wire [31:0] jump_addr_ex;
