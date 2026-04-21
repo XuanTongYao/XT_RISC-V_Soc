@@ -149,7 +149,7 @@ impl Mtime {
         second * Self::FREQ_HZ as u64
     }
     /// 以当前`mtime`为基准，将`mtimecmp`设置为向前的一个时刻\
-    /// `ticks`为时间间隔
+    /// 其中`ticks`为时间间隔
     #[inline(always)]
     pub fn update_mtimecmp_forward(&mut self, ticks: u64) {
         let mut time = self.mtime();

@@ -1,11 +1,15 @@
-// 该机器计时器没有跨时钟域
-// 访问时不会有跨时钟域时序惩罚，其他的计时器不一定
-// 读取期间不保护寄存器的值，在软件上进行处理
+// 该模块为mtime和mtimecmp寄存器，访问时不会有跨时钟域时序惩罚
+// mtime在读取期间不被保护，在软件上进行处理；在写入期间会保护，但没有补偿
+// mtimecmp初始值未知，软件在使用前务必设置mtimecmp，写入时默认清空中断
+//
+// 寄存器布局
+// 0-mtimel 1-mtimeh
+// 2-mtimecmpl 3-mtimecmph
 module SystemTimer
   import Utils_Pkg::sel_t;
   import SystemPeripheral_Pkg::*;
 (
-    // 计时时钟必须比高速总线时钟慢两倍以上
+    // 计时时钟必须比高速总线时钟慢两倍及以上
     input systemtimer_clk,
     // 与高速总线
     input hb_clk,
@@ -15,62 +19,46 @@ module SystemTimer
 
     output logic mtimer_int = 0
 );
+  wire [1:0] waddr = sys_share.waddr[1:0];
 
-  wire time_update_pulse;
+  logic time_update_tff = 0;
+  always_ff @(posedge systemtimer_clk) time_update_tff <= !time_update_tff;
+
+  wire time_update;
   OncePulse #(
-      .TRIGGER(2'b01)
+      .DELAY(2)
   ) u_OncePulse (
       .clk  (hb_clk),
-      .ctrl (systemtimer_clk),
-      .pulse(time_update_pulse)
+      .ctrl (time_update_tff),
+      .pulse(time_update)
   );
 
 
-  // mtime在低位地址0、1，mtimecmp在高位地址2、3
-  wire read_time = sys_share.raddr == 'd0 || sys_share.raddr == 'd1;
-  wire read_cmp = sys_share.raddr == 'd2 || sys_share.raddr == 'd3;
-
-  wire write_time = sys_share.waddr == 'd0 || sys_share.waddr == 'd1;
-  wire write_cmp = sys_share.waddr == 'd2 || sys_share.waddr == 'd3;
-
-  wire read_high = sys_share.raddr == 'd1 || sys_share.raddr == 'd3;
-  wire write_high = sys_share.waddr == 'd1 || sys_share.waddr == 'd3;
-
-  logic [31:0] mtime_l = 0;
-  logic [31:0] mtime_h = 0;
-  wire [32:0] next_mtime_l = mtime_l + 1'b1;
-  wire carry = next_mtime_l[32];
-  wire [31:0] next_mtime_h = mtime_h + carry;
-  // 写入期间保护计时寄存器的值
+  // 写入期间保护mtime寄存器的值
+  logic [63:0] mtime = 0;
   always_ff @(posedge hb_clk) begin
-    if (sel.wen && write_time) begin
-      if (write_high) begin
-        mtime_h <= sys_share.wdata;
+    if (sel.wen && !waddr[1]) begin
+      if (waddr[0]) begin
+        mtime[63:32] <= sys_share.wdata;
       end else begin
-        mtime_l <= sys_share.wdata;
+        mtime[31:0] <= sys_share.wdata;
       end
-    end else if (time_update_pulse) begin
-      mtime_l <= next_mtime_l[31:0];
-      mtime_h <= next_mtime_h;
+    end else if (time_update) begin
+      mtime <= mtime + 64'd1;
     end
   end
 
 
-  logic update_irq = 0;
-  logic [31:0] mtimecmp_l = 0;
-  logic [31:0] mtimecmp_h = 0;
-  wire time_ge_cmp = {mtime_h, mtime_l} >= {mtimecmp_h, mtimecmp_l};
+  logic update_irq;
+  logic [31:0] mtimecmp[2];  // 0-低位 1-高位
+  wire time_ge_cmp = mtime >= {mtimecmp[1], mtimecmp[0]};
   always_ff @(posedge hb_clk) begin
-    update_irq <= sel.wen || time_update_pulse;
+    update_irq <= sel.wen || time_update;
 
-    if (sel.wen && write_cmp) begin
+    if (sel.wen && waddr[1]) begin
       // 写入比较寄存器默认清空中断
       mtimer_int <= 0;
-      if (write_high) begin
-        mtimecmp_h <= sys_share.wdata;
-      end else begin
-        mtimecmp_l <= sys_share.wdata;
-      end
+      mtimecmp[waddr[0]] <= sys_share.wdata;
     end else if (update_irq) begin
       mtimer_int <= time_ge_cmp;
     end
@@ -79,13 +67,11 @@ module SystemTimer
 
   always_ff @(posedge hb_clk) begin
     if (sel.ren) begin
-      unique case ({
-        read_cmp, read_high
-      })
-        2'b00: rdata <= mtime_l;
-        2'b01: rdata <= mtime_h;
-        2'b10: rdata <= mtimecmp_l;
-        2'b11: rdata <= mtimecmp_h;
+      unique case (sys_share.raddr[1:0])
+        2'b00: rdata <= mtime[31:0];
+        2'b01: rdata <= mtime[63:32];
+        2'b10: rdata <= mtimecmp[0];
+        2'b11: rdata <= mtimecmp[1];
       endcase
     end
   end

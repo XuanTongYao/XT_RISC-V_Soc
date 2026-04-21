@@ -14,6 +14,8 @@ fn main() -> ! {
     unsafe {
         eint.set_enable(ExternalInterrupt::Uart.into_mask());
         set_interrupt::<{ (1 << MachineExternal as usize) | (1 << MachineTimer as usize) }>();
+        let mut mtime = Mtime::SINGLETON;
+        mtime.update_mtimecmp_forward(Mtime::sec_ticks(1));
         enable_global_interrupt();
     }
     loop {}
