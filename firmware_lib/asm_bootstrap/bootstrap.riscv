@@ -7,7 +7,7 @@
 # x5始终是临时计数值/计数值参数
 # x6始终是临时数据
 # x7始终是临时数据
-# x8/s0始终是ra(返回地址)的备份
+# x8/s0始终是第二级返回地址(相当于两个ra)
 # x9是一个保存数据
 # x10/a0是函数参数/返回值
 # x11/a1是函数参数/返回值
@@ -17,6 +17,7 @@
 .equ BOOTSTRAP_BASE, 8192
 .equ UART_BASE, 8240
 
+# flash读写的地址，都是自动+1的
 .equ WISHBONE_BASE, 12288
 .equ FLASH_BASE, WISHBONE_BASE+0x70
 .equ MAX_COPY_PAGE, (4096 + 4096 - 512)>>4
@@ -40,9 +41,7 @@
 .equ STR_ERR, 43
 .equ STR_ERR_LEN, 4
 
-#define SET_STR_ARGS(name) \
-    li x15, STR_##name;\
-    li x5, STR_##name##_LEN
+#define SET_STR_ARGS(name) lui x5, (STR_##name##_LEN<<8|STR_##name);
 
 #define INTO_RAM_MODE li x7, 0xF0; sb x7, BOOTSTRAP_BASE-SP_BASE(x4)
 #define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-SP_BASE(x4)
@@ -95,11 +94,10 @@ enable_transparent_ufm:
     DELAY_US(8)
 check_download:
     READ_DEBUG(x7)
-    beqz x7, check_ufm
-    jal download
+    bnez x7, download
 check_ufm:
-    jal reset_ufm_addr
-    jal read_one_ufm_page
+    jal s0, reset_ufm_addr
+    jal s0, read_one_ufm_page
     READ_BUFFER(a0,0)
     bnez a0, boot # flash第0个字为全0，则为无效程序代码或ELF
 error:
@@ -107,20 +105,20 @@ error:
     jal tx_str_block_auto_increment
     j error
 boot:
-    jal reset_ufm_addr
+    jal s0, reset_ufm_addr
     li x9, MAX_COPY_PAGE    # 页计数值
-    li x15, 0                # 存储器指针
+    li x15, 0               # 存储器指针
 # 读取flash并写入内存 双层循环
-2:  jal read_one_ufm_page
-    SET_COUNT(4)
-    mv x6, x2       # 加载缓冲区地址
-1:  lw x7, 0(x6)    # 读取缓冲区
+2:  jal s0, read_one_ufm_page
+    mv x6, x2           # 加载缓冲区地址
+1:  lw x7, 0(x6)        # 读取缓冲区
     sw x7, 0(x15)
     addi x15, x15, 4
     addi x6, x6, 4
-    COUNT_LOOP
+    andi x7, x15, 0x0F  # 地址不是页对齐说明还没写完一页
+    bnez x7, 1b
     addi x9, x9, -1
-    bnez x9, 2b;
+    bnez x9, 2b
 disable_transparent_ufm:
     li a0, 0x000026   # 发送0x26 00 00
     li a1, 0x00         # 不读写
@@ -174,7 +172,7 @@ erase_ufm:
     jal command_frame
     DELAY_MS(1200)      # 必须等至少1000ms
 from_uart_download:     # 双层循环
-    jal reset_ufm_addr
+    jal s0, reset_ufm_addr
 3:  SET_COUNT(PAGE_BYTES)
     mv x15, x2           # 加载缓冲区地址
 1:  jal uart_rx_block
@@ -235,21 +233,14 @@ command_frame:
 reset_ufm_addr:
     li a0, 0x00000047   # 发送0x47 00 00 00
     li a1, 0x00         # 不读写
-    li x5, 4            # x5 = 4
-    mv  s0, ra # s0 = ra
-    jal command_frame
-    mv  ra, s0 # ra = s0
-    ret
-
-# flash读写的地址，都是自动+1的
+    j cmd_operands_4_frame
 read_one_ufm_page:
     li a0, 0x010010CA   # 发送0xCA 10 00 01
     li a1, 0x01         # 读
+cmd_operands_4_frame:
     li x5, 4            # x5 = 4
-    mv  s0, ra # s0 = ra
     jal command_frame
-    mv  ra, s0 # ra = s0
-    ret
+    jr s0
 
 
 uart_rx_block:
@@ -262,7 +253,9 @@ uart_rx_block:
 # x5是字符串长度
 # x15是字符串地址
 tx_str_block_auto_increment:
-    SET_PRELOAD_STR_ADDR(x15)
+    srli x5, x5, 12
+    SET_PRELOAD_STR_ADDR(x5)
+    srli x5, x5, 8
 1:  READ_UART_STATE(x7)
     andi x7, x7, 0x01
     beqz x7, 1b # 等待tx_ready为1
@@ -270,4 +263,3 @@ tx_str_block_auto_increment:
     WRITE_UART_DATA(x7)
     COUNT_LOOP
     ret
-    
