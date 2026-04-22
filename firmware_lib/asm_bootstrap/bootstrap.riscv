@@ -1,0 +1,273 @@
+# 纯汇编自举程序，无栈
+# ra为x1，注意不要使用x1
+
+# x2始终是缓冲区基地址
+# x3始终是Flash基地址
+# x4始终是系统外设基地址
+# x5始终是临时计数值/计数值参数
+# x6始终是临时数据
+# x7始终是临时数据
+# x8/s0始终是ra(返回地址)的备份
+# x9是一个保存数据
+# x10/a0是函数参数/返回值
+# x11/a1是函数参数/返回值
+# x12/a2是函数参数
+
+.equ SP_BASE, 8192
+.equ BOOTSTRAP_BASE, 8192
+.equ UART_BASE, 8240
+
+.equ WISHBONE_BASE, 12288
+.equ FLASH_BASE, WISHBONE_BASE+0x70
+.equ MAX_COPY_PAGE, (4096 + 4096 - 512)>>4
+.equ PAGE_BYTES, 16
+
+.equ BUFFER_BASE, 4096+4096-16-16*10
+
+# "💾:0x56,🛫:0xF1"
+.equ STR_CMD, 0
+.equ STR_CMD_LEN, 20
+# "Len="
+.equ STR_LEN, 20
+.equ STR_LEN_LEN, 4
+# "\n🔛:0x78"
+.equ STR_START_DOWNLOAD, 24
+.equ STR_START_DOWNLOAD_LEN, 10
+# "\n✅:0x57"
+.equ STR_CONFIRM, 34
+.equ STR_CONFIRM_LEN, 9
+# "\n❌" 
+.equ STR_ERR, 43
+.equ STR_ERR_LEN, 4
+
+#define SET_STR_ARGS(name) \
+    li x15, STR_##name;\
+    li x5, STR_##name##_LEN
+
+#define INTO_RAM_MODE li x7, 0xF0; sb x7, BOOTSTRAP_BASE-SP_BASE(x4)
+#define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-SP_BASE(x4)
+#define SET_PRELOAD_STR_ADDR(reg) sb reg, BOOTSTRAP_BASE+4-SP_BASE(x4)
+#define GET_PRELOAD_STR_AUTO_INC(reg) lbu reg, BOOTSTRAP_BASE+8-SP_BASE(x4)
+
+#define WRITE_UART_DATA(reg) sb reg, UART_BASE-SP_BASE(x4)
+#define READ_UART_DATA(reg) lbu reg, UART_BASE-SP_BASE(x4)
+#define READ_UART_STATE(reg) lbu reg, UART_BASE+4-SP_BASE(x4)
+
+#define WRITE_FLASH_CON(reg) sb reg, 0(x3)
+#define WRITE_FLASH_DATA(reg) sb reg, 1(x3)
+#define READ_FLASH_DATA(reg) lbu reg, 3(x3)
+
+#define WRITE_BUFFER_BYTE(reg,offset) sb reg, offset(x2)
+#define READ_BUFFER_BYTE(reg,offset) lbu reg, offset(x2)
+#define WRITE_BUFFER(reg,offset) sw reg, offset(x2)
+#define READ_BUFFER(reg,offset) lw reg, offset(x2)
+
+#define SET_COUNT(imm) li x5, imm;
+#define COUNT_LOOP \
+    addi x5, x5, -1;\
+    bnez x5, 1b;
+
+#define CORE_FREQ_MHZ   12
+#define CORE_FREQ_KHZ   (CORE_FREQ_MHZ*1000)
+#define DELAY(cycle) \
+    SET_COUNT(1+((cycle)/4)) \
+    1: COUNT_LOOP
+#define DELAY_US(t) DELAY(((t)*CORE_FREQ_MHZ))
+#define DELAY_MS(t) DELAY(((t)*CORE_FREQ_KHZ))
+
+.option norelax
+.section .init,"ax",@progbits
+.global _start
+_start:
+main:
+    lla x2, BUFFER_BASE
+    lla x3, FLASH_BASE
+    lla x4, SP_BASE
+reset_flash:
+    li x7, 0x40 # x4 = 0x40
+    WRITE_FLASH_CON(x7)
+    WRITE_FLASH_CON(x0)
+enable_transparent_ufm:
+    li a0, 0x00000874   # 发送0x74 08 00 00
+    li a1, 0x00         # 不读写
+    li x5, 4            # x5 = 4
+    jal command_frame
+    DELAY_US(8)
+check_download:
+    READ_DEBUG(x7)
+    beqz x7, check_ufm
+    jal download
+check_ufm:
+    jal reset_ufm_addr
+    jal read_one_ufm_page
+    READ_BUFFER(a0,0)
+    bnez a0, boot # flash第0个字为全0，则为无效程序代码或ELF
+error:
+    SET_STR_ARGS(ERR)
+    jal tx_str_block_auto_increment
+    j error
+boot:
+    jal reset_ufm_addr
+    li x9, MAX_COPY_PAGE    # 页计数值
+    li x15, 0                # 存储器指针
+# 读取flash并写入内存 双层循环
+2:  jal read_one_ufm_page
+    SET_COUNT(4)
+    mv x6, x2       # 加载缓冲区地址
+1:  lw x7, 0(x6)    # 读取缓冲区
+    sw x7, 0(x15)
+    addi x15, x15, 4
+    addi x6, x6, 4
+    COUNT_LOOP
+    addi x9, x9, -1
+    bnez x9, 2b;
+disable_transparent_ufm:
+    li a0, 0x000026   # 发送0x26 00 00
+    li a1, 0x00         # 不读写
+    li x5, 3            # x5 = 3
+    jal command_frame
+    INTO_RAM_MODE
+    j 0x0
+
+
+
+# x9保存了页面长度
+download:
+    li x9, 0
+# 无限循环
+9:
+    READ_UART_STATE(x7)
+    andi x7, x7, 0x02
+    bnez x7, 2f # 判断rx_end是否为1
+    SET_STR_ARGS(CMD)
+    jal tx_str_block_auto_increment
+    j 9b
+2:  
+    READ_UART_DATA(x7)
+    li x6, 0xF1
+    beq x6, x7, 8f
+    li x6, 0x56
+    bne x6, x7, 9b
+# 进入下载模式
+3:  
+    SET_STR_ARGS(LEN)
+    jal tx_str_block_auto_increment
+    jal uart_rx_block # 接收两字节的页面长度(MSB)
+    slli x9, a0, 8
+    jal uart_rx_block
+    or x9, x9, a0
+    beqz x9, 3b
+    li x6, MAX_COPY_PAGE
+    bgt x9, x6, 3b
+# 确认
+3:
+    SET_STR_ARGS(START_DOWNLOAD)
+    jal tx_str_block_auto_increment
+    jal uart_rx_block
+    li x6, 0x78
+    bne x6, a0, 3b
+# 擦除与下载
+erase_ufm:
+    li a0, 0x000000CB   # 发送0xCB 00 00 00
+    li a1, 0x00         # 不读写
+    li x5, 4            # x5 = 4
+    jal command_frame
+    DELAY_MS(1200)      # 必须等至少1000ms
+from_uart_download:     # 双层循环
+    jal reset_ufm_addr
+3:  SET_COUNT(PAGE_BYTES)
+    mv x15, x2           # 加载缓冲区地址
+1:  jal uart_rx_block
+    sb a0, 0(x15)        # 写入缓冲区
+    addi x15, x15, 1
+    COUNT_LOOP
+    li a0, 0x010000C9   # 发送0xC9 00 00 01
+    li a1, 0x02         # 写
+    li x5, 4            # x5 = 4
+    jal command_frame   # 写入flash
+    DELAY_US(200)          # 至少等200us
+    addi x9, x9, -1
+    bnez x9, 3b
+# 完成确认
+3:
+    SET_STR_ARGS(CONFIRM)
+    jal tx_str_block_auto_increment
+    jal uart_rx_block
+    li x6, 0x57
+    bne x6, a0, 3b
+    j 9b
+8:
+    j check_ufm # 直接跳回去
+
+
+
+# x5是操作数数量
+# a0是命令与操作数，低位字节先发送
+# a1控制是否读写 0x00无 0x01是读取 0x02是写入
+command_frame:
+    li x7, 0x80 # x7 = 0x80
+    WRITE_FLASH_CON(x7)
+# 写入命令与操作数
+1:  WRITE_FLASH_DATA(a0)
+    srli a0, a0, 8
+    COUNT_LOOP
+    
+# 固定数据长度读写数据
+    beqz a1, 4f     # 判断是否有操作
+    mv  a0, x2      # 加载缓冲区地址
+    srli a1, a1, 1  # 结果不为0表示写入
+    SET_COUNT(PAGE_BYTES)
+# 读取
+1:  bnez a1, 2f
+    READ_FLASH_DATA(x7)
+    sb x7, 0(a0)
+    j 3f
+# 写入
+2:  lbu x7, 0(a0)
+    WRITE_FLASH_DATA(x7)
+# 循环末尾
+3:  addi a0, a0, 1 # a0 = a0 + 1
+    COUNT_LOOP
+# 函数返回
+4:  WRITE_FLASH_CON(x0)
+    ret
+
+reset_ufm_addr:
+    li a0, 0x00000047   # 发送0x47 00 00 00
+    li a1, 0x00         # 不读写
+    li x5, 4            # x5 = 4
+    mv  s0, ra # s0 = ra
+    jal command_frame
+    mv  ra, s0 # ra = s0
+    ret
+
+# flash读写的地址，都是自动+1的
+read_one_ufm_page:
+    li a0, 0x010010CA   # 发送0xCA 10 00 01
+    li a1, 0x01         # 读
+    li x5, 4            # x5 = 4
+    mv  s0, ra # s0 = ra
+    jal command_frame
+    mv  ra, s0 # ra = s0
+    ret
+
+
+uart_rx_block:
+1:  READ_UART_STATE(x7)
+    andi x7, x7, 0x02
+    beqz x7, 1b # 等待rx_end为1
+    READ_UART_DATA(a0)
+    ret
+
+# x5是字符串长度
+# x15是字符串地址
+tx_str_block_auto_increment:
+    SET_PRELOAD_STR_ADDR(x15)
+1:  READ_UART_STATE(x7)
+    andi x7, x7, 0x01
+    beqz x7, 1b # 等待tx_ready为1
+    GET_PRELOAD_STR_AUTO_INC(x7)
+    WRITE_UART_DATA(x7)
+    COUNT_LOOP
+    ret
+    

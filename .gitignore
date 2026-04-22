@@ -15,6 +15,9 @@ RTL/IPs/*/*.vhd
 zlocal_only
 assets/**/.$*.bkp
 
+firmware_lib/asm_bootstrap/*.bin
+firmware_lib/asm_bootstrap/*.elf
+
 .settings
 .project
 .library_mapping.xml
