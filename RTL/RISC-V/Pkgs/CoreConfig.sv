@@ -56,7 +56,7 @@ package CoreConfig;
   function automatic core_cfg_t ComputeCoreCfg(core_raw_cfg_t raw_cfg);
     extension_cfg_t EXTENSION = raw_cfg.EXTENSION;
     int XLEN = raw_cfg.XLEN;
-    core_cfg_t cfg = '{default: 0};
+    core_cfg_t cfg = '{xl_t: XLEN32, default: 0};
     cfg.XLEN = XLEN;
     cfg.EXTENSION = EXTENSION;
     cfg.MXL = XLEN == 32 ? XLEN32 : XLEN64;

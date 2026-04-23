@@ -54,6 +54,7 @@ module RISC_V_Core
   wire jump_pending;
   wire instruction_retire;
   assign core_stall_n = stall_n;
+  assign core_inst_if.enable = stall_n;
 
   wire wfi;
 

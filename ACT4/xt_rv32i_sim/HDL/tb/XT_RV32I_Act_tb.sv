@@ -1,20 +1,17 @@
-module XT_RV32I_Act_tb #(
+module XT_RV32I_Act_tb
+  import CoreConfig::CORE_DEFAULT_CFG;
+#(
     parameter int unsigned RAM_WORD_DEPTH = 32'h000F_0000,
     parameter int unsigned RAM_BASE_ADDR  = 32'h80000000
 ) (
     input clk,
-    input rst_sync
+    input rst
 );
-
-  function automatic bit AccessRAM(logic [31:0] addr);
-    return RAM_BASE_ADDR <= addr && addr <= RAM_BASE_ADDR + (RAM_WORD_DEPTH * 4);
-  endfunction
 
   wire stall_req = 0;
   wire core_stall_n;
 
   instruction_if core_inst_if ();
-
   memory_direct_if #(
       .DATA_WIDTH(32),
       .ADDR_WIDTH(32)
@@ -25,6 +22,7 @@ module XT_RV32I_Act_tb #(
   wire mtimer_int = 0;
   wire [30:0] custom_int_code = 0;
   RISC_V_Core #(
+      .CFG(CORE_DEFAULT_CFG),
       .INST_FETCH_REG(0),
       .STALL_REQ_NUM(1),
       .PC_RESET(RAM_BASE_ADDR)
@@ -33,30 +31,12 @@ module XT_RV32I_Act_tb #(
   );
 
 
-  // 0是指令通道
-  logic read[2];
-  logic write[2];
-  logic [1:0] width[2];
-  logic [31:0] addr[2];
-  logic [31:0] wdata[2];
-  wire [31:0] rdata[2];
-  wire core_access_ram_read = memory.read & AccessRAM(memory.raddr);
-  wire core_access_ram_write = memory.write & AccessRAM(memory.waddr);
-  always_comb begin
-    read = '{1'b1, core_access_ram_read};
-    write = '{1'b0, core_access_ram_write};
-    width = '{2'b10, memory.write_size};
-    addr[0] = core_inst_if.addr - RAM_BASE_ADDR;
-    if (memory.read) begin
-      addr[1] = memory.raddr - RAM_BASE_ADDR;
-    end else begin
-      addr[1] = memory.waddr - RAM_BASE_ADDR;
-    end
-    wdata = '{32'b0, memory.wdata};
-    core_inst_if.inst = rdata[0];
-    memory.rdata = rdata[1];
-  end
-  ActRam #(.WORD_DEPTH(RAM_WORD_DEPTH)) u_ActRam (.*);
+  ActRam #(
+      .WORD_DEPTH(RAM_WORD_DEPTH),
+      .BASE_ADDR (RAM_BASE_ADDR)
+  ) u_ActRam (
+      .*
+  );
 
 
   // HTIF
@@ -66,18 +46,18 @@ module XT_RV32I_Act_tb #(
   initial begin
     string wave;
     $value$plusargs("dump=%s", dump_file);
-    htif = new(RAM_BASE_ADDR);
+    htif = new(RAM_BASE_ADDR, memory);
     if ($value$plusargs("wave=%s", wave)) begin
       $dumpfile(wave);
       $dumpvars();
     end
   end
 
-  always @(posedge clk, posedge rst_sync) begin
-    if (rst_sync) begin
+  always @(posedge clk, posedge rst) begin
+    if (rst) begin
       htif.check_halt <= 0;
     end else begin
-      htif.capture_write(memory.write, memory.waddr, memory.wdata);
+      htif.capture_write();
     end
   end
 

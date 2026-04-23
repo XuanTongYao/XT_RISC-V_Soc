@@ -92,7 +92,9 @@ package CSR_Pkg;
   } mie_t;
 
   typedef struct packed {
+    /*verilator lint_off SYMRSVDWORD*/
     logic interrupt;
+    /*verilator lint_off SYMRSVDWORD*/
     logic [30:0] code;
   } mcause_t;
 

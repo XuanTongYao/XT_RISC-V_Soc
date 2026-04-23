@@ -5,6 +5,8 @@
 class HTIF #(
     parameter int unsigned RAM_WORD_DEPTH = 32'h000F_0000
 );
+  virtual memory_direct_if memory;
+
   string elf_name, signature_file, log_file;
   int unsigned cur_cycles = 0, max_cycles = 1000;
   int unsigned ram_base_addr, tohost_addr;
@@ -12,7 +14,7 @@ class HTIF #(
   logic [31:0] tohost_0, tohost_1;
   logic check_halt;
 
-  function new(int unsigned ram_base_addr);
+  function new(int unsigned ram_base_addr, virtual memory_direct_if memory_access);
     `STRICT_PLUSARG("elf_name=%s", elf_name);
     $value$plusargs("max_cycles=%d", max_cycles);
     `STRICT_PLUSARG("tohost=%x", tohost_addr);
@@ -22,13 +24,14 @@ class HTIF #(
     `STRICT_PLUSARG("log=%s", log_file);
     check_halt = 0;
     this.ram_base_addr = ram_base_addr;
+    this.memory = memory_access;
   endfunction
 
-  function void capture_write(logic access_ram_write, logic [31:0] access_ram_waddr, logic [31:0] access_ram_wdata);
-    if (access_ram_write && access_ram_waddr == tohost_addr) begin
-      tohost_0 = access_ram_wdata;
-    end else if (access_ram_write && access_ram_waddr == (tohost_addr + 4)) begin
-      tohost_1   = access_ram_wdata;
+  function void capture_write();
+    if (memory.write && memory.waddr == tohost_addr) begin
+      tohost_0 = memory.wdata;
+    end else if (memory.write && memory.waddr == (tohost_addr + 4)) begin
+      tohost_1   = memory.wdata;
       check_halt = 1;
     end
   endfunction

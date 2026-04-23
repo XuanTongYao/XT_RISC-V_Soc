@@ -160,7 +160,7 @@ module XT_Soc_Risc_V
   rom_boot u_ROM (
       .Address(core_inst_if.addr[ROM_ADDR_WIDTH-1:2]),
       .OutClock(clk),
-      .OutClockEn(core_stall_n),
+      .OutClockEn(core_inst_if.enable),
       .Reset(1'b0),
       .Q(bootloader_instruction)
   );
@@ -176,7 +176,7 @@ module XT_Soc_Risc_V
       .INST_RAM_DEPTH(INST_RAM_DEPTH)
   ) u_HarvardSystemRAM (
       .*,
-      .inst_fetch_clk_en(core_stall_n),
+      .inst_fetch_clk_en(core_inst_if.enable),
       // 数据RAM
       .hb               (ram_data_if),
       .ram_inst         (ram_inst_if),
