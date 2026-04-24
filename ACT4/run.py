@@ -109,7 +109,14 @@ def run_test(
         dump = RESULTS_DIR / rel_path.with_suffix(".dump")
         signature.parent.mkdir(parents=True, exist_ok=True)
         hex.parent.mkdir(parents=True, exist_ok=True)
-        elf_to_hex(elf, hex)
+        # 转换为16进制文本文件
+        subprocess.run(
+            [str(OBJCOPY_EXE)]
+            + f"-O verilog --verilog-data-width 4 --change-addresses -{entry_point:#X}".split()
+            + [str(elf)]
+            + [str(hex)],
+            check=True,
+        )
         # 运行仿真
         cmd = [
             str(simulation_exe),
@@ -123,18 +130,6 @@ def run_test(
         ]
         cmd += [f"+{name}={addr:08x}" for name, addr in symbols.items()]
         subprocess.run(cmd, text=True, check=True)
-
-
-def elf_to_hex(elf: Path, hex: Path):
-    """转换成十六进制文本"""
-    bin = hex.with_suffix(".bin")
-    subprocess.run([str(OBJCOPY_EXE), "-O", "binary", str(elf), str(bin)], check=True)
-
-    with open(bin, "rb") as f_in, open(hex, "w") as f_out:
-        data = f_in.read()
-        for i in range(0, len(data), 4):
-            val = int.from_bytes(data[i : i + 4], "little")
-            f_out.write(f"{val:08x}\n")
 
 
 def get_symbols(elf: Path, symbol_names: list[str], objdump_exe: Path):
