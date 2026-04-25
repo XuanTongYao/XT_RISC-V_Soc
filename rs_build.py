@@ -1,4 +1,5 @@
 import subprocess, sys
+from contextlib import suppress
 from pathlib import Path
 from json import loads
 from argparse import ArgumentParser
@@ -13,9 +14,12 @@ PADDING_BYTE = b"\x00"  # 对齐填充数据
 
 def main():
     args = parse_args()
-    # print(args)
-    cmds = wizard(args)
-    cargo(**cmds)
+    with suppress(KeyboardInterrupt):
+        # print(args)
+        cmds = wizard(args)
+        cargo(**cmds)
+        quit()
+    print("被中断退出")
 
 
 # 定义有效的命令、模式和种类
@@ -71,7 +75,7 @@ def wizard(args: dict):
         print("当前无编译目标")
         quit()
 
-    if "cmd" not in args:
+    if not args["cmd"]:
         args["cmd"] = select_item(VALID_CMDS, "\n选择执行命令:")
 
     if no_target:
@@ -101,30 +105,37 @@ def wizard(args: dict):
 def parse_args():
     """解析命令行参数"""
 
-    parser = ArgumentParser(description="rust构建向导")
+    parser = ArgumentParser(description="rust构建向导", prefix_chars="-+")
 
-    all_cmds = (*VALID_CMD_ALIAS, *VALID_CMDS)
-    if len(sys.argv) >= 2 and sys.argv[1] in all_cmds:
-        parser.add_argument("cmd", choices=all_cmds)
-
+    parser.add_argument("cmd", nargs="?")
     parser.add_argument("-r", "--release", action="store_true")
     target_group = parser.add_mutually_exclusive_group()
     for i in VALID_KIND:
         target_group.add_argument(f"--{i}")
 
     parser.add_argument("-F", "--features", type=str)
-    parser.add_argument("-+", "--additional", nargs="*", type=str)
+    parser.add_argument("+", action="append", dest="additional", type=str)
     parser.add_argument("passed_args", nargs="*", type=str)
 
-    return vars(parser.parse_args())
+    args, unknown = parser.parse_known_intermixed_args()
+
+    all_cmds = (*VALID_CMD_ALIAS, *VALID_CMDS)
+    if args.cmd is not None and args.cmd not in all_cmds:
+        args.passed_args.append(args.cmd)
+        args.cmd = None
+    args.passed_args.extend(unknown)
+    return vars(args)
 
 
 def select_num(options: list, prompt: object = ""):
     if len(options) == 1:
         return 0
-    p = f"{prompt}\n{"\n".join(f"{i}\t->\t{t}" for i,t in enumerate(options))}\n> "
-    n = input(p)
-    return int(n) if n.isdigit() else 0
+    print(f"{prompt}\n{"\n".join(f"{i}\t->\t{t}" for i,t in enumerate(options))}")
+    while True:
+        n = input("> ")
+        if n.isdigit() and 0 <= int(n) < len(options):
+            return int(n)
+        print("请重新输入")
 
 
 def select_item(options: list, prompt: object = ""):

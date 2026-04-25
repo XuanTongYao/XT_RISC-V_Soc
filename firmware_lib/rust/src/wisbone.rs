@@ -947,7 +947,7 @@ impl Flash {
     /// 读取一页数据，页地址自会增
     /// **必须先启用UFM透明传输!**
     pub fn read_one_ufm_page(&mut self, buffer: &mut [u8; 16]) {
-        self.command_frame_read(Self::LSC_READ_TAG, 0x100001, buffer);
+        self.command_frame_read(Self::LSC_READ_TAG, 0x10_00_01, buffer);
     }
 
     /// 擦除UFM所有内容 **阻塞约1050毫秒**\
@@ -960,7 +960,7 @@ impl Flash {
     /// 写入一页数据，页地址自会增
     /// **必须先启用UFM透明传输!**
     pub fn write_one_ufm_page(&mut self, buffer: &[u8; 16]) {
-        self.command_frame_write(Self::LSC_PROG_TAG, 0x000001, buffer);
+        self.command_frame_write(Self::LSC_PROG_TAG, 0x00_00_01, buffer);
         crate::rv_core::delay_us(210); // 至少等200us，保险一点等210us
     }
 }
