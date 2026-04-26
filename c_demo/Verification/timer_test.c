@@ -1,19 +1,24 @@
-#include "XT_RISC_V_Base.h"
-#include "timer.h"
-#include "uart.h"
-#include "af_gpio.h"
+#define XT_RISCV_MCU_IMPLEMENTATION
+#define XTRISCV_ONLY_UART
+#define XTRISCV_ONLY_EINT_CTRL
+#define XTRV32I_LB_IMPLEMENTATION
+#define XTLB_ONLY_AF_GPIO
+#define XTRV32I_WISBONE_IMPLEMENTATION
+#define XTWISBONE_ONLY_TIMER
+#include "c/xt_riscv_mcu.h"
+#include "c/xtrv32i_lb.h"
+#include "c/xtrv32i_wisbone.h"
+#include "c/asm_macros.h"
 
 uint8_t COMPARE = 0;
 uint8_t ADD = 0;
 void main(void) {
     ENABLE_MEI;
-    // ENABLE_MTI;
-    // ENABLE_ALL_MINT;
     *EINT_CTRL_ENABLE_REG = UART_IRQ_MASK | Timer_IRQ_MASK;
     ENABLE_GLOBAL_MINT;
     AF_GPIO->DIRECTION_REG = 0xFC000000;
     AF_GPIO->DATA_REG = 0xFC000000;
-    while (1) {
+    while (true) {
         NOP;
     }
 }
@@ -45,11 +50,11 @@ void breathing_light_test(void) {
     set_top(468);
     COMPARE = 0;
     set_compare(COMPARE);
-    TIMER_INT_EN_REG->IRQOVFEN = 1;// 开启溢出中断
+    TIMER_INT_EN_REG->IRQOVF = 1;// 开启溢出中断
 }
 
 void exit_breathing_light_test(void) {
-    TIMER_INT_EN_REG->IRQOVFEN = 0;// 关闭溢出中断
+    TIMER_INT_EN_REG->IRQOVF = 0;// 关闭溢出中断
 }
 
 void clkdiv_up_test(void) {

@@ -34,8 +34,8 @@
 #include "c/type.h"
 #endif
 
-#ifndef INCLUDE_XT_RISCV_MCU_H
-#define INCLUDE_XT_RISCV_MCU_H
+#ifndef INCLUDE_XTRV32I_WISBONE_H
+#define INCLUDE_XTRV32I_WISBONE_H
 //////////////   头文件开始   ////////////////////////////////////////
 ///
 //
@@ -75,7 +75,7 @@
 //
 ///
 //////////////   头文件结束   ////////////////////////////////////////
-#endif // INCLUDE_XT_RISCV_MCU_H
+#endif // INCLUDE_XTRV32I_WISBONE_H
 
 
 
@@ -189,19 +189,19 @@ static uint8_t I2C_DATA_BUFF[8];
 /// @warning 重设预分频会使I2C复位
 /// @param div 分频公式:SCL = BUS_CLK/(div*4)
 /// @param div [1,1023]
-static void set_i2c_prescale(I2C* i2c, uint16_t div) {
+static void set_i2c_prescale(volatile I2C* i2c, uint16_t div) {
     div &= 0x3FF;
     i2c->BR0_REG = (uint8_t)div;
     i2c->BR1_REG = (uint8_t)(div >> 8);
 }
 
-static uint16_t get_i2c_prescale(I2C* i2c) {
+static uint16_t get_i2c_prescale(volatile I2C* i2c) {
     uint16_t val = i2c->BR0_REG;
     val |= ((uint16_t)i2c->BR1_REG << 8);
     return val;
 }
 
-static void reset_i2c(I2C* i2c) {
+static void reset_i2c(volatile I2C* i2c) {
     i2c->CON_REG.I2CEN = 0;
     DELAY_US(50);
     i2c->CON_REG.I2CEN = 1;
@@ -211,7 +211,7 @@ static void reset_i2c(I2C* i2c) {
 // 逆天的技术手册里要求延迟时间与速率周期有关
 
 /// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。
-static void master_i2c_write_addr_only_block(I2C* i2c, const uint8_t addr) {
+static void master_i2c_write_addr_only_block(volatile I2C* i2c, const uint8_t addr) {
     i2c->TX_DATA_REG = addr;
     i2c->CMD_REG.reg = 0x94;// 开始条件+发送
     while (!i2c->STATUS_REG.TRRDY) {}
@@ -221,7 +221,7 @@ static void master_i2c_write_addr_only_block(I2C* i2c, const uint8_t addr) {
 
 /// @note 未知原因逻辑分析仪得到错误的数据，但是与实物连接又能正常工作，大概率逻辑分析仪的问题。
 /// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。
-static void master_i2c_write_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num) {
+static void master_i2c_write_bytes_block(volatile I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num) {
     i2c->TX_DATA_REG = addr & 0xFE;
     i2c->CMD_REG.reg = 0x94;
     while (!i2c->STATUS_REG.TRRDY) {}
@@ -236,7 +236,7 @@ static void master_i2c_write_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* 
 }
 
 /// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。
-static void master_i2c_read_bytes_block(I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num, const size_t read_num) {
+static void master_i2c_read_bytes_block(volatile I2C* i2c, const uint8_t addr, uint8_t* data, const size_t num, const size_t read_num) {
     i2c->TX_DATA_REG = addr;
     i2c->CMD_REG.reg = 0x94;
     while (!i2c->STATUS_REG.TRRDY) {}

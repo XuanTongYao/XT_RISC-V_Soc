@@ -1,46 +1,11 @@
-#include "flash.h"
-#include "Utils.h"
-#include "bootstrap_control.h"
-
-#ifdef EMOJI
-// 用emoji代替文字
-
-// "💾:0x56,🛫:0xF1"
-#define STR_CMD 0
-#define STR_CMD_LEN 20
-// "Len="
-#define STR_LEN 20
-#define STR_LEN_LEN 4
-// "\n🔛:0x78"
-#define STR_START_DOWNLOAD 24
-#define STR_START_DOWNLOAD_LEN 10
-// "\n✅:0x57"
-#define STR_CONFIRM 34
-#define STR_CONFIRM_LEN 9
-// "\n❌" 
-#define STR_ERR 43
-#define STR_ERR_LEN 4
-
-#else
-
-// "下载:0x56,启动:0xF1\n"
-#define STR_CMD 0
-#define STR_CMD_LEN 24
-// "Len="
-#define STR_LEN 24
-#define STR_LEN_LEN 4
-// "\n开始:0x78"
-#define STR_START_DOWNLOAD 28
-#define STR_START_DOWNLOAD_LEN 12
-// "\n完成:0x57"
-#define STR_CONFIRM 40
-#define STR_CONFIRM_LEN 12
-// "\nERROR"
-#define STR_ERR 52
-#define STR_ERR_LEN 6
-
-#endif
-// 不能用字符串字面量(需要memcpy调用)，只读数据也不好从单端口ROM读取
+#define XT_RISCV_MCU_IMPLEMENTATION
+#define XTRISCV_ONLY_UART
+#define XTRISCV_ONLY_BOOTSTRAP
+#define XTRV32I_WISBONE_IMPLEMENTATION
+#define XTWISBONE_ONLY_FLASH
+#include "c/xt_riscv_mcu.h"
+#include "c/xtrv32i_wisbone.h"
+#include "c/utils.h"
 
 #define INST_BASE_ADDR ((volatile uint32_t*)INST_RAM_BASE)
 // 如果自举工作在内存中可能会用到

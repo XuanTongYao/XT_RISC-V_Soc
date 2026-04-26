@@ -1,13 +1,11 @@
 from pathlib import Path
 
 # 用户自定义程序
-user_paths = ["C_lib/tests"]
+user_paths = ["c_demo"]
 
 
 # 包含相关
-include_paths = [
-    "C_lib/XT_RISC_V",
-]
+include_paths = []
 firmware_paths = [
     "firmware_lib",
 ]

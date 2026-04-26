@@ -61,8 +61,8 @@ def create_header(config_file: Path):
 #include "c/type.h"
 #endif
     
-#ifndef INCLUDE_XT_RISCV_MCU_H
-#define INCLUDE_XT_RISCV_MCU_H
+#ifndef INCLUDE_{header}_H
+#define INCLUDE_{header}_H
 //////////////   头文件开始   ////////////////////////////////////////
 ///
 //
@@ -73,7 +73,7 @@ def create_header(config_file: Path):
 //
 ///
 //////////////   头文件结束   ////////////////////////////////////////
-#endif // INCLUDE_XT_RISCV_MCU_H
+#endif // INCLUDE_{header}_H
 """
 
     # 实现配置

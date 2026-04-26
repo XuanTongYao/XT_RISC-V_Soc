@@ -32,8 +32,8 @@
 #include "c/type.h"
 #endif
 
-#ifndef INCLUDE_XT_RISCV_MCU_H
-#define INCLUDE_XT_RISCV_MCU_H
+#ifndef INCLUDE_XTRV32I_LB_H
+#define INCLUDE_XTRV32I_LB_H
 //////////////   头文件开始   ////////////////////////////////////////
 ///
 //
@@ -61,7 +61,7 @@
 //
 ///
 //////////////   头文件结束   ////////////////////////////////////////
-#endif // INCLUDE_XT_RISCV_MCU_H
+#endif // INCLUDE_XTRV32I_LB_H
 
 
 

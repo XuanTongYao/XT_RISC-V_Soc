@@ -1,8 +1,12 @@
-#include "XT_RISC_V.h"
-#include "Utils.h"
+#define XTRV32I_LB_IMPLEMENTATION
+#define XTLB_ONLY_LEDSD
+#define XTLB_ONLY_SW_KEY
+#include "c/xt_riscv_mcu.h"
+#include "c/xtrv32i_lb.h"
+#include "c/utils.h"
 
 void main(void) {
-    while (1) {
+    while (true) {
         uint16_t key_data = *KEY_REG;
         uint16_t sw_data = *SWITCH_REG;
         if (GetBit(key_data, 0)) {

@@ -23,17 +23,13 @@
 
 #define SetBit(Data,Bit) (Data) |= BITX_MASK(Bit)// 把数据某一位设为1
 #define ResetBit(Data,Bit) (Data) &= ~BITX_MASK(Bit)// 把数据某一位设为0
-#define GetBit(Data,Bit) (((Data) & BITX_MASK(Bit)) == BITX_MASK(Bit)) // 获取数据某一位
+#define GetBit(Data,Bit) (((Data) >> (Bit)) & 1) // 获取数据某一位
 #define GetBitLow(Data,Len) ((Data) & BIT_LX_MASK(Len)) // 获取数据低几位
 #define GetBitHigh(Data,Len,N) (((Data) & BITN_HX_MASK(Len,N)) >> ((N)-(X))) // 获取数据高几位并右对齐，需要指定数据总长度N
 // High - 高位  Low - 低位  左右闭区间 Low不能为0
 #define GetBits(Data,High,Low) (BIT_LX_MASK(High) & ~BIT_LX_MASK((Low)-1U))
 #define GetByteN(Data,N) (((Data) & (0xFF << (N*8)))>>(N*8))
 
-// 各位与
-#define ReductionAnd(Data) (~Data==0)
-// 各位或
-#define ReductionOr(Data) (Data!=0)
 
 
 

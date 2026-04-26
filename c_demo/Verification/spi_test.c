@@ -1,12 +1,17 @@
-#include "XT_RISC_V_Base.h"
-#include "spi.h"
-#include "uart.h"
+#define XT_RISCV_MCU_IMPLEMENTATION
+#define XTRISCV_ONLY_UART
+#define XTRISCV_ONLY_EINT_CTRL
+#define XTRV32I_WISBONE_IMPLEMENTATION
+#define XTWISBONE_ONLY_SPI
+#include "c/xt_riscv_mcu.h"
+#include "c/xtrv32i_wisbone.h"
+#include "c/asm_macros.h"
 
 void main(void) {
     ENABLE_MEI;
     *EINT_CTRL_ENABLE_REG = UART_IRQ_MASK;
     ENABLE_GLOBAL_MINT;
-    while (1) {
+    while (true) {
         NOP;
     }
 }

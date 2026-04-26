@@ -19,7 +19,7 @@ objcopy = "riscv-none-elf-objcopy"
 优化等级 = "-Os"
 其他优化 = "-flto"
 启动文件 = "firmware_lib/rust/asm/start.riscv"
-# 启动文件 = "firmware_lib/rust/asm/simple_start.riscv"
+# 启动文件 = "firmware_lib/rust/asm/bare_start.riscv"
 链接脚本 = ["firmware_lib/c/link.x", "firmware_lib/c/trap_handler.x"]
 
 

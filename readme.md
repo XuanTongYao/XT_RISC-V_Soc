@@ -6,7 +6,7 @@
 
 1. [RTL](RTL)包含了所有Verilog代码，顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
 2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和[Rust版本](firmware_lib/rust)
-3. [demo](C_lib/tests)**暂时**存放了MCU的`C语言`示例程序代码，同时也是`C`编译脚本默认寻找**源文件**的位置
+3. [demo](c_demo)是C语言的示例程序代码，同时也是C程序构建脚本默认寻找**主程序源文件**的位置
 4. [ACT4](ACT4)包含了架构认证测试相关的内容(最新的ACT4框架)
 
 [RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)

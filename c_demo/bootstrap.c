@@ -1,7 +1,7 @@
 //----------自举启动与DEBUG----------//
-#include "XT_RISC_V.h"
 #define EMOJI
 #include "bootstrap.h"
+#include "c/asm_macros.h"
 
 // 取消分页表
 // 反正只有12KB的空间，随便一个程序都满了
@@ -49,7 +49,7 @@ void boot(void) {
     }
     __disable_transparent_UFM();
     *DEBUG_REG = INTO_NORMAL_MODE;
-    asm("j 0x0");
+    asm("j _start");
 }
 
 

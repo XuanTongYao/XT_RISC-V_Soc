@@ -1,14 +1,19 @@
-#include "XT_RISC_V.h"
+#define XT_RISCV_MCU_IMPLEMENTATION
+#define XTRISCV_ONLY_UART
+#define XTRISCV_ONLY_EINT_CTRL
+#define XTRISCV_ONLY_MTIMER
+#define XTRV32I_LB_IMPLEMENTATION
+#define XTLB_ONLY_LEDSD
+#define XTLB_ONLY_LED
+#include "c/xt_riscv_mcu.h"
+#include "c/xtrv32i_lb.h"
+#include "c/asm_macros.h"
 
-uint32_t TIME = 0;
 void main(void) {
-    // ENABLE_MEI;
-    // *UART_DEBUG_REG = 0x01;
-    // ENABLE_MTI;
     ENABLE_ALL_MINT;
     *EINT_CTRL_ENABLE_REG = UART_IRQ_MASK;
     ENABLE_GLOBAL_MINT;
-    while (1) {
+    while (true) {
         NOP;
     }
 }
@@ -19,6 +24,7 @@ IRQ UART_RX_IRQ_Handler(void) {
 }
 
 IRQ mtimer_IRQ_Handler(void) {
+    static uint32_t TIME = 0;
     uint64_t systime = get_mtime();
     set_mtimecmp(systime + (1 * SYSTEM_TIMER_FREQ));
     TIME++;

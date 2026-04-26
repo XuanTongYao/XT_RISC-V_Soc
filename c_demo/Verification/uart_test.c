@@ -51,7 +51,8 @@ void spam_uint8_test(void) {
     }
 }
 
-// FIXME 很神奇的bug，!打印不出来
+// FIXME 一个未知bug，最后一个字符'!'打印不出来(串口接收到0x00)
+// 可能是内存对齐的问题？也可能是UART发送的问题？
 static const char str[] = "Hello, world!";
 void tx_bytes_test(void) {
     tx_bytes_block((uint8_t*)str, sizeof(str), false);
