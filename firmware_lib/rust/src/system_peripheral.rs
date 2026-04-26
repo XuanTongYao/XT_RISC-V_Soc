@@ -81,7 +81,7 @@ pub mod regs {
 
 pub type Bootstrap = Peripheral<regs::Bootstrap, { sp_base(PeripheralId::Bootstrap) }>;
 impl Bootstrap {
-    const INTO_NORMAL_MODE: u8 = 0xF0;
+    const INTO_NORMAL_MODE: u8 = 0xF1;
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
 
     crate::set_value!(

@@ -155,7 +155,7 @@ module XT_Soc_Risc_V
 
 
   // Bootloader和Debug固化程序
-  localparam int ROM_DEPTH = 256;
+  localparam int ROM_DEPTH = 128;
   localparam int ROM_ADDR_WIDTH = $clog2(ROM_DEPTH * 4);
   rom_boot u_ROM (
       .Address(core_inst_if.addr[ROM_ADDR_WIDTH-1:2]),

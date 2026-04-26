@@ -43,7 +43,8 @@ void boot(void) {
         __continue_read_one_UFM_page();
         for (size_t i = 0; i < 4; i++, ram_32addr++) {
             INST_BASE_ADDR[ram_32addr] = __DATA_BUFF_32[i];
-            NOP;// FIXME 在这加一个NOP又能正常加载了？感觉是连续写的问题，没招了，临时解决一下
+            // 不是连续写的问题，是编译器优化问题，纯汇编的版本是正常的，因C固件库已弃用，不再尝试修复此问题
+            NOP;// 在这加一个NOP又能正常加载了？感觉是连续写的问题，没招了，临时解决一下
         }
     }
     __disable_transparent_UFM();

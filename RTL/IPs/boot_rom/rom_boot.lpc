@@ -16,8 +16,8 @@ CoreRevision=2.8
 ModuleName=rom_boot
 SourceFormat=Verilog HDL
 ParameterFileVersion=1.0
-Date=01/29/2026
-Time=21:41:41
+Date=04/27/2026
+Time=00:54:16
 
 [Parameters]
 Verilog=1
@@ -27,14 +27,14 @@ Destination=Synplicity
 Expression=BusA(0 to 7)
 Order=[MSB:LSB]
 IO=0
-Addresses=256
+Addresses=128
 Data=32
 LUT=1
-MemFile=d:/projects/github/xt_risc-v_soc/build/flatbinarytxt/bootstrap-os.mem
+MemFile=d:/projects/github/xt_risc-v_soc/firmware_lib/asm_bootstrap/bootstrap.mem
 MemFormat=hex
 
 [FilesGenerated]
-d:/projects/github/xt_risc-v_soc/build/flatbinarytxt/bootstrap-os.mem=mem
+d:/projects/github/xt_risc-v_soc/firmware_lib/asm_bootstrap/bootstrap.mem=mem
 
 [Command]
-cmd_line= -w -n rom_boot -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 8 -num_words 256 -data_width 32 -outdata REGISTERED -memfile d:/projects/github/xt_risc-v_soc/build/flatbinarytxt/bootstrap-os.mem -memformat hex
+cmd_line= -w -n rom_boot -lang verilog -synth synplify -bus_exp 7 -bb -arch xo2c00 -dram -type romblk -addr_width 7 -num_words 128 -data_width 32 -outdata REGISTERED -memfile d:/projects/github/xt_risc-v_soc/firmware_lib/asm_bootstrap/bootstrap.mem -memformat hex

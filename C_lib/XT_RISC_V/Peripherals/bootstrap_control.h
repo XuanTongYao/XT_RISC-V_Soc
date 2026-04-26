@@ -6,7 +6,7 @@
 // 读取数据表示启动时状态
 #define DOWNLOAD_MODE 0x01
 // 向DEBUG_REG写入数据以切换模式
-#define INTO_NORMAL_MODE 0xF0
+#define INTO_NORMAL_MODE 0xF1
 #define DEBUG_REG ((byte_reg_ptr)(DEBUG_BASE))
 
 // 使用自动增地址的硬件实现字符串输出

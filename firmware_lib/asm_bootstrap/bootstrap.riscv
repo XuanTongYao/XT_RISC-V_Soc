@@ -1,7 +1,7 @@
 # 纯汇编自举程序，无栈
 # ra为x1，注意不要使用x1
 
-# x2始终是栈顶指针(-16得到缓冲区地址)
+# x2始终是栈顶指针(-16得到缓冲区地址，与缓冲区指针比较可以知道是否操作完一页)
 # x3始终是Flash基地址
 # x4始终是系统外设基地址
 # x5始终是临时计数值/计数值参数
@@ -12,9 +12,9 @@
 # x10/a0是函数参数/返回值
 # x11/a1是函数参数/返回值
 # x12/a2可作为一个保存数据
-
+# x13始终是常量0xF1
 # x14始终是MAX_COPY_PAGE，并在执行boot后变为零(当作计数值使用了)
-# x15始终是第二级返回地址(相当于两个ra)
+# x15始终是第二个返回地址，用于嵌套调用
 
 
 .equ SP_BASE, 8192
@@ -30,6 +30,8 @@
 .equ STACK_SIZE, 512
 .equ SSTACK, 4096+4096
 .equ MAX_COPY_PAGE, (SSTACK - STACK_SIZE)>>4
+
+.equ BOOT_IMM, 0xF1
 
 # "💾:0x56,🛫:0xF1"
 .equ STR_CMD, 0
@@ -49,7 +51,7 @@
 
 #define SET_STR_ARGS(name) lui x5, (STR_##name##_LEN<<8|STR_##name);
 
-#define INTO_RAM_MODE li x7, 0xF0; sb x7, BOOTSTRAP_BASE-SP_BASE(x4)
+#define INTO_RAM_MODE sb x13, BOOTSTRAP_BASE-SP_BASE(x4)
 #define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-SP_BASE(x4)
 #define SET_PRELOAD_STR_ADDR(reg) sb reg, BOOTSTRAP_BASE+4-SP_BASE(x4)
 #define GET_PRELOAD_STR_AUTO_INC(reg) lbu reg, BOOTSTRAP_BASE+8-SP_BASE(x4)
@@ -83,31 +85,34 @@ main:
     lla x3, FLASH_BASE
     lla x4, SP_BASE
     li x14, MAX_COPY_PAGE
+    li x13, BOOT_IMM
 reset_flash:
     li x7, 0x40
     WRITE_FLASH_CON(x7)
     WRITE_FLASH_CON(x0)
 enable_transparent_ufm:
     li a0, 0x00000874   # 发送0x74 08 00 00
-    jal x15, no_data_frame
+    jal no_data_frame
     DELAY_US(8)
 check_download:
     READ_DEBUG(x7)
     bnez x7, download
 boot:
-    jal x15, reset_ufm_addr
+    jal reset_ufm_addr
     li s1, 0                # 存储器指针
 # 读取flash并写入内存 双层循环
 2:  li a0, 0x010010CA   # 发送0xCA 10 00 01
     li a1, 0x80         # 读
-    jal x15, cmd_operands_4_frame
-    addi x6, x2, -16    # 加载缓冲区地址
+    jal cmd_operands_4_frame
+    addi x6, x2, -PAGE_BYTES    # 加载缓冲区地址
 1:  lw x7, 0(x6)        # 读取缓冲区
+    bnez s1, 3f         # 检查首个指令是否有效
+    beqz x7, error      # flash第0个字为全0，则为无效程序代码或ELF
+3: 
     sw x7, 0(s1)
     addi s1, s1, 4
     addi x6, x6, 4
-    andi x7, s1, 0x0F   # 地址不是页对齐说明还没写完一页
-    bnez x7, 1b
+    bltu x6, x2, 1b     # 地址小于栈顶指针说明还没写完一页
     addi x14, x14, -1
     bnez x14, 2b
 disable_transparent_ufm:
@@ -119,78 +124,78 @@ flash_nop:              # 要求a1保存不变 一直为0
     li a0, 0xFF         # 发送0xFF
     li x5, 1            # x5 = 1
     jal command_frame   # nop指令
-check_instruction:
-    lw x6, 0(x0)
-    beqz x6, error      # flash第0个字为全0，则为无效程序代码或ELF
+boot_ram_mode:
     INTO_RAM_MODE
     j _start
 error:
     SET_STR_ARGS(ERR)
-    jal tx_str_block_auto_increment
+    jal x15, tx_str_block_auto_increment
     j error
 
 # 可以尝试立即数优化 0xF1和INTO_RAM_MODE用同一个立即数 -1
 # 确认的立即数都换成0x80 -3
 
 # s0保存了页面长度
-# 无限循环
+# 无限循环除非输入0xF1启动
 download:
     SET_STR_ARGS(CMD)
-    jal tx_str_block_auto_increment
+    jal x15, tx_str_block_auto_increment
     READ_UART_STATE(x7)
     andi x7, x7, 0x02
     beqz x7, download # 判断rx_end是否为1
     READ_UART_DATA(x7)
-    li x6, 0xF1
-    beq x6, x7, boot # 直接跳回去
+    beq x13, x7, boot # 直接跳回去
     li x6, 0x56
     bne x6, x7, download
 # 进入下载模式
 3:  
     SET_STR_ARGS(LEN)
-    jal tx_str_block_auto_increment
-    jal uart_rx_block # 接收两字节的页面长度(MSB)
+    jal prompt_rx_block # 接收两字节的页面长度(MSB)
     slli s0, a0, 8
     jal uart_rx_block
     or s0, s0, a0
     beqz s0, 3b
-    bgt s0, x14, 3b
+    bgtu s0, x14, 3b
 # 确认
 3:
     SET_STR_ARGS(START_DOWNLOAD)
-    jal tx_str_block_auto_increment
-    jal uart_rx_block
+    jal prompt_rx_block
     li x6, 0x78
     bne x6, a0, 3b
 # 擦除与下载
 erase_ufm:
     li a0, 0x000000CB   # 发送0xCB 00 00 00
-    jal x15, no_data_frame
+    jal no_data_frame
     DELAY(14401532)     # 必须等至少1000ms，这里等了约1200ms，频率变化需要修改此处
 from_uart_download:     # 双层循环
-    jal x15, reset_ufm_addr
-3:  addi s1, x2, -16    # 加载缓冲区地址
+    jal reset_ufm_addr
+3:  addi s1, x2, -PAGE_BYTES    # 加载缓冲区地址
 1:  jal uart_rx_block
     sb a0, 0(s1)        # 写入缓冲区
     addi s1, s1, 1
-    andi x7, s1, 0x0F   # 地址不是页对齐说明还没写完一页
-    bnez x7, 1b
+    bltu s1, x2, 1b     # 地址小于栈顶指针说明还没写完一页
     li a0, 0x010000C9   # 发送0xC9 00 00 01
     li a1, 0x02         # 写
-    jal x15, cmd_operands_4_frame # 写入flash
+    jal cmd_operands_4_frame # 写入flash
     DELAY_US(200)          # 至少等200us
     addi s0, s0, -1
     bnez s0, 3b
 # 完成确认
 3:
     SET_STR_ARGS(CONFIRM)
-    jal tx_str_block_auto_increment
-    jal uart_rx_block
+    jal prompt_rx_block
     li x6, 0x57
     bne x6, a0, 3b
     j download
 
 
+
+reset_ufm_addr:
+    li a0, 0x00000047   # 发送0x47 00 00 00
+no_data_frame:
+    li a1, 0x00         # 不读写
+cmd_operands_4_frame:
+    li x5, 4            # x5 = 4
 
 # x5是操作数数量
 # a0是命令与操作数，低位字节先发送
@@ -205,7 +210,7 @@ command_frame:
     
 # 固定数据长度读写数据
     beqz a1, 4f     # 判断是否有操作
-    addi a0, x2, -16# 加载缓冲区地址
+    addi a0, x2, -PAGE_BYTES # 加载缓冲区地址
 1:  bne a1, x7, 2f  # 不为0x80表示写入
 # 读取
     READ_FLASH_DATA(x6)
@@ -215,23 +220,14 @@ command_frame:
 2:  lbu x6, 0(a0)
     WRITE_FLASH_DATA(x6)
 # 循环末尾
-3:  addi a0, a0, 1 # a0 = a0 + 1
-    andi x6, a0, 0x0F   # 地址不是页对齐说明还没写完一页
-    bnez x6, 1b
+3:  addi a0, a0, 1  # a0 = a0 + 1
+    bltu a0, x2, 1b # 地址小于栈顶指针说明还没写完一页
 # 函数返回
 4:  WRITE_FLASH_CON(x0)
     ret
 
-reset_ufm_addr:
-    li a0, 0x00000047   # 发送0x47 00 00 00
-no_data_frame:
-    li a1, 0x00         # 不读写
-cmd_operands_4_frame:
-    li x5, 4            # x5 = 4
-    jal command_frame
-    jr x15
-
-
+prompt_rx_block:
+    jal x15, tx_str_block_auto_increment
 uart_rx_block:
 1:  READ_UART_STATE(x7)
     andi x7, x7, 0x02
@@ -240,6 +236,7 @@ uart_rx_block:
     ret
 
 # x5是{8'd字符串长度,8'd字符串地址,12'b0}
+# 使用x15返回
 tx_str_block_auto_increment:
     srli x5, x5, 12
     SET_PRELOAD_STR_ADDR(x5)
@@ -250,4 +247,4 @@ tx_str_block_auto_increment:
     GET_PRELOAD_STR_AUTO_INC(x7)
     WRITE_UART_DATA(x7)
     COUNT_LOOP
-    ret
+    jr x15
