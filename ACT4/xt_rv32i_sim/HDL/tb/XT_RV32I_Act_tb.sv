@@ -67,9 +67,7 @@ module XT_RV32I_Act_tb
     end else if (htif.check_halt) begin
       // 转储所有ram数据
       // int fd = $fopen(dump_file, "w");
-      // if (fd == 0) begin
-      //   $fatal(1,"Failed to open ram dump file");
-      // end
+      // if (fd == 0) $fatal(1,"Failed to open ram dump file");
       // for (int i = 0; i < RAM_WORD_DEPTH; ++i) begin
       //   $fwrite(fd, "%08x: %08x\n", i << 2, u_ActRam.ram[i]);
       // end

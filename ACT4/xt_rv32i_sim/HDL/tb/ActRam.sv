@@ -12,7 +12,7 @@ module ActRam #(
     return BASE_ADDR <= addr && addr <= BASE_ADDR + (WORD_DEPTH * 4);
   endfunction
 
-  logic [31:0] ram[WORD_DEPTH];
+  logic [3:0][7:0] ram[WORD_DEPTH];
   initial begin
     string firmware_file = "firmware.hex";
     $value$plusargs("firmware=%s", firmware_file);
@@ -26,46 +26,32 @@ module ActRam #(
   wire [WIDTH-1:0] write_word_addr = WIDTH'(memory.waddr >> 2);
 
   logic [3:0] byte_enable;
-  logic [31:0] true_wdata, wdata;
-  always_comb begin
-    logic [31:0] write_mask = 0;
-    for (int i = 0; i < 4; ++i) begin
-      write_mask |= (32'({8{byte_enable[i]}}) << i * 8);
-    end
-    true_wdata = (wdata & write_mask) | (ram[write_word_addr] & ~write_mask);
-  end
-
+  logic [31:0] wdata;
   always_ff @(posedge clk) begin
-    if (write_enable) ram[write_word_addr] <= true_wdata;
+    if (write_enable) begin
+      for (int i = 0; i < 4; ++i) begin
+        if (byte_enable[i]) ram[write_word_addr][i] <= wdata[i*8+:8];
+      end
+    end
   end
 
   always_comb begin
-    byte_enable = 0;
+    // 地址取模4 计算字节偏移量[0,3]
+    wdata = memory.wdata << (memory.waddr[1:0] * 8);
     if (memory.write_size == 2'b10) begin
-      wdata = memory.wdata;
       byte_enable = 4'b1111;
     end else if (memory.write_size == 2'b01) begin
-      wdata = {2{memory.wdata[15:0]}};
       byte_enable = 4'b0011 << memory.waddr[1:0];
-      // 地址取模4 计算字节偏移量[0,3]
     end else begin
-      wdata = {4{memory.wdata[7:0]}};
       byte_enable = 4'b0001 << memory.waddr[1:0];
     end
   end
 
 
   always_comb begin
-    logic [31:0] true_rdata;
-    if (write_enable && memory.raddr == memory.waddr) begin
-      true_rdata = true_wdata;
-    end else begin
-      true_rdata = ram[read_word_addr];
-    end
-
     if (read_enable) begin
       // 地址取模4 字节偏移量
-      memory.rdata = true_rdata >> (memory.raddr[1:0] * 8);
+      memory.rdata = ram[read_word_addr] >> (memory.raddr[1:0] * 8);
     end else begin
       memory.rdata = 0;
     end
@@ -77,11 +63,7 @@ module ActRam #(
   wire [WIDTH-1:0] inst_word_addr = WIDTH'(core_inst_if.addr >> 2);
   always_comb begin
     if (inst_enable) begin
-      if (write_enable && core_inst_if.addr == memory.waddr) begin
-        core_inst_if.inst = true_wdata;
-      end else begin
-        core_inst_if.inst = ram[inst_word_addr];
-      end
+      core_inst_if.inst = ram[inst_word_addr];
     end else begin
       core_inst_if.inst = 0;
     end

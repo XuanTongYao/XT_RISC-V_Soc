@@ -1,6 +1,7 @@
 import subprocess, os, yaml, re
 from pathlib import Path
 
+# 使用`uv run --with pyyaml python run.py`来运行测试
 
 # Simulation parameters 仿真参数
 TRACE_ARGS = "--trace-fst --trace-depth 0"
@@ -28,7 +29,7 @@ def main():
 
     generate_ELFs(RISCV_ARCH_TEST, WORKDIR, CONFIG_FILES)
 
-    # 查询入口点(也作为内存基地址)，所有测试的入口点都相同
+    # 查询入口点(也作为主存基地址)，所有测试的入口点都相同
     elf_file = next(ELFS_DIR.rglob("*.elf"), None)
     if not elf_file:
         raise FileNotFoundError(
