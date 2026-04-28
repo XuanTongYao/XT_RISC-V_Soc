@@ -9,7 +9,7 @@ module ActRam #(
   localparam int WIDTH = $clog2(WORD_DEPTH);
 
   function automatic bit Access(logic [31:0] addr);
-    return BASE_ADDR <= addr && addr <= BASE_ADDR + (WORD_DEPTH * 4);
+    return BASE_ADDR <= addr && addr < BASE_ADDR + (WORD_DEPTH * 4);
   endfunction
 
   logic [3:0][7:0] ram[WORD_DEPTH];
