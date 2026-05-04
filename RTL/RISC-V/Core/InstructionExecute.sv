@@ -14,9 +14,9 @@ module InstructionExecute
     reg_w_if.core write_rd,
 
     // 访问控制与状态寄存器
-    csr_rw_if.core csr_rw,
-    output logic trap_returned,
-    input [CFG.PC_LEN-1:0] csr_mepc,
+    csr_rw_if.core  csr_rw,
+    // 自陷控制接口
+    trap_if.execute trap,
 
     // 访存
     memory_direct_if.master memory,
@@ -103,7 +103,7 @@ module InstructionExecute
     jump_addr_ex = 'x;
     jump_en_ex = 0;
 
-    trap_returned = 0;
+    trap.returned = 0;
     csr_rw.ren = 0;
     csr_rw.wen = 0;
     csr_rw.addr = inst[31:20];
@@ -185,8 +185,8 @@ module InstructionExecute
               RV32I_FUNCT12_ECALL, RV32I_FUNCT12_EBREAK: ;  //等效于NOP指令
               RV32I_FUNCT12_MRET: begin
                 jump_en_ex = 1;
-                jump_addr_ex = CFG.XLEN'(PadPC(csr_mepc, CFG.PC_ZEROS));
-                trap_returned = 1;
+                jump_addr_ex = CFG.XLEN'(PadPC(trap.mepc, CFG.PC_ZEROS));
+                trap.returned = 1;
               end
               RV32I_FUNCT12_WFI: wfi = 1;  // WFI(告知内核控制器请求等待)
               default: ;

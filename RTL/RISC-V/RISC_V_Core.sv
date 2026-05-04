@@ -37,11 +37,8 @@ module RISC_V_Core
     // 直接访存接口
     memory_direct_if.master memory,
 
-    // 访问中断控制器
-    input mextern_int,
-    input msoftware_int,
-    input mtimer_int,
-    input [30:0] custom_int_code
+    // 中断源与外部中断控制器
+    int_source_if.hart mint
 );
   localparam int XLEN = CFG.XLEN;
 
@@ -78,15 +75,13 @@ module RISC_V_Core
       .*
   );
 
-  // 控制状态寄存器
+  // 控制与状态寄存器读写接口
   csr_rw_if csr_rw ();
-  wire trap_returned;
-
-  wire mstatus_t csr_mstatus;
-  wire mie_m_only_t csr_mie;
-  wire mip_m_only_t csr_mip;
-  wire mtvec_t csr_mtvec;
-  wire [CFG.PC_LEN-1:0] csr_mepc;
+  // 自陷控制接口
+  trap_if #(
+      .XLEN  (XLEN),
+      .PC_LEN(CFG.PC_LEN)
+  ) trap ();
 
 
   //----------流水线----------//
@@ -114,13 +109,7 @@ module RISC_V_Core
   wire exception_t exception_commit;
   ExceptionPipeLine u_ExceptionPipeLine (.*);
 
-  wire [CFG.PC_LEN-1:0] new_mepc;
-  wire mcause_t new_mcause;
   // wire [31:0] new_mtval;
-  wire any_int_come;
-  wire valid_int_req;
-  wire trap_occurred;
-  wire [31:0] trap_jump_addr;
   ExceptionCtrl #(
       .CFG(CFG)
   ) u_ExceptionCtrl (

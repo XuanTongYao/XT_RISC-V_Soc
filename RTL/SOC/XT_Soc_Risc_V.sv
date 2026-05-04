@@ -101,6 +101,7 @@ module XT_Soc_Risc_V
   wire msoftware_int;
   wire mtimer_int;
   wire [30:0] custom_int_code;
+  int_source_if mint (.*);
   RISC_V_Core #(
       .CFG(CORE_CFG),
       .INST_FETCH_REG(1)

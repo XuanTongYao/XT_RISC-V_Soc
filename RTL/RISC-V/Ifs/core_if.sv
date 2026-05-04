@@ -54,3 +54,30 @@ interface id_to_ex_if #(
 
 endinterface
 
+interface trap_if #(
+    int XLEN   = 32,
+    int PC_LEN = 30
+);
+  import CSR_Pkg::*;
+  mstatus_t mstatus;
+  mie_m_only_t mie;
+  mip_m_only_t mip;
+  mtvec_t mtvec;
+  logic [PC_LEN-1:0] mepc;
+
+  logic occurred, returned;
+  logic [XLEN-1:0] jump_addr;
+  mcause_t new_mcause;
+  logic [PC_LEN-1:0] new_mepc;
+
+  wire any_int_come = (mie & mip) != 0;
+  logic valid_int_req;
+  modport controller(
+      output valid_int_req, occurred, jump_addr, new_mcause, new_mepc,
+      input mstatus, mie, mip, mtvec, any_int_come
+  );
+  modport csr(input occurred, returned, new_mepc, new_mcause, output mstatus, mie, mip, mtvec, mepc);
+  modport core_controller(input any_int_come, valid_int_req, occurred, jump_addr);
+  modport execute(input mepc, output returned);
+endinterface
+

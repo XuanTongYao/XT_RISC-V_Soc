@@ -13,23 +13,12 @@ module CSR
     // 读写接口
     csr_rw_if.csr rw,
 
-    // 与异常/中断控制器连接
-    output mstatus_t csr_mstatus,
-    output mie_m_only_t csr_mie,
-    output mip_m_only_t csr_mip,
-    output mtvec_t csr_mtvec,
-    output logic [CFG.PC_LEN-1:0] csr_mepc,
-
-    input trap_occurred,
-    input trap_returned,
-    input [CFG.PC_LEN-1:0] new_mepc,
-    input mcause_t new_mcause,
+    // 自陷控制接口
+    trap_if.csr trap,
     // input [31:0] new_mtval,
 
-    //中断源
-    input mextern_int,
-    input msoftware_int,
-    input mtimer_int
+    // 中断源
+    int_source_if.hart mint
 );
   wire [7:0] short_addr = rw.addr.short_addr;
   wire atomic_rw_en = rw.wen && stall_n && rw.addr.privilege_level == MACHINE && rw.addr.mode == 2'b00;
@@ -50,19 +39,19 @@ module CSR
   mtvec_t mtvec;  //自陷处理函数基地址
   mie_m_only_t mie;  //中断使能寄存器
   mip_m_only_t mip;  //挂起(待处理)的中断（只读）
-  assign mip = {mextern_int, mtimer_int, msoftware_int};
+  assign mip = {mint.mextern_int, mint.mtimer_int, mint.msoftware_int};
 
   logic [31:0] mscratch;  // 暂存寄存器
   logic [CFG.PC_LEN-1:0] mepc;  // 异常程序地址
   mcause_t mcause;  // 自陷原因
   // logic [31:0] mtval;  // 自陷额外信息（只读0实现）
 
-  // 连接机器模式控制器
-  assign csr_mstatus = mstatus;
-  assign csr_mie = mie;
-  assign csr_mip = mip;
-  assign csr_mtvec = mtvec;
-  assign csr_mepc = mepc;
+  // 连接自陷控制接口
+  assign trap.mstatus = mstatus;
+  assign trap.mie = mie;
+  assign trap.mip = mip;
+  assign trap.mtvec = mtvec;
+  assign trap.mepc = mepc;
 
   // 硬件性能监视(事件计数器只读0)
   bit  [63:0] mcycle_all;  //运行周期数(只读实现)
@@ -89,8 +78,9 @@ module CSR
   // 调试模式（不实现）
 
   always_comb begin
+    rw.rdata = 0;
     unique case (rw.addr.privilege_level)
-      USER, SUPERVISOR, HYPERVISOR: rw.rdata = 32'b0;
+      USER, SUPERVISOR, HYPERVISOR: ;
       MACHINE: begin
         unique case (rw.addr.mode)
           READONLY: begin
@@ -107,7 +97,7 @@ module CSR
 
               // 8'h02:   csr_rdata = minstret;
               // 8'h82:   csr_rdata = minstreth;
-              default: rw.rdata = 32'b0;
+              default: ;
             endcase
           end
           default: begin
@@ -121,7 +111,7 @@ module CSR
               8'h42:   rw.rdata = mcause;
               // 8'h43:   csr_rdata = mtval;
               8'h44:   rw.rdata = PadMieMip(mip);
-              default: rw.rdata = 32'b0;
+              default: ;
             endcase
           end
         endcase
@@ -143,11 +133,11 @@ module CSR
           8'h05:   mtvec <= rw.wdata;
           default: ;
         endcase
-      end else if (trap_occurred) begin
+      end else if (trap.occurred) begin
         mstatus.mpie <= mstatus.mie;
         mstatus.mie  <= 0;
         // mstatus.mpp <= MACHINE;
-      end else if (trap_returned) begin
+      end else if (trap.returned) begin
         mstatus.mpie <= 1'b1;
         mstatus.mie  <= mstatus.mpie;
       end
@@ -165,9 +155,9 @@ module CSR
         // 8'h44: mip <= csr_wdata;(只读)
         default: ;
       endcase
-    end else if (trap_occurred) begin
-      mepc   <= new_mepc;
-      mcause <= new_mcause;
+    end else if (trap.occurred) begin
+      mepc   <= trap.new_mepc;
+      mcause <= trap.new_mcause;
       // mtval <= new_mtval;
     end
   end
