@@ -65,7 +65,6 @@ module RISC_V_Core
 
   // PC寄存器
   wire [31:0] pc;
-  wire [31:0] next_pc;
   wire rvc = 0;
   // wire rvc;
   PC_Reg #(
@@ -75,14 +74,17 @@ module RISC_V_Core
       .*
   );
 
-  // 控制与状态寄存器读写接口
+  // 控制与状态寄存器+自陷控制
   csr_rw_if csr_rw ();
   // 自陷控制接口
   trap_if #(
       .XLEN  (XLEN),
       .PC_LEN(CFG.PC_LEN)
   ) trap ();
-
+  CSR #(CFG) u_CSR (
+      .*,
+      .rw(csr_rw)
+  );
 
   //----------流水线----------//
   instruction_if #(.XLEN(XLEN)) if_inst (), if_id_inst (), id_ex_inst ();  // 指令传输
@@ -93,7 +95,7 @@ module RISC_V_Core
   // 为了适应不同速度的指令存储器，可以选择指令是否打一拍
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
-  assign next_pc = if_id_inst.addr;
+  wire [31:0] next_execute_pc = if_id_inst.addr;
   id_to_ex_if #(.XLEN(XLEN)) id_out ();
   InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
@@ -118,9 +120,5 @@ module RISC_V_Core
       .jump_addr_ex(jump_addr_ex[CFG.XLEN-1:CFG.PC_ZEROS])
   );
   CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
-  CSR #(CFG) u_CSR (
-      .*,
-      .rw(csr_rw)
-  );  // 控制与状态寄存器
 
 endmodule

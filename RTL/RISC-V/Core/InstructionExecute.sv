@@ -8,7 +8,7 @@ module InstructionExecute
     // 来自ID_EX
     instruction_if.from_prev id_ex_inst,
     id_to_ex_if.from_prev id_ex_out,
-    input [31:0] next_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
+    input [31:0] next_execute_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
 
     // 写入目的寄存器
     reg_w_if.core write_rd,
@@ -113,7 +113,7 @@ module InstructionExecute
     unique case (opcode)
       RV32I_OP_LUI, RV32I_OP_AUIPC: write_rd.data = alu_add;
       RV32I_OP_JAL, RV32I_OP_JALR: begin
-        write_rd.data = next_pc;
+        write_rd.data = next_execute_pc;
         jump_addr_ex = {alu_add[31:1], 1'b0};
         jump_en_ex = 1;
       end
