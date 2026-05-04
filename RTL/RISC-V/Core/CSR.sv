@@ -8,7 +8,7 @@ module CSR
     input clk,
     input rst,
     input stall_n,
-    input instruction_retire,
+    // input instruction_retire,
 
     // 读写接口
     csr_rw_if.csr rw,

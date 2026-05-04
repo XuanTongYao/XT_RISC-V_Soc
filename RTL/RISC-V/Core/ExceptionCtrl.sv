@@ -15,9 +15,7 @@ module ExceptionCtrl
     // 提交点(只关心指令执行前的一刻)
     input exception_t exception_commit,
 
-    input [CFG.PC_LEN-1:0] instruction_addr_id_ex,
-    input [CFG.PC_LEN-1:0] jump_addr_ex,
-    input jump_en_ex,
+    input [CFG.PC_LEN-1:0] resume_addr,
 
     // 自陷控制接口
     trap_if.controller trap,
@@ -32,20 +30,18 @@ module ExceptionCtrl
   // 中断需要等本条指令执行完成后再处理
   // 在valid_int_req时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
   logic ready_for_int;
-  logic [CFG.PC_LEN-1:0] last_jump_addr;
   always_ff @(posedge clk, posedge rst) begin
     if (rst || ready_for_int) begin
       ready_for_int <= 0;
     end else if (stall_n) begin
       ready_for_int <= trap.valid_int_req;
-      if (jump_en_ex) last_jump_addr <= jump_addr_ex;
     end
   end
 
   // 注意防止stall等待时清空流水线
   assign trap.valid_int_req = trap.any_int_come && trap.mstatus.mie && !raise && stall_n;
   assign trap.occurred = ready_for_int || raise;
-  assign trap.new_mepc = jump_pending ? last_jump_addr : instruction_addr_id_ex;
+  assign trap.new_mepc = resume_addr;
 
   logic [30:0] code;
   assign trap.new_mcause = {ready_for_int, code};

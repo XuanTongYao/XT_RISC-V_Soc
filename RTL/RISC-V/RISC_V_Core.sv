@@ -49,7 +49,10 @@ module RISC_V_Core
   wire stall_n;
   wire flushing_pipeline;
   wire jump_pending;
-  wire instruction_retire;
+  //   wire instruction_retire;
+
+  // 回归正常程序流的地址
+  wire [CFG.PC_LEN-1:0] resume_addr;
   assign core_stall_n = stall_n;
   assign core_inst_if.enable = stall_n;
 
@@ -112,13 +115,12 @@ module RISC_V_Core
   ExceptionPipeLine u_ExceptionPipeLine (.*);
 
   // wire [31:0] new_mtval;
-  ExceptionCtrl #(
+  ExceptionCtrl #(.CFG(CFG)) u_ExceptionCtrl (.*);
+  CoreCtrl #(
+      .STALL_REQ_NUM(STALL_REQ_NUM),
       .CFG(CFG)
-  ) u_ExceptionCtrl (
-      .*,
-      .instruction_addr_id_ex(id_ex_inst.addr[CFG.XLEN-1:CFG.PC_ZEROS]),
-      .jump_addr_ex(jump_addr_ex[CFG.XLEN-1:CFG.PC_ZEROS])
+  ) u_CoreCtrl (
+      .*
   );
-  CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
 
 endmodule
