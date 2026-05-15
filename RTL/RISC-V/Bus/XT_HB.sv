@@ -106,6 +106,7 @@ module XT_HB
     waddr_mux = 0;
     bus.wdata = 0;
     bus.write_size = 0;
+    bus.read_size = 0;
     // 读通道复用器
     for (int i = 0; i < MASTER_NUM; ++i) begin
       if (read_grant[i]) begin
@@ -121,6 +122,7 @@ module XT_HB
         waddr_mux = master_in[i].waddr;
         bus.wdata = master_in[i].wdata;
         bus.write_size = master_in[i].write_size;
+        bus.read_size = master_in[i].read_size;
         break;
       end
     end
