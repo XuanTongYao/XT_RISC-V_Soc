@@ -1,0 +1,206 @@
+// Minimal RISC-V Debug Specification
+// 最小 RISC-V 调试规范
+// 不实现单独复位hart的hartreset
+// 不实现身份验证
+module DM
+  import Debug_Pkg::*;
+#(
+    parameter bit [3:0] DATACOUNT = 4'd1
+) (
+    input dm_clk,
+    input dm_rst_n,  // 因时钟发生故障而复位
+    output logic dm_rst,
+    dmi_if.dm dmi,
+
+    output logic ndmreset  /* 复位除调试以外的所有逻辑 */,
+
+    dm_hart_minimal_if.dm dm_hart,
+    dm_register_if.dm access_register
+);
+  localparam int unsigned SBADDRESS_NUM = 1;
+  localparam int unsigned SBDATA_NUM = 1;
+
+  // 复位控制
+  logic con_reset_tff = 0;
+  wire  con_reset_pulse;
+  OncePulse u_OncePulse_dmcontrol_reset (
+      .clk  (dm_clk),
+      .ctrl (con_reset_tff),
+      .pulse(con_reset_pulse)
+  );
+
+  wire rst_n;
+  assign dm_rst = ~rst_n;
+  SyncAsyncReset u_SyncAsyncReset (
+      .clk    (dm_clk),
+      .rst_i_n(dm_rst_n & ~con_reset_pulse),
+      .rst_o_n(rst_n)
+  );
+
+
+  // 运行控制
+  logic resumeack;
+
+  // 必须的寄存器
+  logic [31:0] data[DATACOUNT];
+
+  dmcontrol_minimal_t dmcontrol;  // 精简版
+  assign ndmreset = dmcontrol.ndmreset;
+  dmstatus_minimal_t dmstatus;  // 只读
+  assign dmstatus = '{
+          anyhavereset: dm_hart.havereset,
+          anyresumeack: resumeack,
+          anyunavail: dm_hart.dm_state == UNAVAIL,
+          anyrunning: dm_hart.dm_state == RUNNING,
+          anyhalted: dm_hart.dm_state == HALTED
+      };
+
+  // cmderr在抽象命令结束后才改变
+  abstractcs_t abstractcs;  // 只有busy和cmderr是可用的
+  command_t command;
+  logic busy_err;
+
+  logic cmd_0;
+  command_access_register_t cmd_ar;
+  assign cmd_ar = command.control;
+  assign access_register.aarsize = cmd_ar.aarsize;
+  assign access_register.transfer = cmd_ar.transfer && cmd_0;
+  assign access_register.write = cmd_ar.write;
+  assign access_register.regno = cmd_ar.regno;
+  assign access_register.wdata = data[0];
+
+
+  // sbcs_t              sbcs;
+  // logic        [31:0] sbaddress  [SBADDRESS_NUM];
+  // logic        [31:0] sbdata     [    DATACOUNT];
+
+  assign dmi.rsp_valid = 1;
+  wire dmi_req = dmi.req_valid && dmi.req_ready;
+  always_ff @(posedge dm_clk) begin  // DMI读取逻辑+无需复位的逻辑
+    automatic dmcontrol_t write_dmcontrol = dmi.req_data;
+    if (dmi_req && dmcontrol.dmactive) begin
+      if (dmi.req_op == 2'b01) begin  // 读取
+        unique case (dmi.req_addr)
+          DM_DATA_BASE: dmi.rsp_data <= data[0];
+          DM_DMSTATUS: dmi.rsp_data <= PadDmstatus(dmstatus);
+          DM_ABSTRACTCS: dmi.rsp_data <= abstractcs;
+          DM_COMMAND: dmi.rsp_data <= command;
+          default: ;
+        endcase
+      end else if (dmi.req_op == 2'b10) begin  // 写入
+        if (dmi.req_addr == DM_DATA_BASE) begin
+          data[0] <= dmi.req_data;
+        end
+      end
+    end
+
+    // dmcontrol.dmactive可以在非可用状态下读取和写入
+    if (dmi_req && dmi.req_addr == DM_DMCONTROL) begin
+      if (dmi.req_op == 2'b01) begin  // 读取
+        dmi.rsp_data <= PadDmcontrol(dmcontrol);
+      end else if (dmi.req_op == 2'b10 && !write_dmcontrol.dmactive) begin  // 写入
+        con_reset_tff <= ~con_reset_tff;  // 设置复位并自动释放
+      end
+    end
+
+    //----------抽象命令----------//
+    if (cmd_0 && access_register.completed) begin  // 等待完成
+      if (!access_register.failed) begin
+        data[0] <= access_register.rdata;
+      end
+    end
+  end
+
+  always_ff @(posedge dm_clk, posedge dm_rst) begin
+    automatic dmcontrol_t write_dmcontrol = dmi.req_data;
+    automatic abstractcs_t write_abstractcs = dmi.req_data;
+    automatic command_t write_command = dmi.req_data;
+
+    if (dm_rst) begin
+      dmi.req_ready        <= 0;
+      dmi.rsp_op           <= 2'b11;
+      dmcontrol            <= 0;
+      abstractcs           <= '{datacount: DATACOUNT, progbufsize: 0, default: 0};
+      command              <= 0;
+      cmd_0                <= 0;
+      busy_err             <= 0;
+
+      dm_hart.ackhavereset <= 0;
+      dm_hart.haltreq      <= 0;
+      dm_hart.resumereq    <= 0;
+      resumeack            <= 0;
+    end else begin
+      if (dm_hart.dm_state == RUNNING && !resumeack) resumeack <= 1;
+      if (dm_hart.resumereq) dm_hart.resumereq <= 0;  // 脉冲触发信号
+      if (dm_hart.ackhavereset) dm_hart.ackhavereset <= 0;  // 脉冲触发信号
+
+      if (!dmi.req_ready) dmi.req_ready <= 1;
+      dmi.rsp_op <= 0;
+
+      // DMI写入逻辑
+      if (dmi_req && dmcontrol.dmactive && dmi.req_op == 2'b10) begin
+        unique case (dmi.req_addr)
+          DM_ABSTRACTCS: begin
+            if (write_abstractcs.cmderr == 'd1) begin
+              abstractcs.cmderr <= ERR_NONE;
+            end
+          end
+          DM_COMMAND: begin
+            if (abstractcs.cmderr == ERR_NONE) begin
+              if (abstractcs.busy) begin
+                busy_err <= 1;
+              end else begin
+                command <= dmi.req_data;
+                abstractcs.busy <= 1;
+              end
+            end
+          end
+          default: ;
+        endcase
+      end
+
+      // dmcontrol.dmactive可以在非可用状态下读取和写入
+      if (dmi_req && dmi.req_addr == DM_DMCONTROL && dmi.req_op == 2'b10) begin
+        if (dmcontrol.dmactive) begin
+          dmcontrol.ndmreset <= write_dmcontrol.ndmreset;
+          if (!abstractcs.busy) begin  // 不进行抽象命令才允许写入
+            dm_hart.haltreq <= write_dmcontrol.haltreq;
+            if (write_dmcontrol.resumereq && !dm_hart.haltreq) begin
+              // haltreq时忽略对此的写入
+              dm_hart.resumereq <= 1;
+              resumeack <= 0;
+            end
+            if (write_dmcontrol.ackhavereset) dm_hart.ackhavereset <= 1;
+          end
+        end
+        if (write_dmcontrol.dmactive) dmcontrol.dmactive <= 1;
+      end
+
+      //----------抽象命令----------//
+      if (abstractcs.busy) begin
+        if (cmd_0) begin  // 等待完成
+          if (access_register.completed) begin
+            if (busy_err) begin
+              abstractcs.cmderr <= ERR_BUSY;
+            end else if (access_register.failed) begin
+              abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+            end
+            cmd_0 <= 0;
+            abstractcs.busy <= 0;
+          end
+        end else begin  // 启动命令
+          unique case (command.cmdtype)
+            ACCESS_REGISTER: cmd_0 <= 1;
+            default: begin
+              abstractcs.busy   <= 0;
+              abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+            end
+          endcase
+        end
+      end
+    end
+  end
+
+
+
+endmodule

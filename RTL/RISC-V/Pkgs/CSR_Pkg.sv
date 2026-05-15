@@ -122,5 +122,52 @@ package CSR_Pkg;
     return {20'b0, eip_eie, 3'b0, tip_tie, 3'b0, sip_sie, 3'b0};
   endfunction
 
+
+  //----------Sdext扩展CSR----------//
+  typedef struct packed {
+    logic [3:0] debugver;
+    logic zero_1_1;
+    logic [2:0] extcause;
+    logic [3:0] zero_4;
+    logic cetrig;
+    logic pelp;
+    logic ebreakvs;
+    logic ebreakvu;
+    logic ebreakm;
+    logic zero_1_0;
+    logic ebreaks;
+    logic ebreaku;
+    logic stepie;
+    logic stopcount;
+    logic stoptime;
+    logic [2:0] cause;
+    logic v;
+    logic mprven;
+    logic nmip;
+    logic step;
+    logic [1:0] prv;
+  } dcsr_t;
+
+  typedef struct packed {
+    // 仅实现M模式Sdext 1.0时最小裁减版本(prv=MACHINE)
+    // 单步执行step==1时，始终禁用中断(stepie=0)
+    // 本地计数器与time始终正常工作(stopcount=0,stoptime=0)
+    // 无NMI(nmip=0)
+    logic ebreakm;  // 设置ebreak的行为，如果为1则进入调试模式
+    logic [2:0] cause;
+    logic step;  // 单步
+  } dcsr_only_sdext_t;
+  function automatic dcsr_t PadDcsr(dcsr_only_sdext_t partially);
+    dcsr_t fully = '{
+        debugver: 'd4,
+        ebreakm: partially.ebreakm,
+        cause: partially.cause,
+        step: partially.step,
+        prv: MACHINE,
+        default: 0
+    };
+    return fully;
+  endfunction
+
 endpackage
 
