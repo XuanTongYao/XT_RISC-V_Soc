@@ -10,7 +10,6 @@ module ExceptionCtrl
     input rst,
     input flush,
     input stall_n,
-    input jump_pending,
 
     // 提交点(只关心指令执行前的一刻)
     input exception_t exception_commit,

@@ -1,16 +1,14 @@
 // 用于核心内部的接口
-interface csr_rw_if;
+interface csr_rw_if #(
+    int DATA_LEN = 32
+);
   import CSR_Pkg::csr_addr_t;
 
-  logic ren;
-  logic wen;
+  logic ren, wen;
   csr_addr_t addr;
-  logic [31:0] wdata;
-  logic [31:0] rdata;
-
+  logic [DATA_LEN-1:0] wdata, rdata;
   modport core(output ren, wen, addr, wdata, input rdata);
   modport csr(input ren, wen, addr, wdata, output rdata);
-
 endinterface
 
 interface reg_r_if #(

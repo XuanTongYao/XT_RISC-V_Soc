@@ -52,6 +52,7 @@ module InstructionExecute
   wire [CFG.XLEN-1:0] operand1 = id_ex_out.operand1;
   wire [CFG.XLEN-1:0] operand2 = id_ex_out.operand2;
   // 大多数器件都支持加/减法器同时实现(消耗少量额外资源)
+  /* verilator lint_off UNOPTFLAT */
   logic add_sub;
   wire [31:0] alu_add = add_sub ? operand1 + operand2 : operand1 - operand2;
   wire [31:0] alu_xor = operand1 ^ operand2;

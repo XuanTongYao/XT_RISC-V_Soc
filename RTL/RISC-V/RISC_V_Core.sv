@@ -78,7 +78,7 @@ module RISC_V_Core
   );
 
   // 控制与状态寄存器+自陷控制
-  csr_rw_if csr_rw ();
+  csr_rw_if #(.DATA_LEN(XLEN)) csr_rw ();
   // 自陷控制接口
   trap_if #(
       .XLEN  (XLEN),
