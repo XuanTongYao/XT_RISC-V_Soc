@@ -20,7 +20,10 @@ module ExceptionCtrl
     trap_if.controller trap,
 
     // 外部中断控制器
-    int_source_if.hart mint
+    int_source_if.hart mint,
+
+    // 调试控制器
+    debug_if.core debug
 );
 
   wire raise = exception_commit.raise;  // 是否引发同步异常
@@ -38,7 +41,7 @@ module ExceptionCtrl
   end
 
   // 注意防止stall等待时清空流水线
-  assign trap.valid_int_req = trap.any_int_come && trap.mstatus.mie && !raise && stall_n;
+  assign trap.valid_int_req = trap.any_int_come && trap.mstatus.mie && !raise && !debug.dcsr.step && stall_n;
   assign trap.occurred = ready_for_int || raise;
   assign trap.new_mepc = resume_addr;
 

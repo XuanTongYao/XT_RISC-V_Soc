@@ -3,7 +3,7 @@ module XT_Soc_Risc_V
   import Utils_Pkg::sel_t;
   import SocConfig::*;
 #(
-    parameter int GPIO_NUM = 32,
+    parameter int GPIO_NUM = 28,
     parameter int CSN_NUM  = 2    // 专用SPI片选引脚
 ) (
     input                       clk_osc,
@@ -24,7 +24,13 @@ module XT_Soc_Risc_V
     output logic [ CSN_NUM-1:0] spi_csn,
     inout                       spi_clk,
     inout                       spi_miso,
-    inout                       spi_mosi
+    inout                       spi_mosi,
+
+    input tck,
+    input tms,
+    input tdi,
+    output logic tdo,
+    input n_reset
 );
 
 
@@ -70,6 +76,28 @@ module XT_Soc_Risc_V
       .rst_o_n(rst_n)
   );
 
+  //----------调试器----------//
+  dmi_if #(.ABITS(7)) dmi ();
+  wire dm_rst;
+  JtagDTM #(
+      .ABITS       (7),
+      .IDCODE_VALUE(32'h0000_0001)
+  ) u_JtagDTM (
+      .*,
+      .dm_clk(clk)
+  );
+
+  wire ndmreset;
+  dm_hart_minimal_if dm_hart ();
+  dm_register_if access_register ();
+  DM #(
+      .DATACOUNT(4'd1)
+  ) u_DM (
+      .*,
+      .dm_clk  (clk),
+      .dm_rst_n(pll_lock)
+  );
+
 
   //----------XT_HB高速总线互联定义----------//
   // 在SocConfig中配置
@@ -108,7 +136,8 @@ module XT_Soc_Risc_V
   ) u_RISC_V_Core (
       .*,
       .memory   (hb_master[0]),
-      .stall_req(stall_req[0])
+      .stall_req(stall_req[0]),
+      .command0 (access_register)
   );
 
 

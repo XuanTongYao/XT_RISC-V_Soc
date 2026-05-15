@@ -33,12 +33,15 @@ module RISC_V_Core
 
     // 访问指令存储器
     instruction_if.requestor core_inst_if,
-
     // 直接访存接口
-    memory_direct_if.master memory,
+    memory_direct_if.master  memory,
 
     // 中断源与外部中断控制器
-    int_source_if.hart mint
+    int_source_if.hart mint,
+
+    // 调试器接口
+    dm_hart_minimal_if.hart dm_hart,
+    dm_register_if.hart command0
 );
   localparam int XLEN = CFG.XLEN;
 
@@ -58,6 +61,15 @@ module RISC_V_Core
 
   wire wfi;
 
+  wire exception_t exception_commit;  // 提前声明
+
+  // 调试控制器
+  debug_if debug ();
+  wire debug_override_csr, debug_override_gpr;
+  reg_r_if #(.DATA_LEN(XLEN)) debug_read_gpr ();
+  reg_w_if #(.DATA_LEN(XLEN)) debug_write_gpr ();
+  csr_rw_if #(.DATA_LEN(XLEN)) debug_rw_csr ();
+  DebugCtrl #(.CFG(CFG)) u_DebugCtrl (.*);
 
 
   //----------寄存器----------//
@@ -111,7 +123,6 @@ module RISC_V_Core
   InstructionExecute #(.CFG(CFG)) u_InstructionExecute (.*);
 
 
-  wire exception_t exception_commit;
   ExceptionPipeLine u_ExceptionPipeLine (.*);
 
   // wire [31:0] new_mtval;

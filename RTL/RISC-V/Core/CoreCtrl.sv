@@ -17,6 +17,8 @@ module CoreCtrl
 
     // 自陷控制接口
     trap_if.core_controller trap,
+    // 调试控制接口
+    debug_if.core debug,
 
     // 输出
     output logic [CFG.XLEN-1:0] jump_addr,
@@ -38,14 +40,16 @@ module CoreCtrl
   //----------跳转指令控制----------//
   // 核心停止和跳转的优先级谁更高？(目前不会出现这种情况)
   always_comb begin
-    if (trap.occurred) begin
+    if (debug.resume) begin
+      jump_addr = XLEN'(64'(debug.dpc) << PC_ZEROS);
+    end else if (!debug.halt && !debug.halted && trap.occurred) begin
       jump_addr = trap.jump_addr;
     end else begin
       jump_addr = jump_addr_ex;
     end
 
-    jump  = jump_en_ex || trap.occurred;
-    flush = jump || trap.valid_int_req;
+    jump  = jump_en_ex || (!debug.halt && !debug.halted && trap.occurred) || debug.resume;
+    flush = jump || trap.valid_int_req || debug.valid_haltreq;
   end
 
   //----------程序流控制----------//
@@ -77,10 +81,10 @@ module CoreCtrl
 
 
   //----------核心暂停控制----------//
-  wire waiting_int = wfi && !trap.any_int_come;
+  wire waiting_int = wfi && !trap.any_int_come && !debug.bypass_wfi;
   wire any_stall_req = |stall_req;
   always_comb begin
-    stall_n = !(any_stall_req || waiting_int);
+    stall_n = !(any_stall_req || waiting_int || debug.halted);
   end
 
 
