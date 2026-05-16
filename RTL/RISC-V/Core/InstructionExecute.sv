@@ -8,15 +8,15 @@ module InstructionExecute
     // 来自ID_EX
     instruction_if.from_prev id_ex_inst,
     id_to_ex_if.from_prev id_ex_out,
-    input [31:0] next_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
+    input [31:0] next_execute_pc,  // 下一个PC其实就存在IF_ID里面，不需要单独寄存
 
     // 写入目的寄存器
     reg_w_if.core write_rd,
 
     // 访问控制与状态寄存器
-    csr_rw_if.core csr_rw,
-    output logic trap_returned,
-    input [CFG.PC_LEN-1:0] csr_mepc,
+    csr_rw_if.core  csr_rw,
+    // 自陷控制接口
+    trap_if.execute trap,
 
     // 访存
     memory_direct_if.master memory,
@@ -52,6 +52,7 @@ module InstructionExecute
   wire [CFG.XLEN-1:0] operand1 = id_ex_out.operand1;
   wire [CFG.XLEN-1:0] operand2 = id_ex_out.operand2;
   // 大多数器件都支持加/减法器同时实现(消耗少量额外资源)
+  /* verilator lint_off UNOPTFLAT */
   logic add_sub;
   wire [31:0] alu_add = add_sub ? operand1 + operand2 : operand1 - operand2;
   wire [31:0] alu_xor = operand1 ^ operand2;
@@ -103,7 +104,7 @@ module InstructionExecute
     jump_addr_ex = 'x;
     jump_en_ex = 0;
 
-    trap_returned = 0;
+    trap.returned = 0;
     csr_rw.ren = 0;
     csr_rw.wen = 0;
     csr_rw.addr = inst[31:20];
@@ -113,7 +114,7 @@ module InstructionExecute
     unique case (opcode)
       RV32I_OP_LUI, RV32I_OP_AUIPC: write_rd.data = alu_add;
       RV32I_OP_JAL, RV32I_OP_JALR: begin
-        write_rd.data = next_pc;
+        write_rd.data = next_execute_pc;
         jump_addr_ex = {alu_add[31:1], 1'b0};
         jump_en_ex = 1;
       end
@@ -185,8 +186,8 @@ module InstructionExecute
               RV32I_FUNCT12_ECALL, RV32I_FUNCT12_EBREAK: ;  //等效于NOP指令
               RV32I_FUNCT12_MRET: begin
                 jump_en_ex = 1;
-                jump_addr_ex = CFG.XLEN'(PadPC(csr_mepc, CFG.PC_ZEROS));
-                trap_returned = 1;
+                jump_addr_ex = CFG.XLEN'(PadPC(trap.mepc, CFG.PC_ZEROS));
+                trap.returned = 1;
               end
               RV32I_FUNCT12_WFI: wfi = 1;  // WFI(告知内核控制器请求等待)
               default: ;

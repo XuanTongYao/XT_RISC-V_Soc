@@ -33,15 +33,15 @@ module RISC_V_Core
 
     // 访问指令存储器
     instruction_if.requestor core_inst_if,
-
     // 直接访存接口
-    memory_direct_if.master memory,
+    memory_direct_if.master  memory,
 
-    // 访问中断控制器
-    input mextern_int,
-    input msoftware_int,
-    input mtimer_int,
-    input [30:0] custom_int_code
+    // 中断源与外部中断控制器
+    int_source_if.hart mint,
+
+    // 调试器接口
+    dm_hart_minimal_if.hart dm_hart,
+    dm_register_if.hart command0
 );
   localparam int XLEN = CFG.XLEN;
 
@@ -52,12 +52,24 @@ module RISC_V_Core
   wire stall_n;
   wire flushing_pipeline;
   wire jump_pending;
-  wire instruction_retire;
+  //   wire instruction_retire;
+
+  // 回归正常程序流的地址
+  wire [CFG.PC_LEN-1:0] resume_addr;
   assign core_stall_n = stall_n;
   assign core_inst_if.enable = stall_n;
 
   wire wfi;
 
+  wire exception_t exception_commit;  // 提前声明
+
+  // 调试控制器
+  debug_if debug ();
+  wire debug_override_csr, debug_override_gpr;
+  reg_r_if #(.DATA_LEN(XLEN)) debug_read_gpr ();
+  reg_w_if #(.DATA_LEN(XLEN)) debug_write_gpr ();
+  csr_rw_if #(.DATA_LEN(XLEN)) debug_rw_csr ();
+  DebugCtrl #(.CFG(CFG)) u_DebugCtrl (.*);
 
 
   //----------寄存器----------//
@@ -68,7 +80,6 @@ module RISC_V_Core
 
   // PC寄存器
   wire [31:0] pc;
-  wire [31:0] next_pc;
   wire rvc = 0;
   // wire rvc;
   PC_Reg #(
@@ -78,16 +89,17 @@ module RISC_V_Core
       .*
   );
 
-  // 控制状态寄存器
-  csr_rw_if csr_rw ();
-  wire trap_returned;
-
-  wire mstatus_t csr_mstatus;
-  wire mie_m_only_t csr_mie;
-  wire mip_m_only_t csr_mip;
-  wire mtvec_t csr_mtvec;
-  wire [CFG.PC_LEN-1:0] csr_mepc;
-
+  // 控制与状态寄存器+自陷控制
+  csr_rw_if #(.DATA_LEN(XLEN)) csr_rw ();
+  // 自陷控制接口
+  trap_if #(
+      .XLEN  (XLEN),
+      .PC_LEN(CFG.PC_LEN)
+  ) trap ();
+  CSR #(CFG) u_CSR (
+      .*,
+      .rw(csr_rw)
+  );
 
   //----------流水线----------//
   instruction_if #(.XLEN(XLEN)) if_inst (), if_id_inst (), id_ex_inst ();  // 指令传输
@@ -98,7 +110,7 @@ module RISC_V_Core
   // 为了适应不同速度的指令存储器，可以选择指令是否打一拍
   IF_ID #(.INST_DELAY_1TICK(!INST_FETCH_REG)) u_IF_ID (.*);
 
-  assign next_pc = if_id_inst.addr;
+  wire [31:0] next_execute_pc = if_id_inst.addr;
   id_to_ex_if #(.XLEN(XLEN)) id_out ();
   InstructionDecode #(.CFG(CFG)) u_InstructionDecode (.*);
 
@@ -111,27 +123,15 @@ module RISC_V_Core
   InstructionExecute #(.CFG(CFG)) u_InstructionExecute (.*);
 
 
-  wire exception_t exception_commit;
   ExceptionPipeLine u_ExceptionPipeLine (.*);
 
-  wire [CFG.PC_LEN-1:0] new_mepc;
-  wire mcause_t new_mcause;
   // wire [31:0] new_mtval;
-  wire any_int_come;
-  wire valid_int_req;
-  wire trap_occurred;
-  wire [31:0] trap_jump_addr;
-  ExceptionCtrl #(
+  ExceptionCtrl #(.CFG(CFG)) u_ExceptionCtrl (.*);
+  CoreCtrl #(
+      .STALL_REQ_NUM(STALL_REQ_NUM),
       .CFG(CFG)
-  ) u_ExceptionCtrl (
-      .*,
-      .instruction_addr_id_ex(id_ex_inst.addr[CFG.XLEN-1:CFG.PC_ZEROS]),
-      .jump_addr_ex(jump_addr_ex[CFG.XLEN-1:CFG.PC_ZEROS])
+  ) u_CoreCtrl (
+      .*
   );
-  CoreCtrl #(.STALL_REQ_NUM(STALL_REQ_NUM)) u_CoreCtrl (.*);
-  CSR #(CFG) u_CSR (
-      .*,
-      .rw(csr_rw)
-  );  // 控制与状态寄存器
 
 endmodule
