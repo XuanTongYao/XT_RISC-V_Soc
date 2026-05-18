@@ -154,34 +154,14 @@ module XT_Soc_Risc_V
   );
 
 
-  // 系统外设，及其接出来的信号
+  // 提前声明，指令选择
   wire [31:0] bootloader_instruction;
   wire [31:0] user_instruction;
-
+  // 外部中断
   localparam int EXTERNAL_INT_NUM = 13;
   wire [EXTERNAL_INT_NUM-1:0] irq_source;
   assign irq_source[7:1] = 7'b0;
-  xt_hbus_device_if #(.ID(IDX_SYS_P)) system_peripheral_if (.*);
-  SystemPeripheral #(
-      .EXTERNAL_INT_NUM  (EXTERNAL_INT_NUM),
-      .UART_OVER_SAMPLING(8)
-  ) u_SystemPeripheral (
-      .*,
-      .hb    (system_peripheral_if),
-      // 系统外设特殊部分
-      .rx_irq(irq_source[0])
-  );
 
-  // 高速总线本地地址域
-  //   XT_HB_Domain #(
-  //       .SLAVE_NUM(HB_SLAVE_NUM)
-  //   ) u_XT_HB_Domain (
-  //       .*,
-  //       .sel(device_sel[IDX_XT_HB]),
-  //       .read_finish(read_finish[IDX_XT_HB]),
-  //       .write_finish(write_finish[IDX_XT_HB]),
-  //       .rdata(device_data_in[IDX_XT_HB])
-  //   );
 
 
   // Bootloader和Debug固化程序
@@ -215,6 +195,61 @@ module XT_Soc_Risc_V
       .inst_fetch       (user_instruction)
   );
 
+
+  //----------高速总线32位对齐外设----------//
+  xt_hbus_device_if #(.ID(IDX_HB32)) xt_hb32_if (.*);
+  xt_hbus32_if #(
+      .ADDR_WIDTH(5),
+      .ID_WIDTH  (3),
+      .DEVICE_NUM(5)
+  ) xt_hb32 ();
+  XT_HB32_Adapter u_XT_HB32_Adapter (
+      .*,
+      .hb  (xt_hb32_if),
+      .hb32(xt_hb32)
+  );
+
+  // 从ROM自举启动和UART程序下载
+  xt_hbus32_device_if #(.ID(IDX_BOOTLOADER)) harvard_bootstrap_if (.*);
+  HarvardBootstrap u_HarvardBootstrap (
+      .*,
+      .hb(harvard_bootstrap_if)
+  );
+
+  // 外部中断控制器
+  xt_hbus32_device_if #(.ID(IDX_EINT_CTRL)) external_int_ctrl_if (.*);
+  External_INT_Ctrl #(
+      .INT_NUM(EXTERNAL_INT_NUM)
+  ) u_External_INT_Ctrl (
+      .*,
+      .hb(external_int_ctrl_if)
+  );
+
+  // mtime和mtimecmp
+  xt_hbus32_device_if #(.ID(IDX_SYSTEM_TIMER)) systemtimer_if (.*);
+  SystemTimer u_SystemTimer (
+      .*,
+      .hb(systemtimer_if)
+  );
+
+  xt_hbus32_device_if #(.ID(IDX_UART)) uart_bus_if (.*);
+  UART_BUS #(
+      // 超采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
+      // 必须为偶数，最小为8
+      .OVER_SAMPLING(8)
+  ) u_UART (
+      .*,
+      .hb(uart_bus_if),
+      .rx_irq(irq_source[0])
+  );
+
+  xt_hbus32_device_if #(.ID(IDX_SOFTWARE_INT)) software_int_if (.*);
+  SoftwareINT #(
+      .REG_LEN(16)
+  ) u_SoftwareINT (
+      .*,
+      .hb(software_int_if)
+  );
 
 
   //----------WISHBONE总线外设----------//

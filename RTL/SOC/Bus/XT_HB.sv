@@ -30,6 +30,8 @@ module XT_HB
     output logic [MASTER_NUM-1:0] write_grant,
     output logic [MASTER_NUM-1:0] stall_req  // 仲裁失败或读写等待，停顿请求
 );
+  localparam int OFFSET_WIDTH = bus.ADDR_WIDTH - bus.ID_WIDTH;
+
   // 提前声明
   logic [31:0] hb_rdata;
 
@@ -132,15 +134,15 @@ module XT_HB
 
   // 地址映射与片选生成
   logic [DEVICE_NUM-1:0] sel[2];
-  wire [bus.ID_WIDTH-1:0] raddr_mux_id = raddr_mux[bus.ADDR_WIDTH-1:bus.OFFSET_WIDTH];
-  wire [bus.ID_WIDTH-1:0] waddr_mux_id = waddr_mux[bus.ADDR_WIDTH-1:bus.OFFSET_WIDTH];
+  wire [bus.ID_WIDTH-1:0] raddr_mux_id = raddr_mux[bus.ADDR_WIDTH-1:OFFSET_WIDTH];
+  wire [bus.ID_WIDTH-1:0] waddr_mux_id = waddr_mux[bus.ADDR_WIDTH-1:OFFSET_WIDTH];
   MMIO #(
       .ID_WIDTH(bus.ID_WIDTH),
       .ADDR_NUM(2),
       .DEVICE_NUM(DEVICE_NUM),
       .BASE_ID(DEVICE_BASE_ID)
   ) u_MMIO (
-      .device_id({raddr_mux_id, waddr_mux_id}),
+      .device_id('{raddr_mux_id, waddr_mux_id}),
       .sel(sel)
   );
   wire [DEVICE_NUM-1:0] slave_rsel = hb_ren ? sel[0] : 0;

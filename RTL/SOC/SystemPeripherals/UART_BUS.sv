@@ -12,16 +12,13 @@
 // 0:读RX寄存器   1:读状态寄存器
 module UART_BUS
   import Utils_Pkg::sel_t;
-  import SystemPeripheral_Pkg::*;
 #(
     // 过采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
     parameter int OVER_SAMPLING = 16  // 必须为偶数，最小为8
 ) (
-    input hb_clk,
+    // 总线接口
+    xt_hbus32_device_if.port hb,
     input rst,
-    input sys_peripheral_t sys_share,
-    input sel_t sel,
-    output logic [31:0] rdata,
     input sampling_clk,  // 过采样时钟(频率必须比总线时钟低)
 
     output logic rx_irq = 0,
@@ -112,7 +109,7 @@ module UART_BUS
 
   wire frame_end_pulse;
   OncePulse u_rx_OncePulse (
-      .clk  (hb_clk),
+      .clk  (hb.clk),
       .ctrl (frame_end),
       .pulse(frame_end_pulse)
   );
@@ -123,10 +120,10 @@ module UART_BUS
       .WIDTH(8),
       .DEPTH(4)
   ) u_rx_FIFO_SC (
-      .clk         (hb_clk),
+      .clk         (hb.clk),
       .rst         (rst),
       .wen         (frame_end_pulse),
-      .ren         (sel.ren && sys_share.raddr == 'd0),
+      .ren         (hb.sel.ren && hb.raddr == 'd0),
       .data        (rx_buffer),
       .q           (rx_fifo_q),
       .full        (rx_full),
@@ -135,10 +132,10 @@ module UART_BUS
       .almost_empty()
   );
 
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb.clk) begin
     if (frame_end_pulse) begin
       rx_irq <= 1;
-    end else if (sel.ren && sys_share.raddr == 'd0) begin
+    end else if (hb.sel.ren && hb.raddr == 'd0) begin
       rx_irq <= 0;  // 读自动清零中断
     end
   end
@@ -162,11 +159,11 @@ module UART_BUS
       .WIDTH(8),
       .DEPTH(4)
   ) u_tx_FIFO_SC (
-      .clk         (hb_clk),
+      .clk         (hb.clk),
       .rst         (rst),
-      .wen         (sel.wen && sys_share.waddr == 'd0),
+      .wen         (hb.sel.wen && hb.waddr == 'd0),
       .ren         (tx_fifo_ren),
-      .data        (sys_share.wdata[7:0]),
+      .data        (hb.wdata[7:0]),
       .q           (tx_fifo_q),
       .full        (tx_full),
       .empty       (tx_empty),
@@ -176,7 +173,7 @@ module UART_BUS
 
   // 跨时钟同步
   logic tx_not_empty;
-  always_ff @(posedge hb_clk) begin
+  always_ff @(posedge hb.clk) begin
     tx_not_empty <= !tx_empty;
   end
 
@@ -215,7 +212,7 @@ module UART_BUS
   OncePulse #(
       .TRIGGER(2'b01)
   ) u_tx_OncePulse (
-      .clk  (hb_clk),
+      .clk  (hb.clk),
       .ctrl (copy_done_delay),
       .pulse(tx_fifo_ren)
   );
@@ -233,12 +230,12 @@ module UART_BUS
   uart_state_t state;
   assign state = '{rx_full: rx_full, tx_empty: tx_empty, rx_not_empty: !rx_empty, tx_ready: !tx_full};
 
-  always_ff @(posedge hb_clk) begin
-    if (sel.ren) begin
-      if (sys_share.raddr == 'd0) begin
-        rdata <= 32'(rx_fifo_q);
+  always_ff @(posedge hb.clk) begin
+    if (hb.sel.ren) begin
+      if (hb.raddr == 'd0) begin
+        hb.rdata <= 32'(rx_fifo_q);
       end else begin
-        rdata <= 32'(state);
+        hb.rdata <= 32'(state);
       end
     end
   end
