@@ -111,13 +111,10 @@ module XT_Soc_Risc_V
       .ID_WIDTH  (HB_ID_WIDTH),
       .DEVICE_NUM(HB_DEVICE_NUM)
   ) xt_hb (
-      .clk(clk)
+      .clk(clk),
+      .rst(rst)
   );
-  wire hb_clk = clk;
   wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
-  // 总线IO设备
-  //   wire [31:0] hb_data_in[HB_SLAVE_NUM];
-  //   wire sel_t hb_sel[HB_SLAVE_NUM];
 
 
   // 直连RAM/ROM(指令读取)
@@ -199,11 +196,15 @@ module XT_Soc_Risc_V
   //----------高速总线32位对齐外设----------//
   xt_hbus_device_if #(.ID(IDX_HB32)) xt_hb32_if (.*);
   xt_hbus32_if #(
-      .ADDR_WIDTH(5),
-      .ID_WIDTH  (3),
-      .DEVICE_NUM(5)
+      .ADDR_WIDTH(HB32_ADDR_WIDTH),
+      .ID_WIDTH  (HB32_ID_WIDTH),
+      .DEVICE_NUM(HB32_DEVICE_NUM)
   ) xt_hb32 ();
-  XT_HB32_Adapter u_XT_HB32_Adapter (
+  XT_HB32_Adapter #(
+      .ID_WIDTH  (HB32_ID_WIDTH),
+      .DEVICE_NUM(HB32_DEVICE_NUM),
+      .DEVICE_ID (HB32_DEVICE_ID)
+  ) u_XT_HB32_Adapter (
       .*,
       .hb  (xt_hb32_if),
       .hb32(xt_hb32)

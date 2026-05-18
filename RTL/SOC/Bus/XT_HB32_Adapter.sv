@@ -2,17 +2,19 @@
 // 比如内存映射CSR，外部中断控制器，自举启动和DMA等
 module XT_HB32_Adapter
   import Utils_Pkg::sel_t;
-(
-    input rst,
+#(
+    parameter int ID_WIDTH = 3,
+    parameter int DEVICE_NUM = 5,
+    parameter bit [ID_WIDTH-1:0] DEVICE_ID[DEVICE_NUM-1]
+) (
     // 高速总线接口
     xt_hbus_device_if.port hb,
     xt_hbus32_if.bus hb32
 );
-  localparam int ID_WIDTH = hb32.ID_WIDTH;
   localparam int OFFSET_WIDTH = hb32.ADDR_WIDTH - ID_WIDTH;
-  localparam int DEVICE_NUM = hb32.DEVICE_NUM;
 
   assign hb32.clk   = hb.clk;
+  assign hb32.rst   = hb.rst;
   assign hb32.raddr = hb.raddr[OFFSET_WIDTH+2-1:2];
   assign hb32.waddr = hb.waddr[OFFSET_WIDTH+2-1:2];
   assign hb32.wdata = hb.wdata;
@@ -29,7 +31,6 @@ module XT_HB32_Adapter
   wire [ID_WIDTH-1:0] rid = hb.raddr[OFFSET_WIDTH+2+:ID_WIDTH];
   wire [ID_WIDTH-1:0] wid = hb.waddr[OFFSET_WIDTH+2+:ID_WIDTH];
 
-  localparam bit [ID_WIDTH-1:0] DEVICE_ID[DEVICE_NUM-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
 
   logic [DEVICE_NUM-1:0] id_sel[2];
   MMIO #(

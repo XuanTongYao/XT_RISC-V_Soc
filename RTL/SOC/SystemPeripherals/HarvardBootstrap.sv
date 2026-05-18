@@ -6,8 +6,6 @@
 module HarvardBootstrap
   import Utils_Pkg::sel_t;
 (
-    input clk,
-    input rst,
     // 指令选择
     input [31:0] bootloader_instruction,
     input [31:0] user_instruction,
@@ -26,7 +24,7 @@ module HarvardBootstrap
       .Address(rom_addr),
       .Q      (rom_data)
   );
-  always_ff @(posedge clk) begin
+  always_ff @(posedge hb.clk) begin
     if (hb.sel.wen && hb.waddr == 'd1) begin
       rom_addr <= hb.wdata[5:0];
     end else if (hb.sel.ren && hb.raddr == 'd2) begin
@@ -38,8 +36,8 @@ module HarvardBootstrap
   //----------运行模式切换----------//
   logic [7:0] debug_reg;
   logic normal_mode;
-  always_ff @(posedge clk, posedge rst) begin
-    if (rst) begin
+  always_ff @(posedge hb.clk, posedge hb.rst) begin
+    if (hb.rst) begin
       debug_reg   <= 0;
       normal_mode <= 0;
     end else begin
@@ -51,7 +49,7 @@ module HarvardBootstrap
   assign core_inst_if.inst = normal_mode ? user_instruction : bootloader_instruction;
 
   //----------读寄存器----------//
-  always_ff @(posedge clk) begin
+  always_ff @(posedge hb.clk) begin
     if (hb.sel.ren) begin
       if (hb.raddr == 'd0) begin
         hb.rdata <= 32'(download_mode);

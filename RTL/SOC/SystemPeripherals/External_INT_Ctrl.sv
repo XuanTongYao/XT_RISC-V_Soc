@@ -6,7 +6,6 @@ module External_INT_Ctrl
 ) (
     // 总线接口
     xt_hbus32_device_if.port hb,
-    input rst,
 
     input [INT_NUM-1:0] irq_source,
     output logic [30:0] custom_int_code,
@@ -17,8 +16,8 @@ module External_INT_Ctrl
 
   logic [INT_NUM-1:0] INT_enable_reg;
   logic [INT_NUM-1:0] INT_pending_reg;
-  always_ff @(posedge hb.clk, posedge rst) begin
-    if (rst) begin
+  always_ff @(posedge hb.clk, posedge hb.rst) begin
+    if (hb.rst) begin
       INT_enable_reg  <= 0;
       INT_pending_reg <= 0;
     end else begin

@@ -1,13 +1,13 @@
 module XT_LB
   import Utils_Pkg::sel_t;
 (
-    input rst,
     // 与高速总线桥接
     xt_hbus_device_if.port hb,
 
     // 低速总线部分
     xt_lbus_if.master bus
 );
+  wire rst = hb.rst;
 
   logic [31:0] rdata_buffer;
 

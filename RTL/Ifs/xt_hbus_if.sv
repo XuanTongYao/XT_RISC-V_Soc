@@ -3,7 +3,8 @@ interface xt_hbus_if #(
     int ID_WIDTH   = 3,
     int DEVICE_NUM = 4
 ) (
-    input clk
+    input clk,
+    input rst
 );
   // NOTE无法在接口中使用非压缩数组参数
   import Utils_Pkg::sel_t;
@@ -19,12 +20,12 @@ interface xt_hbus_if #(
   logic [DEVICE_NUM-1:0] write_finish;
 
   modport bus(
-      input clk,
+      input clk, rst,
       output read_size, write_size, raddr, waddr, wdata, device_sel,
       input device_data, read_finish, write_finish
   );
   modport device(
-      input clk,
+      input clk, rst,
       input read_size, write_size, raddr, waddr, wdata, device_sel,
       output device_data, read_finish, write_finish
   );
@@ -40,6 +41,7 @@ interface xt_hbus_device_if #(
   import Utils_Pkg::sel_t;
 
   wire clk = xt_hb.clk;
+  wire rst = xt_hb.rst;
   wire [1:0] read_size = xt_hb.read_size;
   wire [1:0] write_size = xt_hb.write_size;
   wire [ADDR_WIDTH-1:0] raddr = xt_hb.raddr;
@@ -53,7 +55,7 @@ interface xt_hbus_device_if #(
   assign xt_hb.read_finish[ID]  = read_finish;
   assign xt_hb.write_finish[ID] = write_finish;
   modport port(
-      input clk,
+      input clk, rst,
       input read_size, write_size, raddr, waddr, wdata, sel,
       output rdata, read_finish, write_finish
   );
@@ -73,6 +75,7 @@ interface xt_hbus32_if #(
   localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
 
   wire clk;
+  wire rst;
 
   wire [OFFSET_WIDTH-1:0] raddr;
   wire [OFFSET_WIDTH-1:0] waddr;
@@ -80,8 +83,8 @@ interface xt_hbus32_if #(
   sel_t device_sel[DEVICE_NUM];
 
   logic [31:0] device_data[DEVICE_NUM];
-  modport bus(output clk, output raddr, waddr, wdata, device_sel, input device_data);
-  modport device(input clk, input raddr, waddr, wdata, device_sel, output device_data);
+  modport bus(output clk, rst, output raddr, waddr, wdata, device_sel, input device_data);
+  modport device(input clk, rst, input raddr, waddr, wdata, device_sel, output device_data);
 
 endinterface
 
@@ -94,6 +97,7 @@ interface xt_hbus32_device_if #(
   import Utils_Pkg::sel_t;
 
   wire clk = xt_hb32.clk;
+  wire rst = xt_hb32.rst;
   wire [OFFSET_WIDTH-1:0] raddr = xt_hb32.raddr;
   wire [OFFSET_WIDTH-1:0] waddr = xt_hb32.waddr;
   wire [31:0] wdata = xt_hb32.wdata;
@@ -101,6 +105,6 @@ interface xt_hbus32_device_if #(
 
   logic [31:0] rdata;
   assign xt_hb32.device_data[ID] = rdata;
-  modport port(input clk, input raddr, waddr, wdata, sel, output rdata);
+  modport port(input clk, rst, input raddr, waddr, wdata, sel, output rdata);
 
 endinterface

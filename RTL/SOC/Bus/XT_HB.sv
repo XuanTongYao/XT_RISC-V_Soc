@@ -16,8 +16,6 @@ module XT_HB
     // 设备基准识别符，从0开始划分地址空间(所以0不用填)
     parameter bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[DEVICE_NUM-1]
 ) (
-    input clk,
-    input rst,
     input core_stall_n,
 
     // 高速总线(读写可以被不同不冲突的主设备占用，全双工)
@@ -31,6 +29,8 @@ module XT_HB
     output logic [MASTER_NUM-1:0] stall_req  // 仲裁失败或读写等待，停顿请求
 );
   localparam int OFFSET_WIDTH = bus.ADDR_WIDTH - bus.ID_WIDTH;
+  wire clk = bus.clk;
+  wire rst = bus.rst;
 
   // 提前声明
   logic [31:0] hb_rdata;

@@ -41,6 +41,7 @@ package SocConfig;
   localparam int HB32_DEVICE_NUM = _hb32_idx_t.num;
   localparam int HB32_ADDR_WIDTH = 5;
   localparam int HB32_ID_WIDTH = 3;
+  localparam bit [HB32_ID_WIDTH-1:0] HB32_DEVICE_ID[HB32_DEVICE_NUM-1] = '{'d1, 'd2, 'd3, 'd4};
 
 
 endpackage

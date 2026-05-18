@@ -4,13 +4,12 @@ module SoftwareINT #(
 ) (
     // 总线接口
     xt_hbus32_device_if.port hb,
-    input rst,
     output logic msoftware_int
 );
 
   logic [REG_LEN-1:0] msoftware_int_reg;
-  always_ff @(posedge hb.clk, posedge rst) begin
-    if (rst) begin
+  always_ff @(posedge hb.clk, posedge hb.rst) begin
+    if (hb.rst) begin
       msoftware_int <= 0;
       msoftware_int_reg <= 0;
     end else if (hb.sel.wen && hb.waddr == 'd0) begin

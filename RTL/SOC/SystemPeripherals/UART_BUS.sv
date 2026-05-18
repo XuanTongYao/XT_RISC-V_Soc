@@ -18,7 +18,6 @@ module UART_BUS
 ) (
     // 总线接口
     xt_hbus32_device_if.port hb,
-    input rst,
     input sampling_clk,  // 过采样时钟(频率必须比总线时钟低)
 
     output logic rx_irq = 0,
@@ -121,7 +120,7 @@ module UART_BUS
       .DEPTH(4)
   ) u_rx_FIFO_SC (
       .clk         (hb.clk),
-      .rst         (rst),
+      .rst         (hb.rst),
       .wen         (frame_end_pulse),
       .ren         (hb.sel.ren && hb.raddr == 'd0),
       .data        (rx_buffer),
@@ -160,7 +159,7 @@ module UART_BUS
       .DEPTH(4)
   ) u_tx_FIFO_SC (
       .clk         (hb.clk),
-      .rst         (rst),
+      .rst         (hb.rst),
       .wen         (hb.sel.wen && hb.waddr == 'd0),
       .ren         (tx_fifo_ren),
       .data        (hb.wdata[7:0]),
@@ -182,8 +181,8 @@ module UART_BUS
   logic copy_done, copy_done_delay;
   logic [3:0] tx_symbol_count;
   logic [7:0] tx_buffer;
-  always_ff @(posedge band_clk, posedge rst) begin
-    if (rst) begin
+  always_ff @(posedge band_clk, posedge hb.rst) begin
+    if (hb.rst) begin
       copy_done <= 0;
       uart_tx   <= 1;
     end else begin
