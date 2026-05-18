@@ -18,6 +18,9 @@ assets/**/.$*.bkp
 firmware_lib/asm_bootstrap/*.bin
 firmware_lib/asm_bootstrap/*.elf
 
+rust_release
+rust_debug
+
 .settings
 .project
 .library_mapping.xml

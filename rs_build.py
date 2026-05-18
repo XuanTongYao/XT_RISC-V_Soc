@@ -1,11 +1,14 @@
-import subprocess, sys
+import subprocess, os
 from contextlib import suppress
 from pathlib import Path
 from json import loads
+from shutil import copy2
 from argparse import ArgumentParser
 
+# 切换到项目目录
+os.chdir(Path(__file__).parent.resolve())
+
 # ===================== 默认配置 ====================
-DEFAULT_NAME = "uart"
 TARGET_TRIPLE = "riscv32i-unknown-none-elf"  # target 要与config.toml里的相同
 PAGE_ALIGN = 16  # 页的对齐字节数
 PADDING_BYTE = b"\x00"  # 对齐填充数据
@@ -55,12 +58,21 @@ def cargo(
     ]
 
     mode = "release" if release else "debug"
-    bin_path = Path(f"target/{TARGET_TRIPLE}/{mode}/bin/{name}.bin")
-    bin_path.parent.mkdir(exist_ok=True)
+    bin_path = Path(f"rust_{mode}/bin/{name}.bin")
+    bin_path.parent.mkdir(exist_ok=True, parents=True)
     if cmd == "objcopy":
         args.append(str(bin_path))
 
     subprocess.run(args, check=True)
+
+    if kind == "bin":
+        elf_path = Path(f"target/{TARGET_TRIPLE}/{mode}/{name}")
+    else:
+        elf_path = Path(f"target/{TARGET_TRIPLE}/{mode}/{kind}s/{name}")
+    cc_elf_path = Path(f"rust_{mode}/elfs/{name}")
+    cc_elf_path.parent.mkdir(exist_ok=True, parents=True)
+    if elf_path.is_file():
+        copy2(elf_path, cc_elf_path)
 
     if cmd == "objcopy":
         pad_to_page(bin_path)
