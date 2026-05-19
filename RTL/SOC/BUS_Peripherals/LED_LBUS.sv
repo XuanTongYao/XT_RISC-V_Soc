@@ -3,7 +3,7 @@
 module LED_LBUS #(
     parameter int LED_NUM = 8
 ) (
-    xt_lbus_slave_if.port lb,
+    xt_lbus_if.port lb,
     output logic [LED_NUM-1:0] led = {LED_NUM{1'b1}}
 );
 

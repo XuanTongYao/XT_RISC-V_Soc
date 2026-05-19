@@ -293,20 +293,23 @@ module XT_Soc_Risc_V
 
 
   //----------低速总线及其外设----------//
-  localparam int LB_SLAVE_NUM = 4;
-  xt_lbus_if #(.SLAVE_NUM(LB_SLAVE_NUM)) xt_lb (.*);
+  localparam int LB_ADDR_WIDTH = 8, LB_ID_WIDTH = 2, LB_DEVICE_NUM = 4;
+  localparam int LB_OFFSET_WIDTH = LB_ADDR_WIDTH - LB_ID_WIDTH;
+  xt_lbus_if #(.OFFSET_WIDTH(LB_OFFSET_WIDTH)) lb_if[LB_DEVICE_NUM] ();
   xt_hbus_device_if #(.ID(IDX_XT_LB)) xt_lb_if (.*);
-  XT_LB u_XT_LB (
+  XT_LB #(
+      .ADDR_WIDTH(LB_ADDR_WIDTH),
+      .ID_WIDTH  (LB_ID_WIDTH),
+      .DEVICE_NUM(LB_DEVICE_NUM)
+  ) u_XT_LB (
       .*,
-      .hb (xt_lb_if),
-      // 低速总线部分
-      .bus(xt_lb)
+      .hb     (xt_lb_if),
+      .devices(lb_if)
   );
 
-  xt_lbus_slave_if #(.ID(0)) sw_key_if (.*);
   SW_KEY_LBUS u_SW_KEY_LBUS (
       .*,
-      .lb(sw_key_if),
+      .lb(lb_if[0]),
       .sw_raw({sw_raw, download_mode})
   );
 
@@ -314,7 +317,6 @@ module XT_Soc_Risc_V
   wire funct_in[AF_FUNCT_IN_NUM];
   assign tc_rst = funct_in[0];
   assign tc_ic  = funct_in[1];
-  xt_lbus_slave_if #(.ID(1)) af_gpio_if (.*);
   AF_GPIO_LBUS #(
       .NUM           (GPIO_NUM),
       .FUNCT_IN_NUM  (AF_FUNCT_IN_NUM),
@@ -324,23 +326,21 @@ module XT_Soc_Risc_V
   ) u_AF_GPIO_LBUS (
       .*,
       .gpio_clk (clk),
-      .lb       (af_gpio_if),
+      .lb       (lb_if[1]),
       .funct_in (funct_in),
       .funct_out({tc_oc, af_spi_csn}),
       .gpio     (gpio)
   );
 
-  xt_lbus_slave_if #(.ID(2)) led_if (.*);
   LED_LBUS #(
       .LED_NUM(8)
   ) u_LED_LBUS (
-      .lb (led_if),
+      .lb (lb_if[2]),
       .led(led)
   );
 
-  xt_lbus_slave_if #(.ID(3)) ledsd_if (.*);
   LEDSD_Direct_LBUS u_LEDSD_Direct_BUS (
-      .lb(ledsd_if),
+      .lb(lb_if[3]),
       .ledsd(ledsd)
   );
 

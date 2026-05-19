@@ -16,7 +16,7 @@ module AF_GPIO_LBUS #(
     parameter bit [31:0] FUNCT_OUT_MASK[FUNCT_OUT_NUM]
 ) (
     input gpio_clk,
-    xt_lbus_slave_if.port lb,
+    xt_lbus_if.port lb,
 
     // funct_in、funct_out非压缩数组,左索引是0
     output logic funct_in[FUNCT_IN_NUM],

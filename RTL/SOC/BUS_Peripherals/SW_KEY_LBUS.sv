@@ -2,7 +2,7 @@
 // 0-1 key_reg
 // 2-3 switch_reg
 module SW_KEY_LBUS (
-    xt_lbus_slave_if.port lb,
+    xt_lbus_if.port lb,
     input [3:0] key_raw,
     input [2:0] sw_raw
 );

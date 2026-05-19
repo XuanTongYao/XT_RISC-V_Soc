@@ -6,7 +6,7 @@ module LEDSD_Direct_LBUS #(
     parameter bit COM = 0,
     parameter int NUM = 2
 ) (
-    xt_lbus_slave_if.port lb,
+    xt_lbus_if.port lb,
     output logic [8:0] ledsd[NUM]
 );
 
