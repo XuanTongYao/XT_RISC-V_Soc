@@ -46,7 +46,7 @@ module ClockMonitor #(
     if (POWER_ON_PERIOD == 0) begin : gen_normal_check
       always_ff @(posedge independent_clk) begin
         if (reseting) begin
-          counter <= counter + 1;
+          counter <= counter + 'd1;
           if (counter == CNT) begin
             reseting <= 0;
             if (!pll_lock_sync) pll_rst <= 1;  // 尝试重新复位
@@ -70,10 +70,10 @@ module ClockMonitor #(
           power_on <= 1;
           pll_rst <= 1;
         end else if (!power_stable) begin
-          counter <= counter + 1;
+          counter <= counter + 'd1;
           if (counter == CNT_1) power_stable <= 1;
         end else if (reseting) begin
-          counter <= counter + 1;
+          counter <= counter + 'd1;
           if (counter == CNT) begin
             reseting <= 0;
             if (!pll_lock_sync) pll_rst <= 1;  // 尝试重新复位

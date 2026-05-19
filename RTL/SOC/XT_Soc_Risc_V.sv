@@ -29,8 +29,7 @@ module XT_Soc_Risc_V
     input tck,
     input tms,
     input tdi,
-    output logic tdo,
-    input n_reset
+    output logic tdo
 );
 
 
@@ -68,11 +67,12 @@ module XT_Soc_Risc_V
       .LOCK(pll_lock)
   );
 
+  wire ndmreset;  // 提前声明
   wire rst_n;
   wire rst = ~rst_n;
   SyncAsyncReset u_SyncAsyncReset (
       .clk    (clk),
-      .rst_i_n(pll_lock),
+      .rst_i_n(pll_lock & ~ndmreset),
       .rst_o_n(rst_n)
   );
 
@@ -87,7 +87,6 @@ module XT_Soc_Risc_V
       .dm_clk(clk)
   );
 
-  wire ndmreset;
   dm_hart_minimal_if dm_hart ();
   dm_register_if access_register ();
   DM #(

@@ -13,7 +13,6 @@ module JtagDTM
     input tms,
     input tdi,
     output logic tdo = 1'bz,
-    input n_reset,
 
 
     input dm_clk,
