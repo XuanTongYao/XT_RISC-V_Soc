@@ -17,7 +17,7 @@ module UART_BUS
     parameter int OVER_SAMPLING = 16  // 必须为偶数，最小为8
 ) (
     // 总线接口
-    xt_hbus32_device_if.port hb,
+    xt_hbus32_if.port hb,
     input sampling_clk,  // 过采样时钟(频率必须比总线时钟低)
 
     output logic rx_irq = 0,

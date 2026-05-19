@@ -12,7 +12,7 @@ module HarvardBootstrap
     instruction_if.responder core_inst_if,
 
     // 总线接口
-    xt_hbus32_device_if.port hb,
+    xt_hbus32_if.port hb,
 
     input download_mode
 );

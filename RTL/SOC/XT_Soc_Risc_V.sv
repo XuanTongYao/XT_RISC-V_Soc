@@ -194,61 +194,53 @@ module XT_Soc_Risc_V
 
   //----------高速总线32位对齐外设----------//
   xt_hbus_device_if #(.ID(IDX_HB32)) xt_hb32_if (.*);
-  xt_hbus32_if #(
-      .ADDR_WIDTH(HB32_ADDR_WIDTH),
-      .ID_WIDTH  (HB32_ID_WIDTH),
-      .DEVICE_NUM(HB32_DEVICE_NUM)
-  ) xt_hb32 ();
+  xt_hbus32_if #(.OFFSET_WIDTH(HB32_OFFSET_WIDTH)) hb32_if[HB32_DEVICE_NUM] ();
   XT_HB32_Adapter #(
+      .ADDR_WIDTH(HB32_ADDR_WIDTH),
       .ID_WIDTH  (HB32_ID_WIDTH),
       .DEVICE_NUM(HB32_DEVICE_NUM),
       .DEVICE_ID (HB32_DEVICE_ID)
   ) u_XT_HB32_Adapter (
       .*,
-      .hb  (xt_hb32_if),
-      .hb32(xt_hb32)
+      .hb     (xt_hb32_if),
+      .devices(hb32_if)
   );
 
   // 从ROM自举启动和UART程序下载
-  xt_hbus32_device_if #(.ID(IDX_BOOTLOADER)) harvard_bootstrap_if (.*);
   HarvardBootstrap u_HarvardBootstrap (
       .*,
-      .hb(harvard_bootstrap_if)
+      .hb(hb32_if[IDX_BOOTLOADER])
   );
 
   // 外部中断控制器
-  xt_hbus32_device_if #(.ID(IDX_EINT_CTRL)) external_int_ctrl_if (.*);
   External_INT_Ctrl #(
       .INT_NUM(EXTERNAL_INT_NUM)
   ) u_External_INT_Ctrl (
       .*,
-      .hb(external_int_ctrl_if)
+      .hb(hb32_if[IDX_EINT_CTRL])
   );
 
   // mtime和mtimecmp
-  xt_hbus32_device_if #(.ID(IDX_SYSTEM_TIMER)) systemtimer_if (.*);
   SystemTimer u_SystemTimer (
       .*,
-      .hb(systemtimer_if)
+      .hb(hb32_if[IDX_SYSTEM_TIMER])
   );
 
-  xt_hbus32_device_if #(.ID(IDX_UART)) uart_bus_if (.*);
   UART_BUS #(
       // 超采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
       // 必须为偶数，最小为8
       .OVER_SAMPLING(8)
   ) u_UART (
       .*,
-      .hb(uart_bus_if),
+      .hb(hb32_if[IDX_UART]),
       .rx_irq(irq_source[0])
   );
 
-  xt_hbus32_device_if #(.ID(IDX_SOFTWARE_INT)) software_int_if (.*);
   SoftwareINT #(
       .REG_LEN(16)
   ) u_SoftwareINT (
       .*,
-      .hb(software_int_if)
+      .hb(hb32_if[IDX_SOFTWARE_INT])
   );
 
 

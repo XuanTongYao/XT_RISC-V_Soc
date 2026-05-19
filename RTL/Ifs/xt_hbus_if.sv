@@ -65,46 +65,20 @@ endinterface
 // 寄存器强制对齐到32bit的总线适配器，提供更好的性能
 // 每个从设备仅能占用一个ID
 // 所有从设备必须能在一个时钟周期内完成写入
-// 在两个时钟周期内完成读取
+// 在两个时钟周期内完成读取并锁存数据
 interface xt_hbus32_if #(
-    int ADDR_WIDTH = 5,
-    int ID_WIDTH   = 3,
-    int DEVICE_NUM = 5
-) ();
-  import Utils_Pkg::sel_t;
-  localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
-
-  wire clk;
-  wire rst;
-
-  wire [OFFSET_WIDTH-1:0] raddr;
-  wire [OFFSET_WIDTH-1:0] waddr;
-  wire [31:0] wdata;
-  sel_t device_sel[DEVICE_NUM];
-
-  logic [31:0] device_data[DEVICE_NUM];
-  modport bus(output clk, rst, output raddr, waddr, wdata, device_sel, input device_data);
-  modport device(input clk, rst, input raddr, waddr, wdata, device_sel, output device_data);
-
-endinterface
-
-interface xt_hbus32_device_if #(
-    int ID = 0,
     int OFFSET_WIDTH = 5
-) (
-    xt_hbus32_if.device xt_hb32
 );
   import Utils_Pkg::sel_t;
 
-  wire clk = xt_hb32.clk;
-  wire rst = xt_hb32.rst;
-  wire [OFFSET_WIDTH-1:0] raddr = xt_hb32.raddr;
-  wire [OFFSET_WIDTH-1:0] waddr = xt_hb32.waddr;
-  wire [31:0] wdata = xt_hb32.wdata;
-  wire sel_t sel = xt_hb32.device_sel[ID];
+  wire clk, rst;
+
+  wire [OFFSET_WIDTH-1:0] raddr, waddr;
+  wire [31:0] wdata;
+  wire sel_t sel;
 
   logic [31:0] rdata;
-  assign xt_hb32.device_data[ID] = rdata;
+  modport bus(output clk, rst, output raddr, waddr, wdata, sel, input rdata);
   modport port(input clk, rst, input raddr, waddr, wdata, sel, output rdata);
 
 endinterface

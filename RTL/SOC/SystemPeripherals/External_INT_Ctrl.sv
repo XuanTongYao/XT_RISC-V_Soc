@@ -5,7 +5,7 @@ module External_INT_Ctrl
     parameter int INT_NUM = 32
 ) (
     // 总线接口
-    xt_hbus32_device_if.port hb,
+    xt_hbus32_if.port hb,
 
     input [INT_NUM-1:0] irq_source,
     output logic [30:0] custom_int_code,

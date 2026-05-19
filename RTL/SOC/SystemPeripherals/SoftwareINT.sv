@@ -3,7 +3,7 @@ module SoftwareINT #(
     parameter int REG_LEN = 16
 ) (
     // 总线接口
-    xt_hbus32_device_if.port hb,
+    xt_hbus32_if.port hb,
     output logic msoftware_int
 );
 

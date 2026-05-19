@@ -1,23 +1,17 @@
-// 与系统强相关的外设
-// 比如内存映射CSR，外部中断控制器，自举启动和DMA等
+// 32bit对齐总线适配器，更好的寻址性能与更低的资源占用
 module XT_HB32_Adapter
   import Utils_Pkg::sel_t;
 #(
+    parameter int ADDR_WIDTH = 5,
     parameter int ID_WIDTH = 3,
     parameter int DEVICE_NUM = 5,
     parameter bit [ID_WIDTH-1:0] DEVICE_ID[DEVICE_NUM-1]
 ) (
     // 高速总线接口
     xt_hbus_device_if.port hb,
-    xt_hbus32_if.bus hb32
+    xt_hbus32_if.bus       devices[DEVICE_NUM]
 );
-  localparam int OFFSET_WIDTH = hb32.ADDR_WIDTH - ID_WIDTH;
-
-  assign hb32.clk   = hb.clk;
-  assign hb32.rst   = hb.rst;
-  assign hb32.raddr = hb.raddr[OFFSET_WIDTH+2-1:2];
-  assign hb32.waddr = hb.waddr[OFFSET_WIDTH+2-1:2];
-  assign hb32.wdata = hb.wdata;
+  localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
 
   always_ff @(posedge hb.clk) begin
     if (hb.read_finish) begin
@@ -28,9 +22,9 @@ module XT_HB32_Adapter
   end
   assign hb.write_finish = 1;
 
+
   wire [ID_WIDTH-1:0] rid = hb.raddr[OFFSET_WIDTH+2+:ID_WIDTH];
   wire [ID_WIDTH-1:0] wid = hb.waddr[OFFSET_WIDTH+2+:ID_WIDTH];
-
 
   logic [DEVICE_NUM-1:0] id_sel[2];
   MMIO #(
@@ -42,25 +36,34 @@ module XT_HB32_Adapter
       .device_id('{rid, wid}),
       .sel(id_sel)
   );
-  logic [DEVICE_NUM-1:0] raddr_sel = id_sel[0];
-  logic [DEVICE_NUM-1:0] waddr_sel = id_sel[1];
+  wire [DEVICE_NUM-1:0] raddr_sel = id_sel[0];
+  wire [DEVICE_NUM-1:0] waddr_sel = id_sel[1];
+  wire [DEVICE_NUM-1:0] rsel = hb.sel.ren && !hb.read_finish ? raddr_sel : 0;
+  wire [DEVICE_NUM-1:0] wsel = hb.sel.wen ? waddr_sel : 0;
 
+
+  logic [31:0] device_data[DEVICE_NUM];
   always_comb begin
     hb.rdata = 0;
     for (int i = 0; i < DEVICE_NUM; ++i) begin
       if (raddr_sel[i]) begin
-        hb.rdata = hb32.device_data[i];
+        hb.rdata = device_data[i];
         break;
       end
     end
   end
 
-  wire [DEVICE_NUM-1:0] rsel = hb.sel.ren && !hb.read_finish ? raddr_sel : 0;
-  wire [DEVICE_NUM-1:0] wsel = hb.sel.wen ? waddr_sel : 0;
   generate
-    for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_sel
-      assign hb32.device_sel[i].ren = rsel[i];
-      assign hb32.device_sel[i].wen = wsel[i];
+    for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_device_link
+      assign devices[i].clk = hb.clk;
+      assign devices[i].rst = hb.rst;
+      assign devices[i].raddr = hb.raddr[OFFSET_WIDTH+2-1:2];
+      assign devices[i].waddr = hb.waddr[OFFSET_WIDTH+2-1:2];
+      assign devices[i].wdata = hb.wdata;
+
+      assign devices[i].sel.ren = rsel[i];
+      assign devices[i].sel.wen = wsel[i];
+      assign device_data[i] = devices[i].rdata;
     end
   endgenerate
 

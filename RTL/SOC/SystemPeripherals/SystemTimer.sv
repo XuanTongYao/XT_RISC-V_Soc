@@ -11,7 +11,7 @@ module SystemTimer
     // 计时时钟必须比高速总线时钟慢两倍及以上
     input systemtimer_clk,
     // 总线接口
-    xt_hbus32_device_if.port hb,
+    xt_hbus32_if.port hb,
 
     output logic mtimer_int = 0
 );
