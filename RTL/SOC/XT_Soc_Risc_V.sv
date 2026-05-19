@@ -198,8 +198,7 @@ module XT_Soc_Risc_V
   XT_HB32_Adapter #(
       .ADDR_WIDTH(HB32_ADDR_WIDTH),
       .ID_WIDTH  (HB32_ID_WIDTH),
-      .DEVICE_NUM(HB32_DEVICE_NUM),
-      .DEVICE_ID (HB32_DEVICE_ID)
+      .DEVICE_NUM(HB32_DEVICE_NUM)
   ) u_XT_HB32_Adapter (
       .*,
       .hb     (xt_hb32_if),

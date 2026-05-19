@@ -3,9 +3,8 @@ module XT_HB32_Adapter
   import Utils_Pkg::sel_t;
 #(
     parameter int ADDR_WIDTH = 5,
-    parameter int ID_WIDTH = 3,
-    parameter int DEVICE_NUM = 5,
-    parameter bit [ID_WIDTH-1:0] DEVICE_ID[DEVICE_NUM-1]
+    parameter int ID_WIDTH   = 3,
+    parameter int DEVICE_NUM = 5
 ) (
     // 高速总线接口
     xt_hbus_device_if.port hb,
@@ -28,10 +27,10 @@ module XT_HB32_Adapter
 
   logic [DEVICE_NUM-1:0] id_sel[2];
   MMIO #(
+      .UNIQUE_ID_MODE(1),
       .ID_WIDTH(ID_WIDTH),
       .ADDR_NUM(2),
-      .DEVICE_NUM(DEVICE_NUM),
-      .BASE_ID(DEVICE_ID)
+      .DEVICE_NUM(DEVICE_NUM)
   ) u_MMIO (
       .device_id('{rid, wid}),
       .sel(id_sel)
@@ -57,8 +56,8 @@ module XT_HB32_Adapter
     for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_device_link
       assign devices[i].clk = hb.clk;
       assign devices[i].rst = hb.rst;
-      assign devices[i].raddr = hb.raddr[OFFSET_WIDTH+2-1:2];
-      assign devices[i].waddr = hb.waddr[OFFSET_WIDTH+2-1:2];
+      assign devices[i].raddr = hb.raddr[2+:OFFSET_WIDTH];
+      assign devices[i].waddr = hb.waddr[2+:OFFSET_WIDTH];
       assign devices[i].wdata = hb.wdata;
 
       assign devices[i].sel.ren = rsel[i];

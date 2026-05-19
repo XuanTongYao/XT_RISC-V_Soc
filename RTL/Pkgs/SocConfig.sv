@@ -42,7 +42,6 @@ package SocConfig;
   localparam int HB32_ADDR_WIDTH = 5;
   localparam int HB32_ID_WIDTH = 3;
   localparam int HB32_OFFSET_WIDTH = HB32_ADDR_WIDTH - HB32_ID_WIDTH;
-  localparam bit [HB32_ID_WIDTH-1:0] HB32_DEVICE_ID[HB32_DEVICE_NUM-1] = '{'d1, 'd2, 'd3, 'd4};
 
 
 endpackage
