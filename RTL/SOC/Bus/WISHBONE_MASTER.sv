@@ -21,7 +21,7 @@ module WISHBONE_MASTER
     output logic [PORT_SIZE-1:0] wb_adr_o,
 
     // 与XT_HB总线
-    xt_hbus_device_if.port hb
+    xt_hbus_if.port hb
 );
   // 停止等待
   logic rw_finish;

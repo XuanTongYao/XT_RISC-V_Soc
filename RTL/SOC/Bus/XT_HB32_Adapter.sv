@@ -7,8 +7,8 @@ module XT_HB32_Adapter
     parameter int DEVICE_NUM = 5
 ) (
     // 高速总线接口
-    xt_hbus_device_if.port hb,
-    xt_hbus32_if.bus       devices[DEVICE_NUM]
+    xt_hbus_if.port  hb,
+    xt_hbus32_if.bus devices[DEVICE_NUM]
 );
   localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
 
@@ -26,7 +26,7 @@ module XT_HB32_Adapter
   wire [ID_WIDTH-1:0] wid = hb.waddr[OFFSET_WIDTH+2+:ID_WIDTH];
 
   logic [DEVICE_NUM-1:0] id_sel[2];
-  MMIO #(
+  SelectDecoder #(
       .UNIQUE_ID_MODE(1),
       .ID_WIDTH(ID_WIDTH),
       .ADDR_NUM(2),

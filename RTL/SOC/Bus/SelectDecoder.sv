@@ -5,7 +5,7 @@
 // 使用非唯一ID模式时(UNIQUE_ID_MODE=0):
 //    BASE_ID是不包含0的逐个递增基准ID
 //    id位于某个区间(左闭右开)时，把对应片选拉高
-module MMIO #(
+module SelectDecoder #(
     parameter bit UNIQUE_ID_MODE = 0,
     parameter int ID_WIDTH = 2,
     parameter int ADDR_NUM = 2,

@@ -21,9 +21,9 @@ module HarvardSystemRAM_BUS
 
     // 与高速总线
     // 数据RAM
-    xt_hbus_device_if.port hb,
+    xt_hbus_if.port hb,
     // 指令RAM
-    xt_hbus_device_if.port ram_inst,
+    xt_hbus_if.port ram_inst,
     input [31:0] inst_fetch_addr,
     output logic [31:0] inst_fetch
 );

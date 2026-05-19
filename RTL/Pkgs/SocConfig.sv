@@ -20,16 +20,29 @@ package SocConfig;
   localparam int HB_ID_WIDTH = 3;  // 识别符占用宽度
   localparam int HB_OFFSET_WIDTH = HB_ADDR_WIDTH - HB_ID_WIDTH;  // 偏移量占用宽度
 
-  // 内核
-  localparam int HB_MASTER_NUM = 1;
-  // 指令RAM,数据RAM,系统外设,WISHBONE,XT_LB
-  localparam int HB_DEVICE_NUM = 5;
+  // 高速总线主设备索引分配
+  typedef enum int {
+    M_IDX_CORE = 0  // 内核
+  } xt_hb_master_idx_t;
+  xt_hb_master_idx_t _xt_hb_master_idx_t = _xt_hb_master_idx_t.first;
+  localparam int HB_MASTER_NUM = _xt_hb_master_idx_t.num;
+
+  // 高速总线IO设备索引分配
+  typedef enum int {
+    IDX_INST_RAM = 0,  // 指令RAM
+    IDX_DATA_RAM,      // 数据RAM
+    IDX_HB32,          // 32bit对齐总线适配器
+    IDX_WISHBONE,      // WISHBONE
+    IDX_XT_LB          // XT_LB
+  } xt_hb_idx_t;
+  xt_hb_idx_t _xt_hb_idx_t = _xt_hb_idx_t.first;
+  localparam int HB_DEVICE_NUM = _xt_hb_idx_t.num;
   // 设备基准ID分配，分别是上面那些设备
   localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_NUM-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
-  // IO设备索引分配
-  localparam int IDX_XT_LB = 4, IDX_WISHBONE = 3, IDX_HB32 = 2, IDX_DATA_RAM = 1, IDX_INST_RAM = 0;
 
-  // HB32从设备ID分配
+
+
+  // HB32从设备ID(也是索引)分配
   typedef enum int {
     IDX_BOOTLOADER   = 0,
     IDX_EINT_CTRL,

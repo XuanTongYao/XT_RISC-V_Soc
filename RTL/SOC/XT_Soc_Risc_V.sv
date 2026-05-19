@@ -101,19 +101,25 @@ module XT_Soc_Risc_V
   //----------XT_HB高速总线互联定义----------//
   // 在SocConfig中配置
 
-  // 高速总线
-  // 0 - 内核, 1 -
+  // 高速总线 主设备接口
   memory_direct_if hb_master[HB_MASTER_NUM] ();
-  // 总线接口
-  xt_hbus_if #(
-      .ADDR_WIDTH(HB_ADDR_WIDTH),
-      .ID_WIDTH  (HB_ID_WIDTH),
-      .DEVICE_NUM(HB_DEVICE_NUM)
-  ) xt_hb (
-      .clk(clk),
-      .rst(rst)
-  );
+  // 高速总线 IO设备接口
+  xt_hbus_if #(.ADDR_WIDTH(HB_ADDR_WIDTH)) hb_if[HB_DEVICE_NUM] ();
+  // 高速总线
   wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
+  XT_HB #(
+      .ADDR_WIDTH    (HB_ADDR_WIDTH),  // 总线上主设备的数量
+      .ID_WIDTH      (HB_ID_WIDTH),    // 总线上主设备的数量
+      .MASTER_NUM    (HB_MASTER_NUM),  // 总线上主设备的数量
+      .DEVICE_NUM    (HB_DEVICE_NUM),  // 总线上IO设备的数量
+      .DEVICE_BASE_ID(DEVICE_BASE_ID)
+  ) u_XT_HB (
+      .*,
+      .clk(clk),
+      .rst(rst),
+      .master(hb_master),
+      .devices(hb_if)
+  );
 
 
   // 直连RAM/ROM(指令读取)
@@ -126,37 +132,24 @@ module XT_Soc_Risc_V
   wire mtimer_int;
   wire [30:0] custom_int_code;
   int_source_if mint (.*);
+  // 外部中断
+  localparam int EXTERNAL_INT_NUM = 13;
+  wire [EXTERNAL_INT_NUM-1:0] irq_source;
+  assign irq_source[7:1] = 7'b0;
+
   RISC_V_Core #(
       .CFG(CORE_CFG),
       .INST_FETCH_REG(1)
   ) u_RISC_V_Core (
       .*,
-      .memory   (hb_master[0]),
-      .stall_req(stall_req[0]),
+      .memory   (hb_master[M_IDX_CORE]),
+      .stall_req(stall_req[M_IDX_CORE]),
       .command0 (access_register)
   );
-
-
-  // 高速总线
-  XT_HB #(
-      .MASTER_NUM(HB_MASTER_NUM),  // 总线上主设备的数量
-      .DEVICE_NUM(HB_DEVICE_NUM),  // 总线上IO设备的数量
-      .DEVICE_BASE_ID(DEVICE_BASE_ID)
-  ) u_XT_HB (
-      .*,
-      .master(hb_master),
-      .bus(xt_hb),
-      .stall_req(stall_req)
-  );
-
 
   // 提前声明，指令选择
   wire [31:0] bootloader_instruction;
   wire [31:0] user_instruction;
-  // 外部中断
-  localparam int EXTERNAL_INT_NUM = 13;
-  wire [EXTERNAL_INT_NUM-1:0] irq_source;
-  assign irq_source[7:1] = 7'b0;
 
 
 
@@ -174,8 +167,6 @@ module XT_Soc_Risc_V
 
 
   // 系统RAM
-  xt_hbus_device_if #(.ID(IDX_DATA_RAM)) ram_data_if (.*);
-  xt_hbus_device_if #(.ID(IDX_INST_RAM)) ram_inst_if (.*);
   HarvardSystemRAM_BUS #(
       // 字深度(最大为2^30对应4GB字节)
       .DATA_RAM_DEPTH(DATA_RAM_DEPTH),
@@ -184,8 +175,8 @@ module XT_Soc_Risc_V
       .*,
       .inst_fetch_clk_en(core_inst_if.enable),
       // 数据RAM
-      .hb               (ram_data_if),
-      .ram_inst         (ram_inst_if),
+      .hb               (hb_if[IDX_DATA_RAM]),
+      .ram_inst         (hb_if[IDX_INST_RAM]),
       // 指令RAM
       .inst_fetch_addr  (core_inst_if.addr),
       .inst_fetch       (user_instruction)
@@ -193,7 +184,6 @@ module XT_Soc_Risc_V
 
 
   //----------高速总线32位对齐外设----------//
-  xt_hbus_device_if #(.ID(IDX_HB32)) xt_hb32_if (.*);
   xt_hbus32_if #(.OFFSET_WIDTH(HB32_OFFSET_WIDTH)) hb32_if[HB32_DEVICE_NUM] ();
   XT_HB32_Adapter #(
       .ADDR_WIDTH(HB32_ADDR_WIDTH),
@@ -201,7 +191,7 @@ module XT_Soc_Risc_V
       .DEVICE_NUM(HB32_DEVICE_NUM)
   ) u_XT_HB32_Adapter (
       .*,
-      .hb     (xt_hb32_if),
+      .hb     (hb_if[IDX_HB32]),
       .devices(hb32_if)
   );
 
@@ -255,7 +245,6 @@ module XT_Soc_Risc_V
   wire [7:0] wb_dat_o, wb_dat_i;
   wire wb_cyc_i, wb_stb_i, wb_we_i;
   wire [7:0] wb_adr_i;
-  xt_hbus_device_if #(.ID(IDX_WISHBONE)) wishbone_master_if (.*);
   WISHBONE_MASTER #(
       .PORT_SIZE(8)
   ) u_WISHBONE_MASTER (
@@ -269,7 +258,7 @@ module XT_Soc_Risc_V
       .wb_we_o (wb_we_i),
       .wb_adr_o(wb_adr_i),
       // 与XT_HB总线
-      .hb      (wishbone_master_if)
+      .hb      (hb_if[IDX_WISHBONE])
   );
 
   localparam int ALL_CSN_NUM = 3;
@@ -295,14 +284,13 @@ module XT_Soc_Risc_V
   localparam int LB_ADDR_WIDTH = 8, LB_ID_WIDTH = 2, LB_DEVICE_NUM = 4;
   localparam int LB_OFFSET_WIDTH = LB_ADDR_WIDTH - LB_ID_WIDTH;
   xt_lbus_if #(.OFFSET_WIDTH(LB_OFFSET_WIDTH)) lb_if[LB_DEVICE_NUM] ();
-  xt_hbus_device_if #(.ID(IDX_XT_LB)) xt_lb_if (.*);
   XT_LB #(
       .ADDR_WIDTH(LB_ADDR_WIDTH),
       .ID_WIDTH  (LB_ID_WIDTH),
       .DEVICE_NUM(LB_DEVICE_NUM)
   ) u_XT_LB (
       .*,
-      .hb     (xt_lb_if),
+      .hb     (hb_if[IDX_XT_LB]),
       .devices(lb_if)
   );
 
@@ -343,10 +331,6 @@ module XT_Soc_Risc_V
       .ledsd(ledsd)
   );
 
-
-
-
-  //----------高速总线外设----------//
 
 
 endmodule

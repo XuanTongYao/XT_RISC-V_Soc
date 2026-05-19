@@ -4,7 +4,7 @@ module XT_LB #(
     parameter int DEVICE_NUM = 4
 ) (
     // 与高速总线桥接
-    xt_hbus_device_if.port hb,
+    xt_hbus_if.port hb,
 
     // 低速总线部分
     input lb_clk,
