@@ -13,7 +13,7 @@ module AlignedRAM_Adapter (
     output logic [31:0] rdata
 );
 
-  //----------写入数据与字节使能----------//
+  //----------写入数据与字节启用----------//
   always_comb begin
     byte_en = 4'b0;
     wdata   = raw_wdata;

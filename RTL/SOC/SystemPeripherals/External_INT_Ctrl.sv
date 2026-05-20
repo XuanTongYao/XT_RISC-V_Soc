@@ -1,4 +1,4 @@
-// 0:使能寄存器  4:待处理中断寄存器
+// 0:中断启用寄存器  4:待处理中断寄存器
 module External_INT_Ctrl
   import Utils_Pkg::sel_t;
 #(
