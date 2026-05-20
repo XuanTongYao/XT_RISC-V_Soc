@@ -6,7 +6,7 @@ package SocConfig;
   localparam core_cfg_t CORE_CFG = ComputeCoreCfg(CORE_RAW_CFG);
 
 
-  //----------内存RAM----------//
+  //----------主存----------//
   // 实际上由IP核决定，这里不一定对
   localparam int INST_RAM_DEPTH = 1024;
   localparam int DATA_RAM_DEPTH = 1024;

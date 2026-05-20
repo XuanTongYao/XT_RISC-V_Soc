@@ -175,9 +175,9 @@ module XT_Soc_Risc_V
       .*,
       .inst_fetch_clk_en(core_inst_if.enable),
       // 数据RAM
-      .hb               (hb_if[IDX_DATA_RAM]),
-      .ram_inst         (hb_if[IDX_INST_RAM]),
+      .data_ram         (hb_if[IDX_DATA_RAM]),
       // 指令RAM
+      .inst_ram         (hb_if[IDX_INST_RAM]),
       .inst_fetch_addr  (core_inst_if.addr),
       .inst_fetch       (user_instruction)
   );
