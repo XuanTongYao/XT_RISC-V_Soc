@@ -47,7 +47,7 @@ SECTIONS
         *(.sdata .sdata.* .gnu.linkonce.s.*)
     } > DATA_RAM
 
-    . = ALIGN(ALIGNOF(.sbss));
+    . = ALIGN(4);
     __BSS_START__ = .;
     .sbss           :
     {

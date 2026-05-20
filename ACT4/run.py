@@ -18,6 +18,11 @@ DUT_CONFIG = Path("./xt_rv32i")
 HDL = Path("./xt_rv32i_sim/HDL")
 VERILATOR_CPP = Path("./xt_rv32i_sim/verilator_cpp")
 
+# Pin to front(.sv) 置顶文件名数组
+# Verilog对文件出现的顺序很严格，某些文件必须放到列表最前面
+# 依靠简单排序无法解决此问题
+PIN_TO_FRONT = []
+
 
 def main():
     WORKDIR = RISCV_ARCH_TEST / "work"
@@ -31,12 +36,12 @@ def main():
 
     # 查询入口点(也作为主存基地址)，所有测试的入口点都相同
     elf_file = next(ELFS_DIR.rglob("*.elf"), None)
-    if not elf_file:
+    if elf_file is None:
         raise FileNotFoundError(
             f"No ELF files in {ELFS_DIR}. 在 {ELFS_DIR} 下没有ELF文件"
         )
     ENTRY_POINT = get_symbols(elf_file, [ENTRY], OBJDUMP_EXE).get(ENTRY)
-    if not ENTRY_POINT:
+    if ENTRY_POINT is None:
         raise Exception("The symbol {ENTRY} was not found. 没有找到 {ENTRY} 符号")
 
     exe = build_verilator_simulation_exe(ENTRY_POINT)
@@ -69,6 +74,13 @@ def is_package(p: Path):
 
 def build_verilator_simulation_exe(ram_base: int):
     sv_files = list(HDL.rglob("*.sv"))
+    # 置顶部分文件
+    front_map = {name: idx for idx, name in enumerate(PIN_TO_FRONT)}
+    front = [p for p in sv_files if p.name in PIN_TO_FRONT]
+    remaining = [p for p in sv_files if p.name not in PIN_TO_FRONT]
+    front.sort(key=lambda p: front_map[p.name])
+    sv_files = front + remaining
+    # 置顶包文件
     pkgs = [p for p in sv_files if is_package(p)]
     non_pkgs = [p for p in sv_files if p not in pkgs]
     all_files = [str(file.resolve()) for file in (pkgs + non_pkgs)]

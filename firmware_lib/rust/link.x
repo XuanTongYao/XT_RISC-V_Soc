@@ -46,14 +46,13 @@ SECTIONS
         *(.sdata .sdata.* .sdata2 .sdata2.*)
     } > DATA_RAM
 
-    . = ALIGN(ALIGNOF(.bss));
+    . = ALIGN(4);
     __BSS_START__ = .;
     .bss :
     {
         *(.sbss .sbss.* .scommon)
         *(.bss .bss.*)
         *(COMMON)
-        . = ALIGN(. != 0 ? 32 / 8 : 1);
     } > DATA_RAM
     . = ALIGN(4);
     __BSS_END__ = .;

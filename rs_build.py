@@ -69,7 +69,7 @@ def cargo(
         elf_path = Path(f"target/{TARGET_TRIPLE}/{mode}/{name}")
     else:
         elf_path = Path(f"target/{TARGET_TRIPLE}/{mode}/{kind}s/{name}")
-    cc_elf_path = Path(f"rust_{mode}/elfs/{name}")
+    cc_elf_path = Path(f"rust_{mode}/elfs/{name}.elf")
     cc_elf_path.parent.mkdir(exist_ok=True, parents=True)
     if elf_path.is_file():
         copy2(elf_path, cc_elf_path)

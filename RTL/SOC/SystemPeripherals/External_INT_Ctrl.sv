@@ -47,9 +47,9 @@ module External_INT_Ctrl
   always_ff @(posedge hb.clk) begin
     if (hb.sel.ren) begin
       if (hb.raddr == 'd0) begin
-        hb.rdata <= INT_enable_reg;
+        hb.rdata <= 32'(INT_enable_reg);
       end else begin
-        hb.rdata <= INT_pending_reg;
+        hb.rdata <= 32'(INT_pending_reg);
       end
     end
   end

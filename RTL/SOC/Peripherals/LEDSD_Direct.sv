@@ -32,7 +32,7 @@ module LEDSD_Direct #(
   generate
     for (genvar i = 0; i < NUM; i = i + 1) begin : gen_multi_LEDSD
       always_comb begin
-        unique case (data_in[i])
+        unique case (5'(data_in[i]))
           5'd0: code[i] = {7{COM}} ^ {7'h3F};  //0
           5'd1: code[i] = {7{COM}} ^ {7'h06};  //1
           5'd2: code[i] = {7{COM}} ^ {7'h5B};  //2

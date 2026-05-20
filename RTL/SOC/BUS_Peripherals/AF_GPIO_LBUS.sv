@@ -126,13 +126,13 @@ module AF_GPIO_LBUS #(
   always_ff @(posedge lb.clk) begin
     if (lb.wen) begin
       if (lb.addr[3:0] == BASE_ADDR_DIR) begin
-        gpio_dir_reg <= lb.wdata;
+        gpio_dir_reg <= lb.wdata[NUM-1:0];
       end else if (lb.addr[3:0] == BASE_ADDR_DATA) begin
-        gpio_out_data_reg <= lb.wdata;
+        gpio_out_data_reg <= lb.wdata[NUM-1:0];
       end else if (lb.addr[3:0] == BASE_ADDR_AF_IN) begin
-        funct_in_af_reg <= lb.wdata;
+        funct_in_af_reg <= lb.wdata[$bits(funct_in_af_reg)-1:0];
       end else if (lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
-        funct_out_af_reg <= lb.wdata;
+        funct_out_af_reg <= lb.wdata[$bits(funct_out_af_reg)-1:0];
       end
     end
   end
@@ -140,13 +140,13 @@ module AF_GPIO_LBUS #(
   // 读寄存器
   always_comb begin
     if (lb.addr[3:0] == BASE_ADDR_DIR) begin
-      lb.rdata = gpio_dir_reg;
+      lb.rdata = 32'(gpio_dir_reg);
     end else if (lb.addr[3:0] == BASE_ADDR_DATA) begin
-      lb.rdata = gpio_in_reg;
+      lb.rdata = 32'(gpio_in_reg);
     end else if (lb.addr[3:0] == BASE_ADDR_AF_IN) begin
-      lb.rdata = funct_in_af_reg;
+      lb.rdata = 32'(funct_in_af_reg);
     end else if (lb.addr[3:0] == BASE_ADDR_AF_OUT) begin
-      lb.rdata = funct_out_af_reg;
+      lb.rdata = 32'(funct_out_af_reg);
     end else begin
       lb.rdata = 0;
     end
