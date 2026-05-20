@@ -10,7 +10,6 @@ module XT_HB_Arbiter #(
     output logic read_busy,
     output logic write_busy
 );
-  localparam int INDEX_WIDTH = $clog2(DEVICE_NUM);
 
   generate
     if (DEVICE_NUM == 1) begin : gen_exclusive
@@ -19,22 +18,15 @@ module XT_HB_Arbiter #(
       assign read_busy = 1;
       assign write_busy = 1;
     end else begin : gen_polling
-      wire [INDEX_WIDTH-1:0] reading_index;
-      wire [INDEX_WIDTH-1:0] writing_index;
 
-      // 死锁自动重置
-      wire dead_locked = read_busy && write_busy && (reading_index != writing_index) && read_req[writing_index] &&
-          write_req[reading_index];
-      wire rst_arbiter = dead_locked || rst;
-
+      wire rst_sync = rst;
       RoundRobinArbiter #(
           .DEVICE_NUM(DEVICE_NUM)
       ) u_ReadArbiter (
           .*,
-          .rst_sync   (rst_arbiter),
           .req        (read_req),
           .grant      (read_grant),
-          .grant_index(reading_index),
+          .grant_index(),
           .busy       (read_busy)
       );
 
@@ -42,10 +34,9 @@ module XT_HB_Arbiter #(
           .DEVICE_NUM(DEVICE_NUM)
       ) u_WriteArbiter (
           .*,
-          .rst_sync   (rst_arbiter),
           .req        (write_req),
           .grant      (write_grant),
-          .grant_index(writing_index),
+          .grant_index(),
           .busy       (write_busy)
       );
 

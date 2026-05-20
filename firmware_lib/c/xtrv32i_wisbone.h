@@ -207,7 +207,7 @@ static void reset_i2c(volatile I2C* i2c) {
     i2c->CON_REG.I2CEN = 1;
 }
 
-// FIXME 函数里面的delay只适用于100KHz的I2C速率
+// NOTE 函数里面的delay只适用于100KHz的I2C速率
 // 逆天的技术手册里要求延迟时间与速率周期有关
 
 /// @warning 信号传输不稳定会导致丢失仲裁，从而进入死锁。

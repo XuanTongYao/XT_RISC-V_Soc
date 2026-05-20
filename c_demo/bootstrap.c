@@ -118,7 +118,6 @@ void check_UFM(void) {
     __reset_UFM_addr();
     __continue_read_one_UFM_page();
     // 第0个字为全0，则为无效程序代码或ELF
-    // TODO 需要简单解析ELF
     __PROG_INFO->fail = __DATA_BUFF_32[0] == 0;
     __PROG_INFO->page_len = 0;
 }

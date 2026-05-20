@@ -106,7 +106,7 @@ module XT_Soc_Risc_V
   // 高速总线 IO设备接口
   xt_hbus_if #(.ADDR_WIDTH(HB_ADDR_WIDTH)) hb_if[HB_DEVICE_NUM] ();
   // 高速总线
-  wire [HB_MASTER_NUM-1:0] read_grant, write_grant, stall_req;
+  xt_hbus_rsp_if hb_rsp_master[HB_MASTER_NUM] ();
   XT_HB #(
       .ADDR_WIDTH    (HB_ADDR_WIDTH),  // 总线上主设备的数量
       .ID_WIDTH      (HB_ID_WIDTH),    // 总线上主设备的数量
@@ -118,6 +118,7 @@ module XT_Soc_Risc_V
       .clk(clk),
       .rst(rst),
       .master(hb_master),
+      .rsp_master(hb_rsp_master),
       .devices(hb_if)
   );
 
@@ -143,7 +144,7 @@ module XT_Soc_Risc_V
   ) u_RISC_V_Core (
       .*,
       .memory   (hb_master[M_IDX_CORE]),
-      .stall_req(stall_req[M_IDX_CORE]),
+      .stall_req(hb_rsp_master[M_IDX_CORE].stall_req),
       .command0 (access_register)
   );
 

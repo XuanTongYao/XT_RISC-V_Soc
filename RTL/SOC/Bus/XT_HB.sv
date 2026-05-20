@@ -25,12 +25,9 @@ module XT_HB
     // 高速总线(读写可以被不同不冲突的主设备占用，全双工)
     // 内核的读写请求为最高优先级
     // 高速总线读写
-    memory_direct_if.slave master [MASTER_NUM],
-    xt_hbus_if.bus         devices[DEVICE_NUM],
-
-    output logic [MASTER_NUM-1:0] read_grant,
-    output logic [MASTER_NUM-1:0] write_grant,
-    output logic [MASTER_NUM-1:0] stall_req  // 仲裁失败或读写等待，停顿请求
+    memory_direct_if.slave master    [MASTER_NUM],
+    xt_hbus_rsp_if.bus     rsp_master[MASTER_NUM],
+    xt_hbus_if.bus         devices   [DEVICE_NUM]
 );
   localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
 
@@ -63,29 +60,26 @@ module XT_HB
 
   //----------访问等待控制器----------//
   logic [MASTER_NUM-1:0] read_req, write_req;
-  logic [MASTER_NUM-1:0] access_req, rw_access_req;
-  logic read_stall, write_stall;
-  logic [MASTER_NUM-1:0] arbiter_stall;
+  logic [MASTER_NUM-1:0] read_grant, write_grant;
+
+  logic read_finished, write_finished;
+  wire [MASTER_NUM-1:0] read_rsp = {MASTER_NUM{read_finished}};
+  wire [MASTER_NUM-1:0] write_rsp = {MASTER_NUM{write_finished}};
+  logic [MASTER_NUM-1:0] read_stall, write_stall, stall_req;
   always_comb begin
-    access_req = read_req | write_req;
-    rw_access_req = read_req & write_req;
-    arbiter_stall = (write_req & ~write_grant) | (read_req & ~read_grant);
-    for (int i = 0; i < MASTER_NUM; ++i) begin
-      if (!access_req[i]) begin
-        stall_req[i] = 0;
-      end else if (arbiter_stall[i]) begin
-        stall_req[i] = 1;
-      end else if (rw_access_req[i]) begin
-        stall_req[i] = write_stall || read_stall;
-      end else if (read_req[i]) begin
-        stall_req[i] = read_stall;
-      end else if (write_req[i]) begin
-        stall_req[i] = write_stall;
-      end else begin
-        stall_req[i] = 0;
-      end
-    end
+    read_stall  = (read_req & ~read_grant) | (read_req & ~read_rsp);
+    write_stall = (write_req & ~write_grant) | (write_req & ~write_rsp);
+    stall_req   = read_stall | write_stall;
   end
+  generate
+    for (genvar i = 0; i < MASTER_NUM; ++i) begin : gen_rsp_if
+      assign rsp_master[i].read_grant  = read_grant[i];
+      assign rsp_master[i].write_grant = write_grant[i];
+      assign rsp_master[i].read_stall  = read_stall[i];
+      assign rsp_master[i].write_stall = write_stall[i];
+      assign rsp_master[i].stall_req   = stall_req[i];
+    end
+  endgenerate
 
 
   //----------总线仲裁器和控制器----------//
@@ -108,9 +102,9 @@ module XT_HB
     hb_wen = 0;
     raddr_mux = 0;
     waddr_mux = 0;
-    wdata_mux = 0;
     read_size_mux = 0;
     write_size_mux = 0;
+    wdata_mux = 0;
     // 读通道复用器
     for (int i = 0; i < MASTER_NUM; ++i) begin
       if (read_grant[i]) begin
@@ -125,8 +119,8 @@ module XT_HB
       if (write_grant[i]) begin
         hb_wen = master_in[i].write;
         waddr_mux = master_in[i].waddr;
-        wdata_mux = master_in[i].wdata;
         write_size_mux = master_in[i].write_size;
+        wdata_mux = master_in[i].wdata;
         break;
       end
     end
@@ -154,10 +148,8 @@ module XT_HB
 
   // 读写等待控制
   logic [DEVICE_NUM-1:0] read_finish, write_finish;
-  wire read_wait_finish = hb_ren ? ((read_finish & slave_rsel) != 0) : 1;
-  wire write_wait_finish = hb_wen ? ((write_finish & slave_wsel) != 0) : 1;
-  assign read_stall  = !read_wait_finish;
-  assign write_stall = !write_wait_finish;
+  assign read_finished  = hb_ren ? ((read_finish & slave_rsel) != 0) : 1;
+  assign write_finished = hb_wen ? ((write_finish & slave_wsel) != 0) : 1;
 
 
   // IO设备总线复用器
