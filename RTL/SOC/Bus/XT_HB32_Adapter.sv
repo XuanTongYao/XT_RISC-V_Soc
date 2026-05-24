@@ -23,15 +23,18 @@ module XT_HB32_Adapter #(
   wire [ID_WIDTH-1:0] rid = hb.raddr[OFFSET_WIDTH+2+:ID_WIDTH];
   wire [ID_WIDTH-1:0] wid = hb.waddr[OFFSET_WIDTH+2+:ID_WIDTH];
 
+  localparam int IDX_WIDTH = (DEVICE_NUM == 1) ? 1 : $clog2(DEVICE_NUM);
   logic [DEVICE_NUM-1:0] id_sel[2];
+  logic [IDX_WIDTH-1:0] id_sel_idx[2];
   SelectDecoder #(
       .UNIQUE_ID_MODE(1),
       .ID_WIDTH(ID_WIDTH),
-      .ADDR_NUM(2),
-      .DEVICE_NUM(DEVICE_NUM)
+      .ADDR_COUNT(2),
+      .DEVICE_COUNT(DEVICE_NUM)
   ) u_MMIO (
       .device_id('{rid, wid}),
-      .sel(id_sel)
+      .sel(id_sel),
+      .sel_idx(id_sel_idx)
   );
   wire [DEVICE_NUM-1:0] raddr_sel = id_sel[0];
   wire [DEVICE_NUM-1:0] waddr_sel = id_sel[1];
@@ -40,15 +43,7 @@ module XT_HB32_Adapter #(
 
 
   logic [31:0] device_data[DEVICE_NUM];
-  always_comb begin
-    hb.rdata = 0;
-    for (int i = 0; i < DEVICE_NUM; ++i) begin
-      if (raddr_sel[i]) begin
-        hb.rdata = device_data[i];
-        break;
-      end
-    end
-  end
+  assign hb.rdata = device_data[id_sel_idx[0]];
 
   generate
     for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_device_link

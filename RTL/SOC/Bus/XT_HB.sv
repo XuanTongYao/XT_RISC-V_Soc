@@ -108,17 +108,20 @@ module XT_HB #(
 
 
   // 片选生成
+  localparam int SEL_IDX_WIDTH = (DEVICE_NUM == 1) ? 1 : $clog2(DEVICE_NUM);
   logic [DEVICE_NUM-1:0] sel[2];
+  logic [SEL_IDX_WIDTH-1:0] sel_idx[2];
   wire [ID_WIDTH-1:0] raddr_mux_id = raddr_mux[OFFSET_WIDTH+:ID_WIDTH];
   wire [ID_WIDTH-1:0] waddr_mux_id = waddr_mux[OFFSET_WIDTH+:ID_WIDTH];
   SelectDecoder #(
       .ID_WIDTH(ID_WIDTH),
-      .ADDR_NUM(2),
-      .DEVICE_NUM(DEVICE_NUM),
+      .ADDR_COUNT(2),
+      .DEVICE_COUNT(DEVICE_NUM),
       .BASE_ID(DEVICE_BASE_ID)
   ) u_MMIO (
       .device_id('{raddr_mux_id, waddr_mux_id}),
-      .sel(sel)
+      .sel(sel),
+      .sel_idx(sel_idx)
   );
   wire [DEVICE_NUM-1:0] slave_rsel = hb_ren ? sel[0] : 0;
   wire [DEVICE_NUM-1:0] slave_wsel = hb_wen ? sel[1] : 0;
@@ -133,15 +136,7 @@ module XT_HB #(
 
   // IO设备总线复用器
   logic [31:0] device_data[DEVICE_NUM];
-  always_comb begin
-    hb_rdata = 0;
-    for (int i = 0; i < DEVICE_NUM; ++i) begin
-      if (sel[0][i]) begin
-        hb_rdata = device_data[i];
-        break;
-      end
-    end
-  end
+  assign hb_rdata = device_data[sel_idx[0]];
 
 
   generate
