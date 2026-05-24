@@ -10,9 +10,7 @@
 // OVER_SAMPLING:        过采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)，必须为偶数，最小为8
 //
 // 0:读RX寄存器   1:读状态寄存器
-module UART_BUS
-  import Utils_Pkg::sel_t;
-#(
+module UART_BUS #(
     // 过采样比率(波特率=SAMPLING_CLK/OVER_SAMPLING)
     parameter int OVER_SAMPLING = 16  // 必须为偶数，最小为8
 ) (
@@ -122,7 +120,7 @@ module UART_BUS
       .clk         (hb.clk),
       .rst         (hb.rst),
       .wen         (frame_end_pulse),
-      .ren         (hb.sel.ren && hb.raddr == 'd0),
+      .ren         (hb.ren && hb.raddr == 'd0),
       .data        (rx_buffer),
       .q           (rx_fifo_q),
       .full        (rx_full),
@@ -134,7 +132,7 @@ module UART_BUS
   always_ff @(posedge hb.clk) begin
     if (frame_end_pulse) begin
       rx_irq <= 1;
-    end else if (hb.sel.ren && hb.raddr == 'd0) begin
+    end else if (hb.ren && hb.raddr == 'd0) begin
       rx_irq <= 0;  // 读自动清零中断
     end
   end
@@ -160,7 +158,7 @@ module UART_BUS
   ) u_tx_FIFO_SC (
       .clk         (hb.clk),
       .rst         (hb.rst),
-      .wen         (hb.sel.wen && hb.waddr == 'd0),
+      .wen         (hb.wen && hb.waddr == 'd0),
       .ren         (tx_fifo_ren),
       .data        (hb.wdata[7:0]),
       .q           (tx_fifo_q),
@@ -230,7 +228,7 @@ module UART_BUS
   assign state = '{rx_full: rx_full, tx_empty: tx_empty, rx_not_empty: !rx_empty, tx_ready: !tx_full};
 
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.ren) begin
+    if (hb.ren) begin
       if (hb.raddr == 'd0) begin
         hb.rdata <= 32'(rx_fifo_q);
       end else begin

@@ -2,9 +2,7 @@
 // 仅支持单次读写，有原子指令再考虑支持RMW，正在思考正确的RMW如何实现
 // Q:如果有多个设备(比如DMA)要使用WISHBONE资源怎么办？
 // A:给每个设备单独配一个主机，避开访问冲突问题。
-module WISHBONE_MASTER
-  import Utils_Pkg::sel_t;
-#(
+module WISHBONE_MASTER #(
     parameter int PORT_SIZE = 8
 ) (
     // 与总线控制器
@@ -39,7 +37,7 @@ module WISHBONE_MASTER
   // 启动读写控制
   // 这里等一个周期，等HB的主机走到下一条指令
   logic hb_ready;
-  wire  start_rw = hb_ready && (hb.sel.ren || hb.sel.wen);
+  wire  start_rw = hb_ready && (hb.ren || hb.wen);
   always_ff @(posedge wb_clk_i) begin
     if (wb_cyc_o) begin
       hb_ready <= 0;
@@ -74,7 +72,7 @@ module WISHBONE_MASTER
         end
       end
     end else if (start_rw) begin  // 空闲
-      if (hb.sel.ren) begin
+      if (hb.ren) begin
         wb_we_o  <= 0;
         wb_adr_o <= hb.raddr[7:0];
       end else begin

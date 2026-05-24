@@ -1,7 +1,5 @@
 // 32bit对齐总线适配器，更好的寻址性能与更低的资源占用
-module XT_HB32_Adapter
-  import Utils_Pkg::sel_t;
-#(
+module XT_HB32_Adapter #(
     parameter int ADDR_WIDTH = 5,
     parameter int ID_WIDTH   = 3,
     parameter int DEVICE_NUM = 5
@@ -15,7 +13,7 @@ module XT_HB32_Adapter
   always_ff @(posedge hb.clk) begin
     if (hb.read_finish) begin
       hb.read_finish <= 0;
-    end else if (hb.sel.ren) begin
+    end else if (hb.ren) begin
       hb.read_finish <= 1;
     end
   end
@@ -37,8 +35,8 @@ module XT_HB32_Adapter
   );
   wire [DEVICE_NUM-1:0] raddr_sel = id_sel[0];
   wire [DEVICE_NUM-1:0] waddr_sel = id_sel[1];
-  wire [DEVICE_NUM-1:0] rsel = hb.sel.ren && !hb.read_finish ? raddr_sel : 0;
-  wire [DEVICE_NUM-1:0] wsel = hb.sel.wen ? waddr_sel : 0;
+  wire [DEVICE_NUM-1:0] rsel = hb.ren && !hb.read_finish ? raddr_sel : 0;
+  wire [DEVICE_NUM-1:0] wsel = hb.wen ? waddr_sel : 0;
 
 
   logic [31:0] device_data[DEVICE_NUM];
@@ -54,15 +52,15 @@ module XT_HB32_Adapter
 
   generate
     for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_device_link
-      assign devices[i].clk = hb.clk;
-      assign devices[i].rst = hb.rst;
+      assign devices[i].clk   = hb.clk;
+      assign devices[i].rst   = hb.rst;
       assign devices[i].raddr = hb.raddr[2+:OFFSET_WIDTH];
       assign devices[i].waddr = hb.waddr[2+:OFFSET_WIDTH];
       assign devices[i].wdata = hb.wdata;
 
-      assign devices[i].sel.ren = rsel[i];
-      assign devices[i].sel.wen = wsel[i];
-      assign device_data[i] = devices[i].rdata;
+      assign devices[i].ren   = rsel[i];
+      assign devices[i].wen   = wsel[i];
+      assign device_data[i]   = devices[i].rdata;
     end
   endgenerate
 

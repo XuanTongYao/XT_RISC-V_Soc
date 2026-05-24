@@ -3,9 +3,7 @@
 // 寄存器布局
 // 0-debug寄存器
 // 1-预加载字符串地址 2-预加载字符串
-module HarvardBootstrap
-  import Utils_Pkg::sel_t;
-(
+module HarvardBootstrap (
     // 指令选择
     input [31:0] bootloader_instruction,
     input [31:0] user_instruction,
@@ -25,9 +23,9 @@ module HarvardBootstrap
       .Q      (rom_data)
   );
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.wen && hb.waddr == 'd1) begin
+    if (hb.wen && hb.waddr == 'd1) begin
       rom_addr <= hb.wdata[5:0];
-    end else if (hb.sel.ren && hb.raddr == 'd2) begin
+    end else if (hb.ren && hb.raddr == 'd2) begin
       rom_addr <= rom_addr + 6'd1;
     end
   end
@@ -41,7 +39,7 @@ module HarvardBootstrap
       debug_reg   <= 0;
       normal_mode <= 0;
     end else begin
-      if (hb.sel.wen && hb.waddr == 'd0) debug_reg <= hb.wdata[7:0];
+      if (hb.wen && hb.waddr == 'd0) debug_reg <= hb.wdata[7:0];
       if (!normal_mode && debug_reg == 8'hF1) normal_mode <= 1;
     end
   end
@@ -50,7 +48,7 @@ module HarvardBootstrap
 
   //----------读寄存器----------//
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.ren) begin
+    if (hb.ren) begin
       if (hb.raddr == 'd0) begin
         hb.rdata <= 32'(download_mode);
       end else begin

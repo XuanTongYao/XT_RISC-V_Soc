@@ -8,10 +8,7 @@
 // 0.4更新 放弃旧的地址域映射，使用设备识别符+地址偏移的MMIO
 // 0.5更新 使用接口作为总线信号
 // 0.6更新 去除嵌套接口的使用
-module XT_HB
-  import Utils_Pkg::sel_t;
-  import SocConfig::HB_ID_WIDTH;
-#(
+module XT_HB #(
     parameter int ADDR_WIDTH = 16,
     parameter int ID_WIDTH = 3,
     parameter int MASTER_NUM = 1,  // 总线上主设备的数量
@@ -22,9 +19,6 @@ module XT_HB
     input clk,
     input rst,
 
-    // 高速总线(读写可以被不同不冲突的主设备占用，全双工)
-    // 内核的读写请求为最高优先级
-    // 高速总线读写
     memory_direct_if.slave master    [MASTER_NUM],
     xt_hbus_rsp_if.bus     rsp_master[MASTER_NUM],
     xt_hbus_if.bus         devices   [DEVICE_NUM]
@@ -83,14 +77,15 @@ module XT_HB
 
 
   //----------总线仲裁器和控制器----------//
+  localparam int unsigned REQ_IDX_WIDTH = (MASTER_NUM == 1) ? 1 : $clog2(MASTER_NUM);
   always_comb begin
     for (int i = 0; i < MASTER_NUM; ++i) begin
       read_req[i]  = master_in[i].read;
       write_req[i] = master_in[i].write;
     end
   end
-  wire read_busy, write_busy;
-  XT_HB_Arbiter #(.DEVICE_NUM(MASTER_NUM)) u_XT_BusArbiter (.*);
+  logic [REQ_IDX_WIDTH-1:0] read_grant_idx, write_grant_idx;
+  XT_HB_Arbiter #(.REQ_COUNT(MASTER_NUM)) u_XT_BusArbiter (.*);
 
   // 主设备总线复用器
   logic hb_ren, hb_wen;
@@ -98,32 +93,16 @@ module XT_HB
   logic [1:0] read_size_mux, write_size_mux;
   logic [31:0] wdata_mux;
   always_comb begin
-    hb_ren = 0;
-    hb_wen = 0;
-    raddr_mux = 0;
-    waddr_mux = 0;
-    read_size_mux = 0;
-    write_size_mux = 0;
-    wdata_mux = 0;
     // 读通道复用器
-    for (int i = 0; i < MASTER_NUM; ++i) begin
-      if (read_grant[i]) begin
-        hb_ren = master_in[i].read;
-        raddr_mux = master_in[i].raddr;
-        read_size_mux = master_in[i].read_size;
-        break;
-      end
-    end
+    hb_ren = master_in[read_grant_idx].read;
+    raddr_mux = master_in[read_grant_idx].raddr;
+    read_size_mux = master_in[read_grant_idx].read_size;
+
     // 写通道复用器
-    for (int i = 0; i < MASTER_NUM; ++i) begin
-      if (write_grant[i]) begin
-        hb_wen = master_in[i].write;
-        waddr_mux = master_in[i].waddr;
-        write_size_mux = master_in[i].write_size;
-        wdata_mux = master_in[i].wdata;
-        break;
-      end
-    end
+    hb_wen = master_in[write_grant_idx].write;
+    waddr_mux = master_in[write_grant_idx].waddr;
+    write_size_mux = master_in[write_grant_idx].write_size;
+    wdata_mux = master_in[write_grant_idx].wdata;
   end
 
 
@@ -174,8 +153,8 @@ module XT_HB
       assign devices[i].raddr = raddr_mux;
       assign devices[i].waddr = waddr_mux;
       assign devices[i].wdata = wdata_mux;
-      assign devices[i].sel.ren = slave_rsel[i];
-      assign devices[i].sel.wen = slave_wsel[i];
+      assign devices[i].ren = slave_rsel[i];
+      assign devices[i].wen = slave_wsel[i];
 
       assign device_data[i] = devices[i].rdata;
       assign read_finish[i] = devices[i].read_finish;

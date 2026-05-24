@@ -12,7 +12,7 @@ module SoftwareINT #(
     if (hb.rst) begin
       msoftware_int <= 0;
       msoftware_int_reg <= 0;
-    end else if (hb.sel.wen && hb.waddr == 'd0) begin
+    end else if (hb.wen && hb.waddr == 'd0) begin
       msoftware_int <= hb.wdata[31];
       msoftware_int_reg[REG_LEN-1] <= hb.wdata[31];
       msoftware_int_reg[REG_LEN-2:0] <= hb.wdata[REG_LEN-2:0];
@@ -22,7 +22,7 @@ module SoftwareINT #(
   wire sip = msoftware_int_reg[REG_LEN-1];
   wire [REG_LEN-2:0] cause = msoftware_int_reg[REG_LEN-2:0];
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.ren && hb.raddr == 'd0) begin
+    if (hb.ren && hb.raddr == 'd0) begin
       hb.rdata <= {sip, 31'(cause)};
     end
   end

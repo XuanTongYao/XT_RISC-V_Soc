@@ -20,7 +20,7 @@ module XT_LB #(
 
   // HB时钟部分
   logic send_ready_delay, finish;
-  wire send = (hb.sel.ren || hb.sel.wen) && send_ready_delay;
+  wire send = (hb.ren || hb.wen) && send_ready_delay;
   wire send_ready;
   wire ack;
   always_ff @(posedge hb.clk) begin
@@ -39,7 +39,7 @@ module XT_LB #(
   assign hb.write_finish = finish;
   localparam int TRUNCATED_WIDTH = 2 * ADDR_WIDTH + 32 + 2 + 2;
   wire [TRUNCATED_WIDTH-1:0] truncated_xt_hb = {
-    hb.sel.ren, hb.sel.wen, hb.raddr[ADDR_WIDTH-1:0], hb.waddr[ADDR_WIDTH-1:0], hb.wdata, hb.write_size
+    hb.ren, hb.wen, hb.raddr[ADDR_WIDTH-1:0], hb.waddr[ADDR_WIDTH-1:0], hb.wdata, hb.write_size
   };
 
 

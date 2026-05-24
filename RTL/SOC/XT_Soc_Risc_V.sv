@@ -1,6 +1,5 @@
 // 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
-  import Utils_Pkg::sel_t;
   import SocConfig::*;
 #(
     parameter int GPIO_NUM = 28,

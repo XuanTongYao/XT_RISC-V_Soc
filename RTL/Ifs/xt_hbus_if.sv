@@ -1,25 +1,24 @@
 interface xt_hbus_if #(
     int ADDR_WIDTH = 16
 );
-  import Utils_Pkg::sel_t;
 
   wire clk, rst;
 
   wire [1:0] read_size, write_size;
   wire [ADDR_WIDTH-1:0] raddr, waddr;
   wire [31:0] wdata;
-  wire sel_t sel;
 
+  wire ren, wen;  // 读写片选
   logic [31:0] rdata;
   logic read_finish, write_finish;
   modport bus(
       output clk, rst,
-      output read_size, write_size, raddr, waddr, wdata, sel,
+      output ren, wen, read_size, write_size, raddr, waddr, wdata,
       input rdata, read_finish, write_finish
   );
   modport port(
       input clk, rst,
-      input read_size, write_size, raddr, waddr, wdata, sel,
+      input ren, wen, read_size, write_size, raddr, waddr, wdata,
       output rdata, read_finish, write_finish
   );
 
@@ -38,16 +37,15 @@ endinterface
 interface xt_hbus32_if #(
     int OFFSET_WIDTH = 5
 );
-  import Utils_Pkg::sel_t;
 
   wire clk, rst;
 
   wire [OFFSET_WIDTH-1:0] raddr, waddr;
   wire [31:0] wdata;
-  wire sel_t sel;
 
+  wire ren, wen;  // 读写片选
   logic [31:0] rdata;
-  modport bus(output clk, rst, output raddr, waddr, wdata, sel, input rdata);
-  modport port(input clk, rst, input raddr, waddr, wdata, sel, output rdata);
+  modport bus(output clk, rst, output ren, wen, raddr, waddr, wdata, input rdata);
+  modport port(input clk, rst, input ren, wen, raddr, waddr, wdata, output rdata);
 
 endinterface

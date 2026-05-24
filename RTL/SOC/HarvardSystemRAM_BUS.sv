@@ -3,9 +3,7 @@
 //       数据存储器(双端口，按字节寻址)只允许对齐访问
 //       指令存储器(真双端口，按字节寻址)只允许对齐访问，A口始终是指令读取接口，B口是总线读写接口
 //       为保证对齐，读取时可能会读取到周围字节的信息，自行截断
-module HarvardSystemRAM_BUS
-  import Utils_Pkg::sel_t;
-#(
+module HarvardSystemRAM_BUS #(
     parameter int DATA_RAM_DEPTH = 512,  // 字深度(最大为2^30对应4GB字节)
     parameter int INST_RAM_DEPTH = 512
 ) (
@@ -22,8 +20,8 @@ module HarvardSystemRAM_BUS
   localparam int INST_WIDTH = $clog2(INST_RAM_DEPTH);
 
   //----------数据存储器----------//
-  wire data_wen = data_ram.sel.wen;
-  wire data_ren = data_ram.sel.ren;
+  wire data_wen = data_ram.wen;
+  wire data_ren = data_ram.ren;
   always_ff @(posedge data_ram.clk) begin
     if (data_ram.read_finish) begin
       data_ram.read_finish <= 0;
@@ -81,8 +79,8 @@ module HarvardSystemRAM_BUS
   // B口是总线读写接口
 
   // 读优先
-  wire inst_wen = inst_ram.sel.wen && !inst_ram.sel.ren;
-  wire inst_ren = inst_ram.sel.ren;
+  wire inst_wen = inst_ram.wen && !inst_ram.ren;
+  wire inst_ren = inst_ram.ren;
   always_ff @(posedge inst_ram.clk) begin
     if (inst_ram.read_finish) begin
       inst_ram.read_finish <= 0;

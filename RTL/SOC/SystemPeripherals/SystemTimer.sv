@@ -5,9 +5,7 @@
 // 寄存器布局
 // 0-mtimel 1-mtimeh
 // 2-mtimecmpl 3-mtimecmph
-module SystemTimer
-  import Utils_Pkg::sel_t;
-(
+module SystemTimer (
     // 计时时钟必须比高速总线时钟慢两倍及以上
     input systemtimer_clk,
     // 总线接口
@@ -33,7 +31,7 @@ module SystemTimer
   // 写入期间保护mtime寄存器的值
   logic [63:0] mtime = 0;
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.wen && !waddr[1]) begin
+    if (hb.wen && !waddr[1]) begin
       if (waddr[0]) begin
         mtime[63:32] <= hb.wdata;
       end else begin
@@ -49,9 +47,9 @@ module SystemTimer
   logic [31:0] mtimecmp[2];  // 0-低位 1-高位
   wire time_ge_cmp = mtime >= {mtimecmp[1], mtimecmp[0]};
   always_ff @(posedge hb.clk) begin
-    update_irq <= hb.sel.wen || time_update;
+    update_irq <= hb.wen || time_update;
 
-    if (hb.sel.wen && waddr[1]) begin
+    if (hb.wen && waddr[1]) begin
       // 写入比较寄存器默认清空中断
       mtimer_int <= 0;
       mtimecmp[waddr[0]] <= hb.wdata;
@@ -62,7 +60,7 @@ module SystemTimer
 
 
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.ren) begin
+    if (hb.ren) begin
       unique case (hb.raddr[1:0])
         2'b00: hb.rdata <= mtime[31:0];
         2'b01: hb.rdata <= mtime[63:32];

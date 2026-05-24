@@ -1,7 +1,5 @@
 // 0:中断启用寄存器  4:待处理中断寄存器
-module External_INT_Ctrl
-  import Utils_Pkg::sel_t;
-#(
+module External_INT_Ctrl #(
     parameter int INT_NUM = 32
 ) (
     // 总线接口
@@ -21,7 +19,7 @@ module External_INT_Ctrl
       INT_enable_reg  <= 0;
       INT_pending_reg <= 0;
     end else begin
-      if (hb.sel.wen && hb.waddr == 'd0) begin
+      if (hb.wen && hb.waddr == 'd0) begin
         INT_enable_reg <= hb.wdata[INT_NUM-1:0];
       end
       INT_pending_reg <= irq_source & INT_enable_reg;
@@ -45,7 +43,7 @@ module External_INT_Ctrl
 
   // 总线读
   always_ff @(posedge hb.clk) begin
-    if (hb.sel.ren) begin
+    if (hb.ren) begin
       if (hb.raddr == 'd0) begin
         hb.rdata <= 32'(INT_enable_reg);
       end else begin
