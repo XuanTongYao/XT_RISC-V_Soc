@@ -2,28 +2,28 @@
 module XT_Soc_Risc_V
   import SocConfig::*;
 #(
-    parameter int GPIO_NUM = 28,
-    parameter int CSN_NUM  = 2    // 专用SPI片选引脚
+    parameter int GPIO_COUNT = 28,
+    parameter int CSN_COUNT  = 2    // 专用SPI片选引脚
 ) (
-    input                       clk_osc,
-    input                       rst_sw,
-    input                       download_mode,
-    inout        [GPIO_NUM-1:0] gpio,
-    input        [         3:0] key_raw,
-    input        [         1:0] sw_raw,
-    output logic [         7:0] led,
-    output logic [         8:0] ledsd        [2],
-    input                       uart_rx,
-    output logic                uart_tx,
-    inout                       i2c1_scl,
-    inout                       i2c1_sda,
-    inout                       i2c2_scl,
-    inout                       i2c2_sda,
-    input                       spi_scsn,
-    output logic [ CSN_NUM-1:0] spi_csn,
-    inout                       spi_clk,
-    inout                       spi_miso,
-    inout                       spi_mosi,
+    input                         clk_osc,
+    input                         rst_sw,
+    input                         download_mode,
+    inout        [GPIO_COUNT-1:0] gpio,
+    input        [           3:0] key_raw,
+    input        [           1:0] sw_raw,
+    output logic [           7:0] led,
+    output logic [           8:0] ledsd        [2],
+    input                         uart_rx,
+    output logic                  uart_tx,
+    inout                         i2c1_scl,
+    inout                         i2c1_sda,
+    inout                         i2c2_scl,
+    inout                         i2c2_sda,
+    input                         spi_scsn,
+    output logic [ CSN_COUNT-1:0] spi_csn,
+    inout                         spi_clk,
+    inout                         spi_miso,
+    inout                         spi_mosi,
 
     input tck,
     input tms,
@@ -101,16 +101,16 @@ module XT_Soc_Risc_V
   // 在SocConfig中配置
 
   // 高速总线 主设备接口
-  memory_direct_if hb_master[HB_MASTER_NUM] ();
+  memory_direct_if hb_master[HB_MASTER_COUNT] ();
   // 高速总线 IO设备接口
-  xt_hbus_if #(.ADDR_WIDTH(HB_ADDR_WIDTH)) hb_if[HB_DEVICE_NUM] ();
+  xt_hbus_if #(.ADDR_WIDTH(HB_ADDR_WIDTH)) hb_if[HB_DEVICE_COUNT] ();
   // 高速总线
-  xt_hbus_rsp_if hb_rsp_master[HB_MASTER_NUM] ();
+  xt_hbus_rsp_if hb_rsp_master[HB_MASTER_COUNT] ();
   XT_HB #(
-      .ADDR_WIDTH    (HB_ADDR_WIDTH),  // 总线上主设备的数量
-      .ID_WIDTH      (HB_ID_WIDTH),    // 总线上主设备的数量
-      .MASTER_NUM    (HB_MASTER_NUM),  // 总线上主设备的数量
-      .DEVICE_NUM    (HB_DEVICE_NUM),  // 总线上IO设备的数量
+      .ADDR_WIDTH    (HB_ADDR_WIDTH),    // 总线上主设备的数量
+      .ID_WIDTH      (HB_ID_WIDTH),      // 总线上主设备的数量
+      .MASTER_COUNT  (HB_MASTER_COUNT),  // 总线上主设备的数量
+      .DEVICE_COUNT  (HB_DEVICE_COUNT),  // 总线上IO设备的数量
       .DEVICE_BASE_ID(DEVICE_BASE_ID)
   ) u_XT_HB (
       .*,
@@ -133,8 +133,8 @@ module XT_Soc_Risc_V
   wire [30:0] custom_int_code;
   int_source_if mint (.*);
   // 外部中断
-  localparam int EXTERNAL_INT_NUM = 13;
-  wire [EXTERNAL_INT_NUM-1:0] irq_source;
+  localparam int EXTERNAL_INT_COUNT = 13;
+  wire [EXTERNAL_INT_COUNT-1:0] irq_source;
   assign irq_source[7:1] = 7'b0;
 
   RISC_V_Core #(
@@ -184,11 +184,11 @@ module XT_Soc_Risc_V
 
 
   //----------高速总线32位对齐外设----------//
-  xt_hbus32_if #(.OFFSET_WIDTH(HB32_OFFSET_WIDTH)) hb32_if[HB32_DEVICE_NUM] ();
+  xt_hbus32_if #(.OFFSET_WIDTH(HB32_OFFSET_WIDTH)) hb32_if[HB32_DEVICE_COUNT] ();
   XT_HB32_Adapter #(
       .ADDR_WIDTH(HB32_ADDR_WIDTH),
-      .ID_WIDTH  (HB32_ID_WIDTH),
-      .DEVICE_NUM(HB32_DEVICE_NUM)
+      .ID_WIDTH(HB32_ID_WIDTH),
+      .DEVICE_COUNT(HB32_DEVICE_COUNT)
   ) u_XT_HB32_Adapter (
       .*,
       .hb     (hb_if[IDX_HB32]),
@@ -203,7 +203,7 @@ module XT_Soc_Risc_V
 
   // 外部中断控制器
   External_INT_Ctrl #(
-      .INT_NUM(EXTERNAL_INT_NUM)
+      .INT_COUNT(EXTERNAL_INT_COUNT)
   ) u_External_INT_Ctrl (
       .*,
       .hb(hb32_if[IDX_EINT_CTRL])
@@ -261,13 +261,13 @@ module XT_Soc_Risc_V
       .hb      (hb_if[IDX_WISHBONE])
   );
 
-  localparam int ALL_CSN_NUM = 3;
+  localparam int ALL_CSN_COUNT = 3;
   wire ufm_sn = 1;
   wire tc_rst, tc_ic, tc_oc;  // 定时器的功能复用
   wire tc_rstn = !tc_rst;
-  wire [ALL_CSN_NUM-1:0] all_spi_csn;
-  assign spi_csn = all_spi_csn[CSN_NUM-1:0];
-  wire [ALL_CSN_NUM-CSN_NUM-1:0] af_spi_csn = all_spi_csn[ALL_CSN_NUM-1:CSN_NUM];
+  wire [ALL_CSN_COUNT-1:0] all_spi_csn;
+  assign spi_csn = all_spi_csn[CSN_COUNT-1:0];
+  wire [ALL_CSN_COUNT-CSN_COUNT-1:0] af_spi_csn = all_spi_csn[ALL_CSN_COUNT-1:CSN_COUNT];
   efb u_efb (
       .*,
       .tc_clki(clk_osc),
@@ -281,13 +281,13 @@ module XT_Soc_Risc_V
 
 
   //----------低速总线及其外设----------//
-  localparam int LB_ADDR_WIDTH = 8, LB_ID_WIDTH = 2, LB_DEVICE_NUM = 4;
+  localparam int LB_ADDR_WIDTH = 8, LB_ID_WIDTH = 2, LB_DEVICE_COUNT = 4;
   localparam int LB_OFFSET_WIDTH = LB_ADDR_WIDTH - LB_ID_WIDTH;
-  xt_lbus_if #(.OFFSET_WIDTH(LB_OFFSET_WIDTH)) lb_if[LB_DEVICE_NUM] ();
+  xt_lbus_if #(.OFFSET_WIDTH(LB_OFFSET_WIDTH)) lb_if[LB_DEVICE_COUNT] ();
   XT_LB #(
       .ADDR_WIDTH(LB_ADDR_WIDTH),
-      .ID_WIDTH  (LB_ID_WIDTH),
-      .DEVICE_NUM(LB_DEVICE_NUM)
+      .ID_WIDTH(LB_ID_WIDTH),
+      .DEVICE_COUNT(LB_DEVICE_COUNT)
   ) u_XT_LB (
       .*,
       .hb     (hb_if[IDX_XT_LB]),
@@ -300,16 +300,16 @@ module XT_Soc_Risc_V
       .sw_raw({sw_raw, download_mode})
   );
 
-  localparam int AF_FUNCT_IN_NUM = 2;
-  wire funct_in[AF_FUNCT_IN_NUM];
+  localparam int AF_FUNCT_IN_COUNT = 2;
+  wire funct_in[AF_FUNCT_IN_COUNT];
   assign tc_rst = funct_in[0];
   assign tc_ic  = funct_in[1];
   AF_GPIO_LBUS #(
-      .NUM           (GPIO_NUM),
-      .FUNCT_IN_NUM  (AF_FUNCT_IN_NUM),
-      .FUNCT_IN_MASK ('{32'h0000_00FF, 32'h0000_00FF}),
-      .FUNCT_OUT_NUM (2),
-      .FUNCT_OUT_MASK('{32'h1FE0_0000, 32'h1FE0_0000})
+      .COUNT          (GPIO_COUNT),
+      .FUNCT_IN_COUNT (AF_FUNCT_IN_COUNT),
+      .FUNCT_IN_MASK  ('{32'h0000_00FF, 32'h0000_00FF}),
+      .FUNCT_OUT_COUNT(2),
+      .FUNCT_OUT_MASK ('{32'h1FE0_0000, 32'h1FE0_0000})
   ) u_AF_GPIO_LBUS (
       .*,
       .gpio_clk (clk),
@@ -320,7 +320,7 @@ module XT_Soc_Risc_V
   );
 
   LED_LBUS #(
-      .LED_NUM(8)
+      .LED_COUNT(8)
   ) u_LED_LBUS (
       .lb (lb_if[2]),
       .led(led)

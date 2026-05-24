@@ -45,7 +45,7 @@ package CoreConfig;
     int XLEN;  // 位宽
     extension_cfg_t EXTENSION;  // 扩展
     xl_t MXL;
-    int REG_NUMS;
+    int REG_COUNT;
     int REG_LEN;
 
     int IALIGN;    // 指令对齐位宽,32或16
@@ -60,8 +60,8 @@ package CoreConfig;
     cfg.XLEN = XLEN;
     cfg.EXTENSION = EXTENSION;
     cfg.MXL = XLEN == 32 ? XLEN32 : XLEN64;
-    cfg.REG_NUMS = EXTENSION.E ? 16 : 32;
-    cfg.REG_LEN = $clog2(cfg.REG_NUMS);
+    cfg.REG_COUNT = EXTENSION.E ? 16 : 32;
+    cfg.REG_LEN = $clog2(cfg.REG_COUNT);
     cfg.IALIGN = EXTENSION.C ? 16 : 32;
     cfg.PC_LEN = cfg.IALIGN == 32 ? XLEN - 2 : XLEN - 1;
     cfg.PC_ZEROS = XLEN - cfg.PC_LEN;

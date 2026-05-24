@@ -1,15 +1,15 @@
 // 寄存器布局
 // 0 led
 module LED_LBUS #(
-    parameter int LED_NUM = 8
+    parameter int LED_COUNT = 8
 ) (
     xt_lbus_if.port lb,
-    output logic [LED_NUM-1:0] led = {LED_NUM{1'b1}}
+    output logic [LED_COUNT-1:0] led = {LED_COUNT{1'b1}}
 );
 
   always_ff @(posedge lb.clk) begin
     if (lb.wen) begin
-      led <= lb.wdata[LED_NUM-1:0];
+      led <= lb.wdata[LED_COUNT-1:0];
     end
   end
 

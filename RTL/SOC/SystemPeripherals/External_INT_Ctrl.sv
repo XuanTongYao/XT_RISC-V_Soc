@@ -1,26 +1,26 @@
 // 0:中断启用寄存器  4:待处理中断寄存器
 module External_INT_Ctrl #(
-    parameter int INT_NUM = 32
+    parameter int INT_COUNT = 32
 ) (
     // 总线接口
     xt_hbus32_if.port hb,
 
-    input [INT_NUM-1:0] irq_source,
+    input [INT_COUNT-1:0] irq_source,
     output logic [30:0] custom_int_code,
     output logic mextern_int
 );
   localparam int CUSTOM_CODE_BEGIN = 16;
-  localparam int CODE_WIDTH = $clog2(INT_NUM + CUSTOM_CODE_BEGIN);
+  localparam int CODE_WIDTH = $clog2(INT_COUNT + CUSTOM_CODE_BEGIN);
 
-  logic [INT_NUM-1:0] INT_enable_reg;
-  logic [INT_NUM-1:0] INT_pending_reg;
+  logic [INT_COUNT-1:0] INT_enable_reg;
+  logic [INT_COUNT-1:0] INT_pending_reg;
   always_ff @(posedge hb.clk, posedge hb.rst) begin
     if (hb.rst) begin
       INT_enable_reg  <= 0;
       INT_pending_reg <= 0;
     end else begin
       if (hb.wen && hb.waddr == 'd0) begin
-        INT_enable_reg <= hb.wdata[INT_NUM-1:0];
+        INT_enable_reg <= hb.wdata[INT_COUNT-1:0];
       end
       INT_pending_reg <= irq_source & INT_enable_reg;
     end
@@ -29,7 +29,7 @@ module External_INT_Ctrl #(
 
   always_comb begin
     int id;
-    for (id = 0; id < INT_NUM; ++id) begin
+    for (id = 0; id < INT_COUNT; ++id) begin
       if (INT_pending_reg[id]) begin
         break;
       end

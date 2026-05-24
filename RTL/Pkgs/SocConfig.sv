@@ -25,7 +25,7 @@ package SocConfig;
     M_IDX_CORE = 0  // 内核
   } xt_hb_master_idx_t;
   xt_hb_master_idx_t _xt_hb_master_idx_t = _xt_hb_master_idx_t.first;
-  localparam int HB_MASTER_NUM = _xt_hb_master_idx_t.num;
+  localparam int HB_MASTER_COUNT = _xt_hb_master_idx_t.num;
 
   // 高速总线IO设备索引分配
   typedef enum int {
@@ -36,9 +36,9 @@ package SocConfig;
     IDX_XT_LB          // XT_LB
   } xt_hb_idx_t;
   xt_hb_idx_t _xt_hb_idx_t = _xt_hb_idx_t.first;
-  localparam int HB_DEVICE_NUM = _xt_hb_idx_t.num;
+  localparam int HB_DEVICE_COUNT = _xt_hb_idx_t.num;
   // 设备基准ID分配，分别是上面那些设备
-  localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_NUM-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
+  localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_COUNT-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
 
 
 
@@ -51,7 +51,7 @@ package SocConfig;
     IDX_SOFTWARE_INT
   } hb32_idx_t;
   hb32_idx_t _hb32_idx_t = _hb32_idx_t.first;
-  localparam int HB32_DEVICE_NUM = _hb32_idx_t.num;
+  localparam int HB32_DEVICE_COUNT = _hb32_idx_t.num;
   localparam int HB32_ADDR_WIDTH = 5;
   localparam int HB32_ID_WIDTH = 3;
   localparam int HB32_OFFSET_WIDTH = HB32_ADDR_WIDTH - HB32_ID_WIDTH;

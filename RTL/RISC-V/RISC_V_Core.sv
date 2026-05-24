@@ -1,13 +1,14 @@
 // 模块: RISC-V内核
 // 功能: 处理器内核能够执行RISC-V指令集的指令
-//       目前仅支持RV32I_zicsr指令集
-// 版本: v0.3
+//       目前仅支持RV32I_Zicsr_Sdext指令集
+// 版本: v0.4
 // BUG修复记录:
 //
 // 作者: 姚萱彤
 // <<< 参 数 >>> //
 // INST_FETCH_REG:      读取指令时是否经过寄存器，将决定在IF_ID模块是否对指令延迟一个周期
-// STALL_REQ_NUM:       暂停请求的数量
+// STALL_REQ_COUNT:       暂停请求的数量
+// PC_RESET:            PC寄存器复位值
 //
 // <<< 端 口 >>> //
 // clk:            时钟信号
@@ -23,12 +24,12 @@ module RISC_V_Core
 #(
     parameter core_cfg_t CFG,
     parameter bit INST_FETCH_REG = 0,  // 读取指令时是否已经经过寄存器
-    parameter int STALL_REQ_NUM = 1,  // 暂停请求的数量
+    parameter int STALL_REQ_COUNT = 1,  // 暂停请求的数量
     parameter bit [CFG.XLEN-1:0] PC_RESET = 0
 ) (
     input clk,
     input rst,
-    input [STALL_REQ_NUM-1:0] stall_req,
+    input [STALL_REQ_COUNT-1:0] stall_req,
     output logic core_stall_n,
 
     // 访问指令存储器
@@ -128,7 +129,7 @@ module RISC_V_Core
   // wire [31:0] new_mtval;
   ExceptionCtrl #(.CFG(CFG)) u_ExceptionCtrl (.*);
   CoreCtrl #(
-      .STALL_REQ_NUM(STALL_REQ_NUM),
+      .STALL_REQ_COUNT(STALL_REQ_COUNT),
       .CFG(CFG)
   ) u_CoreCtrl (
       .*

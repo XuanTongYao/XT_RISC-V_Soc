@@ -17,8 +17,8 @@ module DM
     dm_hart_minimal_if.dm dm_hart,
     dm_register_if.dm access_register
 );
-  localparam int unsigned SBADDRESS_NUM = 1;
-  localparam int unsigned SBDATA_NUM = 1;
+  localparam int unsigned SBADDRESS_COUNT = 1;
+  localparam int unsigned SBDATA_COUNT = 1;
 
   // 复位控制
   logic con_reset_tff = 0;
@@ -71,7 +71,7 @@ module DM
 
 
   // sbcs_t              sbcs;
-  // logic        [31:0] sbaddress  [SBADDRESS_NUM];
+  // logic        [31:0] sbaddress  [SBADDRESS_COUNT];
   // logic        [31:0] sbdata     [    DATACOUNT];
 
   assign dmi.rsp_valid = 1;

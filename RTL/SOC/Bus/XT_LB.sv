@@ -1,14 +1,14 @@
 module XT_LB #(
     parameter int ADDR_WIDTH = 8,
-    parameter int ID_WIDTH   = 2,
-    parameter int DEVICE_NUM = 4
+    parameter int ID_WIDTH = 2,
+    parameter int DEVICE_COUNT = 4
 ) (
     // 与高速总线桥接
     xt_hbus_if.port hb,
 
     // 低速总线部分
     input lb_clk,
-    xt_lbus_if.bus devices[DEVICE_NUM]
+    xt_lbus_if.bus devices[DEVICE_COUNT]
 );
   localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
 
@@ -76,7 +76,7 @@ module XT_LB #(
   wire [ID_WIDTH-1:0] r_id = raddr[ADDR_WIDTH-1:OFFSET_WIDTH];
   wire [ID_WIDTH-1:0] w_id = waddr[ADDR_WIDTH-1:OFFSET_WIDTH];
 
-  logic wsel[DEVICE_NUM];
+  logic wsel[DEVICE_COUNT];
   always_comb begin
     wsel = '{default: 1'b0};
     if (lb_state == WRITE) begin
@@ -123,7 +123,7 @@ module XT_LB #(
 
 
   logic [OFFSET_WIDTH-1:0] addr;
-  logic [31:0] rdata[DEVICE_NUM];
+  logic [31:0] rdata[DEVICE_COUNT];
   always_ff @(posedge lb_clk) begin
     unique case (lb_state)
       IDLE: begin
@@ -146,7 +146,7 @@ module XT_LB #(
   end
 
   generate
-    for (genvar i = 0; i < DEVICE_NUM; ++i) begin : gen_device_link
+    for (genvar i = 0; i < DEVICE_COUNT; ++i) begin : gen_device_link
       assign devices[i].clk = lb_clk;
       assign devices[i].rst = rst;
       assign devices[i].addr = addr;

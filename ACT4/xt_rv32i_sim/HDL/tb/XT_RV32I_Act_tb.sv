@@ -24,7 +24,7 @@ module XT_RV32I_Act_tb
   RISC_V_Core #(
       .CFG(CORE_DEFAULT_CFG),
       .INST_FETCH_REG(0),
-      .STALL_REQ_NUM(1),
+      .STALL_REQ_COUNT(1),
       .PC_RESET(RAM_BASE_ADDR)
   ) dut (
       .*

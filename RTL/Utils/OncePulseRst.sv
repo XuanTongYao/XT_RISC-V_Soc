@@ -24,34 +24,34 @@ module OncePulseRst #(
     output logic pulse,
     output logic q
 );
-  localparam int REG_NUM = DELAY + 1;
+  localparam int REG_COUNT = DELAY + 1;
   localparam bit REG_INIT_VAL = TRIGGER == 2'b01 ? 1'b1 : 1'b0;
 
   // 赋初值消除上电误触发
-  logic [REG_NUM-1:0] shift;
+  logic [REG_COUNT-1:0] shift;
   logic detect;  // 倒数第二个移位寄存器/控制信号
   logic detect_delay;  // 最后一个移位寄存器
 
   assign q = detect_delay;
-  assign detect_delay = shift[REG_NUM-1];
+  assign detect_delay = shift[REG_COUNT-1];
   generate
     if (DELAY == 0) begin : gen_single_reg
       assign detect = ctrl;
       always_ff @(posedge clk, posedge rst) begin
         if (rst) begin
-          shift <= {REG_NUM{REG_INIT_VAL}};
+          shift <= {REG_COUNT{REG_INIT_VAL}};
         end else begin
           shift <= ctrl;
         end
       end
     end else begin : gen_normal
-      assign detect = shift[REG_NUM-2];
+      assign detect = shift[REG_COUNT-2];
       always_ff @(posedge clk, posedge rst) begin
         if (rst) begin
-          shift <= {REG_NUM{REG_INIT_VAL}};
+          shift <= {REG_COUNT{REG_INIT_VAL}};
         end else begin
           shift[0] <= ctrl;
-          shift[REG_NUM-1:1] <= shift[REG_NUM-2:0];
+          shift[REG_COUNT-1:1] <= shift[REG_COUNT-2:0];
         end
       end
     end

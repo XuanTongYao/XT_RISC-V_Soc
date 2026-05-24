@@ -36,7 +36,7 @@ module CoreReg
   end
 
   // 0号寄存器X0固定为0
-  logic [CFG.XLEN-1:0] core_reg[CFG.REG_NUMS];
+  logic [CFG.XLEN-1:0] core_reg[CFG.REG_COUNT];
 
   //----------数据控制----------//
   always_comb begin

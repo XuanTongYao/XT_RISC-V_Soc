@@ -1,14 +1,14 @@
 module CoreCtrl
   import CoreConfig::*;
 #(
-    parameter int STALL_REQ_NUM = 1,
+    parameter int STALL_REQ_COUNT = 1,
     parameter core_cfg_t CFG
 ) (
     input clk,
     input rst,
 
     // 来自外部控制
-    input [STALL_REQ_NUM-1:0] stall_req,
+    input [STALL_REQ_COUNT-1:0] stall_req,
 
     // 来自指令执行模块
     input [31:0] jump_addr_ex,
