@@ -65,7 +65,8 @@ package Debug_Pkg;
     logic dmactive;
   } dmcontrol_minimal_t;
   function automatic dmcontrol_t PadDmcontrol(dmcontrol_minimal_t partially);
-    dmcontrol_t fully = '{ndmreset: partially.ndmreset, dmactive: partially.dmactive, default: 0};
+    dmcontrol_t fully;
+    fully = '{ndmreset: partially.ndmreset, dmactive: partially.dmactive, default: 0};
     return fully;
   endfunction
 
@@ -114,7 +115,8 @@ package Debug_Pkg;
     logic anyhalted;
   } dmstatus_minimal_t;
   function automatic dmstatus_t PadDmstatus(dmstatus_minimal_t partially);
-    dmstatus_t fully = '{
+    dmstatus_t fully;
+    fully = '{
         allhavereset: partially.anyhavereset,
         anyhavereset: partially.anyhavereset,
         allresumeack: partially.anyresumeack,
@@ -154,6 +156,25 @@ package Debug_Pkg;
     logic [3:0]  zero_4;
     logic [3:0]  datacount;
   } abstractcs_t;
+  typedef struct packed {
+    // 可变数据
+    logic       busy;
+    logic       relaxedpriv;
+    logic [2:0] cmderr;
+  } abstractcs_variable_t;
+  function automatic abstractcs_t PadAbstractcs(abstractcs_variable_t variable, logic [4:0] progbufsize,
+                                                logic [3:0] datacount);
+    abstractcs_t fully;
+    fully = '{
+        progbufsize: progbufsize,
+        datacount: datacount,
+        busy: variable.busy,
+        relaxedpriv: variable.relaxedpriv,
+        cmderr: variable.cmderr,
+        default: 0
+    };
+    return fully;
+  endfunction
 
   localparam bit [6:0] DM_COMMAND = 7'h17;
   typedef enum bit [7:0] {

@@ -56,7 +56,7 @@ module DM
       };
 
   // cmderr在抽象命令结束后才改变
-  abstractcs_t abstractcs;  // 只有busy和cmderr是可用的
+  abstractcs_variable_t abstractcs;  // 只有busy和cmderr是可用的
   command_t command;
   logic busy_err;
 
@@ -74,16 +74,21 @@ module DM
   // logic        [31:0] sbaddress  [SBADDRESS_COUNT];
   // logic        [31:0] sbdata     [    DATACOUNT];
 
+
+  // 解析写入寄存器
+  wire dmcontrol_t  req_dmcontrol = dmi.req_data;
+  wire abstractcs_t req_abstractcs = dmi.req_data;
+  wire command_t    req_command = dmi.req_data;
+
   assign dmi.rsp_valid = 1;
   wire dmi_req = dmi.req_valid && dmi.req_ready;
   always_ff @(posedge dm_clk) begin  // DMI读取逻辑+无需复位的逻辑
-    automatic dmcontrol_t write_dmcontrol = dmi.req_data;
     if (dmi_req && dmcontrol.dmactive) begin
       if (dmi.req_op == 2'b01) begin  // 读取
         unique case (dmi.req_addr)
           DM_DATA_BASE: dmi.rsp_data <= data[0];
           DM_DMSTATUS: dmi.rsp_data <= PadDmstatus(dmstatus);
-          DM_ABSTRACTCS: dmi.rsp_data <= abstractcs;
+          DM_ABSTRACTCS: dmi.rsp_data <= PadAbstractcs(abstractcs, 0, DATACOUNT);
           DM_COMMAND: dmi.rsp_data <= command;
           default: ;
         endcase
@@ -98,7 +103,7 @@ module DM
     if (dmi_req && dmi.req_addr == DM_DMCONTROL) begin
       if (dmi.req_op == 2'b01) begin  // 读取
         dmi.rsp_data <= PadDmcontrol(dmcontrol);
-      end else if (dmi.req_op == 2'b10 && !write_dmcontrol.dmactive) begin  // 写入
+      end else if (dmi.req_op == 2'b10 && !req_dmcontrol.dmactive) begin  // 写入
         con_reset_tff <= ~con_reset_tff;  // 设置复位并自动释放
       end
     end
@@ -112,15 +117,11 @@ module DM
   end
 
   always_ff @(posedge dm_clk, posedge dm_rst) begin
-    automatic dmcontrol_t write_dmcontrol = dmi.req_data;
-    automatic abstractcs_t write_abstractcs = dmi.req_data;
-    automatic command_t write_command = dmi.req_data;
-
     if (dm_rst) begin
       dmi.req_ready        <= 0;
       dmi.rsp_op           <= 2'b11;
       dmcontrol            <= 0;
-      abstractcs           <= '{datacount: DATACOUNT, progbufsize: 0, default: 0};
+      abstractcs           <= '{default: 0};
       command              <= 0;
       cmd_0                <= 0;
       busy_err             <= 0;
@@ -141,7 +142,7 @@ module DM
       if (dmi_req && dmcontrol.dmactive && dmi.req_op == 2'b10) begin
         unique case (dmi.req_addr)
           DM_ABSTRACTCS: begin
-            if (write_abstractcs.cmderr == 'd1) begin
+            if (req_abstractcs.cmderr == 'd1) begin
               abstractcs.cmderr <= ERR_NONE;
             end
           end
@@ -162,18 +163,18 @@ module DM
       // dmcontrol.dmactive可以在非可用状态下读取和写入
       if (dmi_req && dmi.req_addr == DM_DMCONTROL && dmi.req_op == 2'b10) begin
         if (dmcontrol.dmactive) begin
-          dmcontrol.ndmreset <= write_dmcontrol.ndmreset;
+          dmcontrol.ndmreset <= req_dmcontrol.ndmreset;
           if (!abstractcs.busy) begin  // 不进行抽象命令才允许写入
-            dm_hart.haltreq <= write_dmcontrol.haltreq;
-            if (write_dmcontrol.resumereq && !dm_hart.haltreq) begin
+            dm_hart.haltreq <= req_dmcontrol.haltreq;
+            if (req_dmcontrol.resumereq && !dm_hart.haltreq) begin
               // haltreq时忽略对此的写入
               dm_hart.resumereq <= 1;
               resumeack <= 0;
             end
-            if (write_dmcontrol.ackhavereset) dm_hart.ackhavereset <= 1;
+            if (req_dmcontrol.ackhavereset) dm_hart.ackhavereset <= 1;
           end
         end
-        if (write_dmcontrol.dmactive) dmcontrol.dmactive <= 1;
+        if (req_dmcontrol.dmactive) dmcontrol.dmactive <= 1;
       end
 
       //----------抽象命令----------//

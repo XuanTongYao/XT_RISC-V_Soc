@@ -63,7 +63,7 @@ module CSR
   // wire [31:0] mconfigptr = 32'h0;  // 配置指针（配置数据不存在 只读0）
 
   // 自陷寄存器
-  mstatus_t mstatus;  //状态寄存器
+  mstatus_m_only_t mstatus;  //状态寄存器
   mtvec_t mtvec;  //自陷处理函数基地址
   mie_m_only_t mie;  //中断启用寄存器
   mip_m_only_t mip;  //挂起(待处理)的中断（只读）
@@ -75,7 +75,7 @@ module CSR
   // logic [31:0] mtval;  // 自陷额外信息（只读0实现）
 
   // 连接自陷控制接口
-  assign trap.mstatus = mstatus;
+  assign trap.mstatus = PadMstatus(mstatus);
   assign trap.mie = mie;
   assign trap.mip = mip;
   assign trap.mtvec = mtvec;
@@ -105,7 +105,7 @@ module CSR
   // 调试触发器模块 Sdtrig扩展（不实现）
 
   // Sdext扩展(调试模式)
-  dcsr_only_sdext_t dcsr;
+  dcsr_sdext_only_t dcsr;
   logic [CFG.PC_LEN-1:0] dpc;
   assign debug.dcsr = dcsr;
   assign debug.dpc  = dpc;
@@ -143,7 +143,7 @@ module CSR
           end
           2'b00: begin
             unique case (short_addr)
-              8'h00: rdata = mstatus;
+              8'h00: rdata = PadMstatus(mstatus);
               8'h04: rdata = PadMieMip(mie);
               8'h05: rdata = mtvec;
 
@@ -171,7 +171,7 @@ module CSR
     end else begin
       if (atomic_rw_en && rwaddr.mode == 2'b00) begin
         unique case (short_addr)
-          8'h00:   mstatus <= {24'b0, wdata[7], 3'b0, wdata[3], 3'b0};
+          8'h00:   mstatus <= UnpadMstatus(wdata);
           8'h04:   mie <= {wdata[11], wdata[7], wdata[3]};
           8'h05:   mtvec <= wdata;
           default: ;

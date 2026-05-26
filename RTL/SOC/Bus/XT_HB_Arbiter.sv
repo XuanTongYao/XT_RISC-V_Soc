@@ -20,7 +20,6 @@ module XT_HB_Arbiter #(
       assign write_grant_idx = 0;
     end else begin : gen_polling
 
-      wire rst_sync = rst;
       RoundRobinArbiter #(
           .REQ_COUNT(REQ_COUNT)
       ) u_ReadArbiter (

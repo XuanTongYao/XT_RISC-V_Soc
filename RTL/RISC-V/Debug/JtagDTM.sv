@@ -33,9 +33,8 @@ module JtagDTM
   localparam bit [4:0] IR_BYPASS = 5'h1f;
   // 边界扫描寄存器复用bypass(11.2.1 规则i)
   // SAMPLE_PRELOAD和EXTEST都使用bypass寄存器
-  // update寄存器定义
+  // update寄存器定义(默认选中bypass)
   typedef struct packed {
-    logic bypass;
     logic dmi;
     logic dtmcs;
     logic idcode;
@@ -171,7 +170,7 @@ module JtagDTM
           IR_IDCODE: ir_update <= '{default: 0,idcode: 1'b1};
           IR_DTMCS:  ir_update <= '{default: 0,dtmcs: 1'b1};
           IR_DMI:    ir_update <= '{default: 0,dmi: 1'b1 };
-          default:   ir_update <= '{default: 0,bypass: 1'b1};
+          default:   ir_update <= '{default: 0};
         endcase
       end
       default:          ;

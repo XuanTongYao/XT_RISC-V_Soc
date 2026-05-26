@@ -32,17 +32,17 @@ module FIFO_SC #(
 
   //----------写----------//
   assign full = count == TRUE_DEPTH[PTR_WIDTH:0];
-  wire write_vaild = wen && !full;
+  wire write_valid = wen && !full;
   always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
       write_ptr <= 0;
-    end else if (write_vaild) begin
+    end else if (write_valid) begin
       write_ptr <= write_ptr + 1;
     end
   end
 
   always_ff @(posedge clk) begin
-    if (write_vaild) begin
+    if (write_valid) begin
       fifo[write_ptr] <= data;
     end
   end
@@ -50,12 +50,12 @@ module FIFO_SC #(
 
   //----------读----------//
   assign empty = count == 0;
-  wire read_vaild = ren && !empty;
-  wire [PTR_WIDTH-1:0] next_read_ptr = read_ptr + 1;
+  wire read_valid = ren && !empty;
+  wire [PTR_WIDTH-1:0] next_read_ptr = read_ptr + 'd1;
   always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
       read_ptr <= 0;
-    end else if (read_vaild) begin
+    end else if (read_valid) begin
       read_ptr <= next_read_ptr;
     end
   end
@@ -64,16 +64,14 @@ module FIFO_SC #(
     if (SHOW_AHEAD) begin : g_show_ahead
       always_ff @(posedge clk) begin
         if (empty) begin
-          if (wen) begin
-            q <= data;
-          end
-        end else if (read_vaild) begin
+          if (wen) q <= data;
+        end else if (read_valid) begin
           q <= fifo[next_read_ptr];
         end
       end
     end else begin : g_normal
       always_ff @(posedge clk) begin
-        if (read_vaild) begin
+        if (read_valid) begin
           q <= fifo[read_ptr];
         end
       end
@@ -85,10 +83,10 @@ module FIFO_SC #(
   always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
       count <= 0;
-    end else if (write_vaild && !read_vaild) begin
-      count <= count + 1;
-    end else if (!write_vaild && read_vaild) begin
-      count <= count - 1;
+    end else if (write_valid && !read_valid) begin
+      count <= count + 'd1;
+    end else if (!write_valid && read_valid) begin
+      count <= count - 'd1;
     end
   end
 

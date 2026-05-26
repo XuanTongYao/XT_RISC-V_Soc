@@ -23,7 +23,6 @@ module XT_HB #(
     xt_hbus_rsp_if.bus     rsp_master[MASTER_COUNT],
     xt_hbus_if.bus         devices   [DEVICE_COUNT]
 );
-  localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
 
   // 提前声明
   logic [31:0] hb_rdata;
@@ -56,7 +55,7 @@ module XT_HB #(
   logic [MASTER_COUNT-1:0] read_req, write_req;
   logic [MASTER_COUNT-1:0] read_grant, write_grant;
 
-  logic read_finished, write_finished;
+  logic read_finished, write_finished;  // 提前声明
   wire [MASTER_COUNT-1:0] read_rsp = {MASTER_COUNT{read_finished}};
   wire [MASTER_COUNT-1:0] write_rsp = {MASTER_COUNT{write_finished}};
   logic [MASTER_COUNT-1:0] read_stall, write_stall, stall_req;
@@ -108,6 +107,7 @@ module XT_HB #(
 
 
   // 片选生成
+  localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
   localparam int SEL_IDX_WIDTH = (DEVICE_COUNT == 1) ? 1 : $clog2(DEVICE_COUNT);
   logic [DEVICE_COUNT-1:0] sel[2];
   logic [SEL_IDX_WIDTH-1:0] sel_idx[2];

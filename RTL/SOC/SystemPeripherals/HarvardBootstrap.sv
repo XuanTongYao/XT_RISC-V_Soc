@@ -15,8 +15,8 @@ module HarvardBootstrap (
     input download_mode
 );
 
-  // 地址读后自增
-  logic [5:0] rom_addr = 0;
+  // 地址读后自增(使用前必须写入正确地址)
+  logic [5:0] rom_addr;
   wire  [7:0] rom_data;
   rom_str u_rom_str (
       .Address(rom_addr),
