@@ -29,6 +29,6 @@ fn main() -> ! {
     }
 }
 
-const fn bit_is_1(num: u16, bit: u8) -> bool {
+const fn bit_is_1(num: u8, bit: u8) -> bool {
     (num & (1 << bit)) != 0
 }

@@ -4,8 +4,8 @@
 
 use riscv::interrupt::Interrupt::*;
 use xt_riscv_mcu::entry;
+use xt_riscv_mcu::hb32::{EintController, Mtime, Uart};
 use xt_riscv_mcu::lb::{LED, LEDSD};
-use xt_riscv_mcu::system_peripheral::{EintController, Mtime, Uart};
 use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, set_interrupt};
 
 #[entry]

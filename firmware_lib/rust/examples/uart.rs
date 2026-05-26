@@ -4,7 +4,7 @@
 use core::mem::MaybeUninit;
 
 use xt_riscv_mcu::entry;
-use xt_riscv_mcu::system_peripheral::Uart;
+use xt_riscv_mcu::hb32::Uart;
 
 // 这里也会出现C程序的问题，'!'字符打印不出来，怀疑是其他部分
 // 已经解决了，是链接脚本没对齐4字节导致的

@@ -4,8 +4,8 @@
 use core::arch::asm;
 
 use xt_riscv_mcu::entry;
-use xt_riscv_mcu::system_peripheral::BootstrapPreloadStr;
-use xt_riscv_mcu::system_peripheral::{Bootstrap, Uart};
+use xt_riscv_mcu::hb32::BootstrapPreloadStr;
+use xt_riscv_mcu::hb32::{Bootstrap, Uart};
 use xt_riscv_mcu::wisbone::Flash;
 
 const MAX_TEXT_DATA_LEN: usize = 4096 + 4096 - 512;

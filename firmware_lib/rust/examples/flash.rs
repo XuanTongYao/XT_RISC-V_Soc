@@ -2,7 +2,7 @@
 #![no_main]
 
 use xt_riscv_mcu::entry;
-use xt_riscv_mcu::system_peripheral::Uart;
+use xt_riscv_mcu::hb32::Uart;
 use xt_riscv_mcu::wisbone::Flash;
 
 const TEST_DATA: [u8; 16] = arr_range::<16>();

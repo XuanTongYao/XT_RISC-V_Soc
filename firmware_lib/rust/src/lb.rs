@@ -48,6 +48,7 @@ pub mod regs {
         __: u8,
     }
     seq!(N in 0..=7 {
+        #[deprecated = "此外设已被hb32::Gpio代替"]
         pub enum AfControlSel {
             #(
                 Sel~N,
@@ -122,19 +123,23 @@ impl KeySwitch {
     crate::get_value!(switch, switch, u8);
 }
 
+#[deprecated = "此外设已被hb32::Gpio代替"]
 pub type AfGpio = Peripheral<regs::AfGpio, { lb_base(PeripheralId::AfGpio) }>;
 use regs::AfControl;
 pub use regs::AfControlSel;
+#[deprecated = "此外设已被hb32::Gpio代替"]
 #[derive(Clone, Copy)]
 pub enum InAF {
     TimerRst,
     TimerInput,
 }
+#[deprecated = "此外设已被hb32::Gpio代替"]
 #[derive(Clone, Copy)]
 pub enum OutAF {
     TimerOutput,
     SpiCs2,
 }
+#[deprecated = "此外设已被hb32::Gpio代替"]
 pub enum GpioAlternateFunction {
     Input(InAF),
     Output(OutAF),

@@ -2,7 +2,7 @@
 #![no_main]
 
 use xt_riscv_mcu::entry;
-use xt_riscv_mcu::system_peripheral::Uart;
+use xt_riscv_mcu::hb32::Uart;
 use xt_riscv_mcu::wisbone::I2C;
 
 const SSD1306_ADDR: u8 = 0x78;

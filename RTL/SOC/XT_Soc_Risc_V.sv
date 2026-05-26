@@ -2,8 +2,7 @@
 module XT_Soc_Risc_V
   import SocConfig::*;
 #(
-    parameter int GPIO_COUNT = 28,
-    parameter int CSN_COUNT  = 2    // 专用SPI片选引脚
+    parameter int CSN_COUNT = 2  // 专用SPI片选引脚
 ) (
     input                         clk_osc,
     input                         rst_sw,
@@ -232,6 +231,21 @@ module XT_Soc_Risc_V
       .hb(hb32_if[IDX_SOFTWARE_INT])
   );
 
+  wire funct_in [ AF_FUNCT_IN_COUNT];
+  wire funct_out[AF_FUNCT_OUT_COUNT];
+  AF_GPIO_BUS #(
+      // 数量不能超过32个
+      .COUNT          (GPIO_COUNT),
+      .FUNCT_IN_COUNT (AF_FUNCT_IN_COUNT),
+      .FUNCT_OUT_COUNT(AF_FUNCT_OUT_COUNT),
+      .AF_CFGS        (AF_CFGS)
+  ) u_AF_GPIO_BUS (
+      .hb       (hb32_if[IDX_GPIO]),
+      .funct_in (funct_in),
+      .funct_out(funct_out),
+      .gpio     (gpio)
+  );
+
 
   //----------WISHBONE总线外设----------//
   wire wb_rst_i, wb_clk_i;
@@ -263,11 +277,12 @@ module XT_Soc_Risc_V
 
   localparam int ALL_CSN_COUNT = 3;
   wire ufm_sn = 1;
-  wire tc_rst, tc_ic, tc_oc;  // 定时器的功能复用
-  wire tc_rstn = !tc_rst;
+  //   wire tc_rst, tc_ic, tc_oc;  // 定时器的功能复用
+  //   wire tc_rstn = !tc_rst;
   wire [ALL_CSN_COUNT-1:0] all_spi_csn;
   assign spi_csn = all_spi_csn[CSN_COUNT-1:0];
   wire [ALL_CSN_COUNT-CSN_COUNT-1:0] af_spi_csn = all_spi_csn[ALL_CSN_COUNT-1:CSN_COUNT];
+  assign funct_out[SPI_CSN] = af_spi_csn;
   efb u_efb (
       .*,
       .tc_clki(clk_osc),
@@ -276,11 +291,17 @@ module XT_Soc_Risc_V
       .spi_irq(irq_source[10]),
       .tc_int(irq_source[11]),
       .wbc_ufm_irq(irq_source[12]),
-      .spi_csn(all_spi_csn)
+      .spi_csn(all_spi_csn),
+
+      .tc_ic  (funct_in[TIMER_IN]),
+      .tc_rstn(!funct_in[TIMER_RST]),
+
+      .tc_oc(funct_out[TIMER_OUT])
   );
 
 
   //----------低速总线及其外设----------//
+  // 暂时保留AF_GPIO_LBUS，不破坏地址分配
   localparam int LB_ADDR_WIDTH = 8, LB_ID_WIDTH = 2, LB_DEVICE_COUNT = 4;
   localparam int LB_OFFSET_WIDTH = LB_ADDR_WIDTH - LB_ID_WIDTH;
   xt_lbus_if #(.OFFSET_WIDTH(LB_OFFSET_WIDTH)) lb_if[LB_DEVICE_COUNT] ();
@@ -300,24 +321,24 @@ module XT_Soc_Risc_V
       .sw_raw({sw_raw, download_mode})
   );
 
-  localparam int AF_FUNCT_IN_COUNT = 2;
-  wire funct_in[AF_FUNCT_IN_COUNT];
-  assign tc_rst = funct_in[0];
-  assign tc_ic  = funct_in[1];
-  AF_GPIO_LBUS #(
-      .COUNT          (GPIO_COUNT),
-      .FUNCT_IN_COUNT (AF_FUNCT_IN_COUNT),
-      .FUNCT_IN_MASK  ('{32'h0000_00FF, 32'h0000_00FF}),
-      .FUNCT_OUT_COUNT(2),
-      .FUNCT_OUT_MASK ('{32'h1FE0_0000, 32'h1FE0_0000})
-  ) u_AF_GPIO_LBUS (
-      .*,
-      .gpio_clk (clk),
-      .lb       (lb_if[1]),
-      .funct_in (funct_in),
-      .funct_out({tc_oc, af_spi_csn}),
-      .gpio     (gpio)
-  );
+  //   localparam int AF_FUNCT_IN_COUNT = 2;
+  //   wire funct_in[AF_FUNCT_IN_COUNT];
+  //   assign tc_rst = funct_in[0];
+  //   assign tc_ic  = funct_in[1];
+  //   AF_GPIO_LBUS #(
+  //       .COUNT          (GPIO_COUNT),
+  //       .FUNCT_IN_COUNT (AF_FUNCT_IN_COUNT),
+  //       .FUNCT_IN_MASK  ('{32'h0000_00FF, 32'h0000_00FF}),
+  //       .FUNCT_OUT_COUNT(2),
+  //       .FUNCT_OUT_MASK ('{32'h1FE0_0000, 32'h1FE0_0000})
+  //   ) u_AF_GPIO_LBUS (
+  //       .*,
+  //       .gpio_clk (clk),
+  //       .lb       (lb_if[1]),
+  //       .funct_in (funct_in),
+  //       .funct_out({tc_oc, af_spi_csn}),
+  //       .gpio     (gpio)
+  //   );
 
   LED_LBUS #(
       .LED_COUNT(8)

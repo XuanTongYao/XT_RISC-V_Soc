@@ -25,9 +25,9 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
 
 mod macros;
 
+pub mod hb32;
 pub mod lb;
 pub mod rv_core;
-pub mod system_peripheral;
 pub mod wisbone;
 
 pub use rv_core::*;

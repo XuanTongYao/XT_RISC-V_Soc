@@ -1,5 +1,6 @@
 package SocConfig;
   import CoreConfig::*;
+  import AfGpio_Pkg::*;
 
   //----------内核配置----------//
   localparam core_raw_cfg_t CORE_RAW_CFG = '{EXTENSION: '{E: 0, default: 0}, XLEN: 32};
@@ -48,14 +49,45 @@ package SocConfig;
     IDX_EINT_CTRL,
     IDX_SYSTEM_TIMER,
     IDX_UART,
-    IDX_SOFTWARE_INT
+    IDX_SOFTWARE_INT,
+    IDX_GPIO
   } hb32_idx_t;
   hb32_idx_t _hb32_idx_t = _hb32_idx_t.first;
   localparam int HB32_DEVICE_COUNT = _hb32_idx_t.num;
-  localparam int HB32_ADDR_WIDTH = 5;
+  localparam int HB32_ADDR_WIDTH = 6;
   localparam int HB32_ID_WIDTH = 3;
   localparam int HB32_OFFSET_WIDTH = HB32_ADDR_WIDTH - HB32_ID_WIDTH;
 
+
+  //----------GPIO----------//
+  localparam int GPIO_COUNT = 28;
+
+  // 复用功能ID
+  typedef enum int {
+    TIMER_IN  = 0,
+    TIMER_RST
+  } af_in_id_t;
+  typedef enum int {
+    TIMER_OUT = 0,
+    SPI_CSN
+  } af_out_id_t;
+
+  localparam gpio_af_cfg_t IN_OUT_0_1 = '{
+      in_valid: 1'b1,
+      out_valid: 1'b1,
+      in_sel: '{TIMER_IN, TIMER_RST, TIMER_IN, TIMER_RST},
+      out_sel: '{TIMER_OUT, SPI_CSN, TIMER_OUT, SPI_CSN}
+  };
+
+  localparam int AF_FUNCT_IN_COUNT = 2;
+  localparam int AF_FUNCT_OUT_COUNT = 2;
+  localparam gpio_af_cfg_t AF_CFGS[GPIO_COUNT] = '{
+      0: IN_OUT_0_1,
+      1: IN_OUT_0_1,
+      2: IN_OUT_0_1,
+      3: IN_OUT_0_1,
+      default: NONE_AF_CFG
+  };
 
 endpackage
 

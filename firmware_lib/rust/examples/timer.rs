@@ -6,8 +6,8 @@ use AfControlSel::{Sel6, Sel7};
 use core::sync::atomic::{AtomicU16, Ordering};
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
+use xt_riscv_mcu::hb32::{EintController, Uart};
 use xt_riscv_mcu::lb::{AfControlSel, AfGpio, GpioAlternateFunction, OutAF};
-use xt_riscv_mcu::system_peripheral::{EintController, Uart};
 use xt_riscv_mcu::wisbone::Timer;
 use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
 

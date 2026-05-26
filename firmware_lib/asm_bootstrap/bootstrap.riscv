@@ -19,7 +19,7 @@
 
 .equ SP_BASE, 8192
 .equ BOOTSTRAP_BASE, 8192
-.equ UART_BASE, 8240
+.equ UART_BASE, 8288
 
 # flash读写的地址，都是自动+1的
 # flash每页为16字节，页对齐到16字节

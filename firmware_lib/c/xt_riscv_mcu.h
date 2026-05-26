@@ -117,7 +117,7 @@ typedef dword_reg_ptr           wo_dword_reg_ptr;
 
 //----------------系统外设----------------//
 // 地址位宽
-#define SP_ADDR_LEN 5
+#define SP_ADDR_LEN 6
 #define SP_ID_LEN 3
 #define SP_OFFSET_LEN (SP_ADDR_LEN-SP_ID_LEN)
 #define SP_ID_START_BIT (SP_OFFSET_LEN+2)

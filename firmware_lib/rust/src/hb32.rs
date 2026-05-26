@@ -1,23 +1,24 @@
-//! 系统级外设，包含外部中断控制器、mtime等
+//! 高速32bit对齐总线
 
 use volatile_register::RW;
 
 use crate::common::Peripheral;
-const DOMAIN_SP_BASE: usize = crate::common::domain_base(2);
-const SP_ADDR_LEN: usize = 5;
-const SP_ID_LEN: usize = 3;
-const SP_OFFSET_LEN: usize = SP_ADDR_LEN - SP_ID_LEN;
-const SP_ID_START_BIT: usize = SP_OFFSET_LEN + 2;
+const DOMAIN_HB32_BASE: usize = crate::common::domain_base(2);
+const HB32_ADDR_LEN: usize = 6;
+const HB32_ID_LEN: usize = 3;
+const HB32_OFFSET_LEN: usize = HB32_ADDR_LEN - HB32_ID_LEN;
+const HB32_ID_START_BIT: usize = HB32_OFFSET_LEN + 2;
 enum PeripheralId {
     Bootstrap,
     EintController,
     Mtime,
     Uart,
     SoftwareInt,
+    Gpio,
 }
 
 const fn sp_base(statr_id: PeripheralId) -> usize {
-    DOMAIN_SP_BASE + ((statr_id as usize) << SP_ID_START_BIT)
+    DOMAIN_HB32_BASE + ((statr_id as usize) << HB32_ID_START_BIT)
 }
 
 pub mod regs {
@@ -71,11 +72,20 @@ pub mod regs {
         __: u32,
     }
 
-    #[bitfield(u16)]
+    #[bitfield(u32)]
     pub struct MSoftwareInt {
-        #[bits(15)]
-        pub int_code: u16,
+        #[bits(31)]
+        pub cause: u32,
         pub pending: bool,
+    }
+
+    #[repr(C)]
+    pub struct Gpio {
+        pub direction: RW<u32>,
+        pub data: RW<u32>,
+        pub af_enable: RW<u32>,
+        pub afl: RW<u32>,
+        pub afh: RW<u32>,
     }
 }
 
@@ -299,11 +309,64 @@ pub type MSoftwareInt = Peripheral<RW<regs::MSoftwareInt>, { sp_base(PeripheralI
 impl MSoftwareInt {
     pub const SINGLETON: MSoftwareInt = unsafe { MSoftwareInt::from_ptr(MSoftwareInt::BASE as _) };
 
-    crate::getset_field!(code,,int_code,u16);
+    crate::getset_field!(cause,,cause,u32);
     crate::getset_field!(pending,,pending,bool);
 
     #[inline(always)]
-    pub fn set(&mut self, value: u16) {
+    pub fn set(&mut self, value: u32) {
         unsafe { self.reg().write(value.into()) }
+    }
+}
+
+pub type Gpio = Peripheral<regs::Gpio, { sp_base(PeripheralId::Gpio) }>;
+seq_macro::seq!(N in 0..=31 {
+    #[derive(Clone, Copy)]
+    pub enum AFGPIO {
+        #(
+            GPIO~N,
+        )*
+    }
+});
+impl Gpio {
+    pub const SINGLETON: Gpio = unsafe { Gpio::from_ptr(Gpio::BASE as _) };
+
+    /// 有效GPIO数量
+    pub const VALID_COUNT: u32 = 28;
+
+    crate::getset_value!(direction, direction, u32);
+    crate::getset_value!(data, data, u32);
+    crate::getset_value!(af_enable, af_enable, u32);
+
+    pub fn set_af(&mut self, gpio: AFGPIO, af: u8) {
+        if gpio as u32 >= Self::VALID_COUNT {
+            return;
+        }
+
+        if gpio as u32 >= 16 {
+            let offset = ((gpio as u32) - 16) << 1;
+            unsafe {
+                self.reg()
+                    .afh
+                    .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | ((af as u32) << offset));
+            }
+        } else {
+            let offset = (gpio as u32) << 1;
+            unsafe {
+                self.reg()
+                    .afl
+                    .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | ((af as u32) << offset));
+            }
+        };
+    }
+
+    #[inline(always)]
+    pub fn af(&mut self, gpio: AFGPIO) -> u8 {
+        if gpio as u32 >= 16 {
+            let offset = ((gpio as u32) - 16) << 1;
+            ((self.reg().afh.read() >> offset) & 0b11) as u8
+        } else {
+            let offset = (gpio as u32) << 1;
+            ((self.reg().afl.read() >> offset) & 0b11) as u8
+        }
     }
 }
