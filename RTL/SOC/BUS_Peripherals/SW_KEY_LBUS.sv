@@ -1,6 +1,6 @@
 // 寄存器布局
-// 0-1 key_reg
-// 2-3 switch_reg
+// 0 key_reg
+// 1 switch_reg
 module SW_KEY_LBUS (
     xt_lbus_if.port lb,
     input [3:0] key_raw,
@@ -22,7 +22,7 @@ module SW_KEY_LBUS (
 
   //----------读取----------//
   always_comb begin
-    if (lb.addr[1:0] == 'd0) begin
+    if (lb.addr[0] == 'd0) begin
       lb.rdata = 32'(~key_reg);
     end else begin
       lb.rdata = 32'(switch_reg);

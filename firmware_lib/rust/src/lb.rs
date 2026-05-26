@@ -26,8 +26,8 @@ pub mod regs {
 
     #[repr(C)]
     pub struct KeySwitch {
-        pub key: RO<u16>, // 按下时为高电平(已经在硬件做了翻转)
-        pub switch: RO<u16>,
+        pub key: RO<u8>, // 按下时为高电平(已经在硬件做了翻转)
+        pub switch: RO<u8>,
     }
 
     #[repr(C)]
@@ -118,8 +118,8 @@ pub mod regs {
 pub type KeySwitch = Peripheral<regs::KeySwitch, { lb_base(PeripheralId::KeySwitch) }>;
 impl KeySwitch {
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
-    crate::get_value!(key, key, u16);
-    crate::get_value!(switch, switch, u16);
+    crate::get_value!(key, key, u8);
+    crate::get_value!(switch, switch, u8);
 }
 
 pub type AfGpio = Peripheral<regs::AfGpio, { lb_base(PeripheralId::AfGpio) }>;
