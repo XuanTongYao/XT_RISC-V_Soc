@@ -10,7 +10,7 @@ const LB_OFFSET_LEN: usize = LB_ADDR_LEN - LB_ID_LEN;
 const LB_ID_START_BIT: usize = LB_OFFSET_LEN;
 enum PeripheralId {
     KeySwitch,
-    AfGpio,
+    AfGpio, // 暂时占用，避免改变原地址
     LED,
     LEDSD,
 }
@@ -21,82 +21,12 @@ const fn lb_base(statr_id: PeripheralId) -> usize {
 
 pub mod regs {
     use bitfield_struct::bitfield;
-    use seq_macro::seq;
     use volatile_register::{RO, RW};
 
     #[repr(C)]
     pub struct KeySwitch {
         pub key: RO<u8>, // 按下时为高电平(已经在硬件做了翻转)
         pub switch: RO<u8>,
-    }
-
-    #[repr(C)]
-    pub struct AfGpio {
-        pub direction: RW<u32>,
-        pub data: RW<u32>,
-        pub in_af_control: RW<FunctAfControl>,
-        pub out_af_control: RW<FunctAfControl>,
-    }
-
-    #[bitfield(u8)]
-    pub struct AfControl {
-        #[bits(3)]
-        pub sel: u8,
-        #[bits(1)]
-        pub enbale: bool,
-        #[bits(4)]
-        __: u8,
-    }
-    seq!(N in 0..=7 {
-        #[deprecated = "此外设已被hb32::Gpio代替"]
-        pub enum AfControlSel {
-            #(
-                Sel~N,
-            )*
-        }
-    });
-
-    seq!(N in 0..=7 {
-        #[bitfield(u32)]
-        pub struct FunctAfControl {
-            #(
-                #[bits(4)]
-                pub con~N: AfControl,
-            )*
-        }
-    });
-    impl FunctAfControl {
-        #[inline(always)]
-        pub const fn get_control(self: Self, index: u8) -> AfControl {
-            seq!(N in 0..7 {
-                match index {
-                    #( N => self.con~N(), )*
-                    _ => self.con7(),
-                }
-            })
-        }
-
-        #[inline(always)]
-        pub const fn modify_control(
-            self: Self,
-            index: u8,
-            sel: Option<AfControlSel>,
-            enable: Option<bool>,
-        ) -> FunctAfControl {
-            let mut con = self.get_control(index);
-            if let Some(sel) = sel {
-                con.set_sel(sel as u8);
-            }
-            if let Some(enable) = enable {
-                con.set_enbale(enable);
-            }
-            seq!(N in 0..7 {
-                match index {
-                    #( N => self.with_con~N(con), )*
-                    _ => self.with_con7(con),
-                }
-            })
-        }
     }
 
     #[repr(C)]
@@ -121,65 +51,6 @@ impl KeySwitch {
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
     crate::get_value!(key, key, u8);
     crate::get_value!(switch, switch, u8);
-}
-
-#[deprecated = "此外设已被hb32::Gpio代替"]
-pub type AfGpio = Peripheral<regs::AfGpio, { lb_base(PeripheralId::AfGpio) }>;
-use regs::AfControl;
-pub use regs::AfControlSel;
-#[deprecated = "此外设已被hb32::Gpio代替"]
-#[derive(Clone, Copy)]
-pub enum InAF {
-    TimerRst,
-    TimerInput,
-}
-#[deprecated = "此外设已被hb32::Gpio代替"]
-#[derive(Clone, Copy)]
-pub enum OutAF {
-    TimerOutput,
-    SpiCs2,
-}
-#[deprecated = "此外设已被hb32::Gpio代替"]
-pub enum GpioAlternateFunction {
-    Input(InAF),
-    Output(OutAF),
-}
-impl AfGpio {
-    pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
-
-    crate::getset_value!(direction, direction, u32);
-    crate::getset_value!(data, data, u32);
-
-    #[inline(always)]
-    pub fn af_control(&self, gpio_af: GpioAlternateFunction) -> AfControl {
-        use GpioAlternateFunction::{Input, Output};
-        match gpio_af {
-            Input(af) => self.reg().in_af_control.read().get_control(af as u8),
-            Output(af) => self.reg().out_af_control.read().get_control(af as u8),
-        }
-    }
-
-    #[inline(always)]
-    pub fn set_af_control(
-        &mut self,
-        gpio_af: GpioAlternateFunction,
-        sel: Option<AfControlSel>,
-        enable: Option<bool>,
-    ) {
-        use GpioAlternateFunction::{Input, Output};
-        unsafe {
-            match gpio_af {
-                Input(af) => self
-                    .reg()
-                    .in_af_control
-                    .modify(|fac| fac.modify_control(af as u8, sel, enable)),
-                Output(af) => self
-                    .reg()
-                    .out_af_control
-                    .modify(|fac| fac.modify_control(af as u8, sel, enable)),
-            };
-        }
-    }
 }
 
 pub type LED = Peripheral<RW<u8>, { lb_base(PeripheralId::LED) }>;
