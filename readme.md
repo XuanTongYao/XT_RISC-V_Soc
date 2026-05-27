@@ -42,9 +42,9 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 ## MCU特性
 
-[![架构图](assets/架构图.drawio.svg "架构图")](assets/架构图.drawio.svg)
+[![架构图](assets/架构图.svg "架构图")](assets/架构图.svg)
 
-[![地址映射](assets/内存映射.drawio.svg "内存地址映射")](assets/内存映射.drawio.svg)
+[![地址映射](assets/内存映射.svg "内存地址映射")](assets/内存映射.svg)
 
 ### RV32I_Zicsr_Sdext内核
 
@@ -223,7 +223,7 @@ emoji提示`💾下载 🛫启动 🔛开始 ✅完成 ❌错误`
 
 引脚图来源于[该核心板的参考资料](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)
 
-[![硬件对照图](assets/引脚图.drawio.svg "引脚图")](assets/引脚图.drawio.svg)
+[![硬件对照图](assets/引脚图.svg "引脚图")](assets/引脚图.svg)
 
 每个GPIO可以从四个复用功能中，选中某一个复用功能进行复用，允许多个引脚复用相同的功能
 
