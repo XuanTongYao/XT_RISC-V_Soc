@@ -79,6 +79,27 @@ macro_rules! set_value {
 }
 
 #[macro_export]
+macro_rules! modify_value {
+    ($(#[$doc:meta])* unsafe $name:ident, $($reg:ident)?, $t:ty) => {
+        $crate::modify_value!(@impl $(#[$doc])*, (unsafe), $name, $($reg)?, $t);
+    };
+    ($(#[$doc:meta])* $name:ident, $($reg:ident)?, $t:ty) => {
+        $crate::modify_value!(@impl $(#[$doc])*, (), $name, $($reg)?, $t);
+    };
+    (@impl $(#[$doc:meta])*, ($($unsafe:tt)?), $name:ident, $($reg:ident)?, $t:ty) => {
+        paste::paste! {
+            $(#[$doc])*
+            #[inline(always)]
+            pub $($unsafe)? fn [<modify_ $name>]<F>(&mut self, f: F)
+                where F: FnOnce($t) -> $t
+            {
+                unsafe { self.reg(). $($reg.)? modify(f) }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! getset_value {
     ($(#[$doc:meta])* unsafe $name:ident, $($reg:ident)?, $t:ty) => {
         $crate::get_value!($(#[$doc])* unsafe $name, $($reg)?, $t);
@@ -87,5 +108,17 @@ macro_rules! getset_value {
     ($(#[$doc:meta])* $name:ident, $($reg:ident)?, $t:ty) => {
         $crate::get_value!($(#[$doc])* $name, $($reg)?, $t);
         $crate::set_value!($(#[$doc])* $name, $($reg)?, $t);
+    };
+}
+
+#[macro_export]
+macro_rules! getsetm_value {
+    ($(#[$doc:meta])* unsafe $name:ident, $($reg:ident)?, $t:ty) => {
+        $crate::getset_value!($(#[$doc])* unsafe $name, $($reg)?, $t);
+        $crate::modify_value!($(#[$doc])* unsafe $name, $($reg)?, $t);
+    };
+    ($(#[$doc:meta])* $name:ident, $($reg:ident)?, $t:ty) => {
+        $crate::getset_value!($(#[$doc])* $name, $($reg)?, $t);
+        $crate::modify_value!($(#[$doc])* $name, $($reg)?, $t);
     };
 }

@@ -319,54 +319,46 @@ impl MSoftwareInt {
 }
 
 pub type Gpio = Peripheral<regs::Gpio, { sp_base(PeripheralId::Gpio) }>;
-seq_macro::seq!(N in 0..=31 {
-    #[derive(Clone, Copy)]
-    pub enum AFGPIO {
-        #(
-            GPIO~N,
-        )*
-    }
-});
 impl Gpio {
     pub const SINGLETON: Gpio = unsafe { Gpio::from_ptr(Gpio::BASE as _) };
 
     /// 有效GPIO数量
     pub const VALID_COUNT: u32 = 28;
 
-    crate::getset_value!(direction, direction, u32);
-    crate::getset_value!(data, data, u32);
-    crate::getset_value!(af_enable, af_enable, u32);
+    crate::getsetm_value!(direction, direction, u32);
+    crate::getsetm_value!(data, data, u32);
+    crate::getsetm_value!(af_enable, af_enable, u32);
 
-    pub fn set_af(&mut self, gpio: AFGPIO, af: u8) {
-        if gpio as u32 >= Self::VALID_COUNT {
+    pub fn set_af(&mut self, gpio: u32, af: u32) {
+        if gpio >= Self::VALID_COUNT {
             return;
         }
 
-        if gpio as u32 >= 16 {
-            let offset = ((gpio as u32) - 16) << 1;
+        if gpio >= 16 {
+            let offset = (gpio - 16) << 1;
             unsafe {
                 self.reg()
                     .afh
-                    .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | ((af as u32) << offset));
+                    .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | (af << offset));
             }
         } else {
-            let offset = (gpio as u32) << 1;
+            let offset = (gpio) << 1;
             unsafe {
                 self.reg()
                     .afl
-                    .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | ((af as u32) << offset));
+                    .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | (af << offset));
             }
         };
     }
 
     #[inline(always)]
-    pub fn af(&mut self, gpio: AFGPIO) -> u8 {
+    pub fn af(&mut self, gpio: u32) -> u32 {
         if gpio as u32 >= 16 {
-            let offset = ((gpio as u32) - 16) << 1;
-            ((self.reg().afh.read() >> offset) & 0b11) as u8
+            let offset = (gpio - 16) << 1;
+            (self.reg().afh.read() >> offset) & 0b11
         } else {
-            let offset = (gpio as u32) << 1;
-            ((self.reg().afl.read() >> offset) & 0b11) as u8
+            let offset = gpio << 1;
+            (self.reg().afl.read() >> offset) & 0b11
         }
     }
 }

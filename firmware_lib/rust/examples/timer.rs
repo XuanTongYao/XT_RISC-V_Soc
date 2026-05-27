@@ -2,17 +2,15 @@
 #![no_main]
 #![feature(abi_riscv_interrupt)]
 
-use AfControlSel::{Sel6, Sel7};
 use core::sync::atomic::{AtomicU16, Ordering};
 use riscv::interrupt::Interrupt;
 use xt_riscv_mcu::entry;
-use xt_riscv_mcu::hb32::{EintController, Uart};
-use xt_riscv_mcu::lb::{AfControlSel, AfGpio, GpioAlternateFunction, OutAF};
+use xt_riscv_mcu::hb32::{EintController, Gpio, Uart};
+use xt_riscv_mcu::lb::LEDSD;
 use xt_riscv_mcu::wisbone::Timer;
 use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
 
-const TIMER_AF: GpioAlternateFunction = GpioAlternateFunction::Output(OutAF::TimerOutput);
-const SPI_AF: GpioAlternateFunction = GpioAlternateFunction::Output(OutAF::SpiCs2);
+const RGB_MASK: u32 = 0b111_111 << 24;
 
 #[entry]
 fn main() -> ! {
@@ -24,9 +22,16 @@ fn main() -> ! {
     }
     let mut uart = Uart::SINGLETON;
     let mut timer = Timer::SINGLETON;
-    let mut gpio = AfGpio::SINGLETON;
-    gpio.set_direction(0xFC000000);
-    gpio.set_data(0xFC000000);
+    let mut gpio = Gpio::SINGLETON;
+    let mut ledsd = LEDSD::SINGLETON;
+    ledsd.set_digit(0b11); // 关闭LED数码管
+    // 控制2xRGB灯珠6个引脚 与 GPIO0
+    gpio.set_direction(RGB_MASK | 0b1); // 设为输出模式
+    gpio.set_data(RGB_MASK); // 熄灭(共阳极)
+    for i in 24..=29 {
+        gpio.set_af(i, 0); // 配置复用到定时器输出
+    }
+    gpio.set_af(0, 0);
     loop {
         let cmd = uart.rx_block();
         match cmd {
@@ -36,12 +41,14 @@ fn main() -> ! {
             0x03 => clkdiv_down(&mut timer),
             0x04 => breathing_light(&mut timer, &mut gpio),
             0x05 => exit_breathing_light(&mut timer),
-            0x06 => gpio.set_af_control(TIMER_AF, None, Some(false)), // 关闭定时器复用
-            0x07 => gpio.set_af_control(TIMER_AF, None, Some(true)),  // 开启定时器复用
-            0x08 => gpio.set_af_control(TIMER_AF, Some(Sel7), None),  // 红色LED
-            0x09 => gpio.set_af_control(TIMER_AF, Some(Sel6), None),  // 绿色LED
-            0x0a => gpio.set_af_control(SPI_AF, Some(Sel6), Some(true)), // 开启SPI复用
-            0x0b => gpio.set_af_control(SPI_AF, None, Some(false)),   // 关闭SPI复用
+            0x06 => gpio.modify_af_enable(|val| val | (RGB_MASK)), // RGB引脚开启功能复用
+            0x07 => gpio.modify_af_enable(|val| val & !(RGB_MASK)), // RGB引脚关闭功能复用
+            0x08 => gpio.modify_af_enable(|val| val | (0b100_100 << 24)), // 红色LED引脚开启功能复用
+            0x09 => gpio.modify_af_enable(|val| val | (0b100_100 << 23)), // 绿色LED引脚开启功能复用
+            0x0a => gpio.modify_af_enable(|val| val | (0b100_100 << 22)), // 蓝色LED引脚开启功能复用
+            0x0b => gpio.modify_af_enable(|val| val | (uart.rx_block() as u32) << 24), // 设置RGB引脚复用
+            0x0c => gpio.modify_af_enable(|val| val | 0b1), // GPIO0开启功能复用
+            0x0d => gpio.modify_af_enable(|val| val & !0b1), // GPIO0关闭功能复用
             _ => (),
         }
     }
@@ -89,12 +96,10 @@ fn clkdiv_down(timer: &mut Timer) {
 
 static COMPARE: AtomicU16 = AtomicU16::new(0);
 
-fn breathing_light(timer: &mut Timer, gpio: &mut AfGpio) {
-    gpio.set_af_control(TIMER_AF, Some(Sel7), Some(true));
+fn breathing_light(timer: &mut Timer, gpio: &mut Gpio) {
+    gpio.set_af_enable(0b111_111 << 24);
 
-    let control0 = TimerControl0::new()
-        .with_prescale(Div256)
-        .with_clkedge(false);
+    let control0 = TimerControl0::new().with_prescale(Div1).with_clkedge(false);
     let control1 = TimerControl1::new().with_tcm(FastPWM).with_ocm(SetClear);
     timer.set_control0(control0);
     timer.set_control1(control1);
