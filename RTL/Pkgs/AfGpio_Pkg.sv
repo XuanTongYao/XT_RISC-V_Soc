@@ -4,7 +4,7 @@ package AfGpio_Pkg;
   typedef struct {
     bit in_valid;
     bit out_valid;
-    int in_sel[4];   // 选中功能数组中的某一位
+    int in_sel[4];   // 选中功能数组中的某一位(-1表示未连接，仅限输入)
     int out_sel[4];  // 选中功能数组中的某一位
   } gpio_af_cfg_t;
 

@@ -60,32 +60,78 @@ package SocConfig;
 
 
   //----------GPIO----------//
-  localparam int GPIO_COUNT = 28;
+  localparam int GPIO_COUNT = 30;
 
   // 复用功能ID
   typedef enum int {
-    TIMER_IN  = 0,
-    TIMER_RST
+    TIMER_INPUT = 0,
+    TIMER_RST,
+    SPI_SCSN
   } af_in_id_t;
-  typedef enum int {
-    TIMER_OUT = 0,
-    SPI_CSN
-  } af_out_id_t;
+  af_in_id_t _af_in_id_t = _af_in_id_t.first;
+  localparam int AF_FUNCT_IN_COUNT = _af_in_id_t.num;
 
-  localparam gpio_af_cfg_t IN_OUT_0_1 = '{
+  typedef enum int {
+    TIMER_OUTPUT = 0,
+    SPI_CSN1,
+    SPI_CSN2,
+    SPI_CSN3,
+    SPI_CSN4,
+    SPI_CSN5,
+    SPI_CSN6,
+    SPI_CSN7
+  } af_out_id_t;
+  af_out_id_t _af_out_id_t = _af_out_id_t.first;
+  localparam int AF_FUNCT_OUT_COUNT = _af_out_id_t.num;
+
+  localparam gpio_af_cfg_t IN_OUT_0_1_2_3 = '{
       in_valid: 1'b1,
       out_valid: 1'b1,
-      in_sel: '{TIMER_IN, TIMER_RST, TIMER_IN, TIMER_RST},
-      out_sel: '{TIMER_OUT, SPI_CSN, TIMER_OUT, SPI_CSN}
+      in_sel: '{TIMER_INPUT, TIMER_RST, SPI_SCSN, -1},
+      out_sel: '{TIMER_OUTPUT, SPI_CSN1, SPI_CSN2, SPI_CSN3}
   };
 
-  localparam int AF_FUNCT_IN_COUNT = 2;
-  localparam int AF_FUNCT_OUT_COUNT = 2;
+  localparam gpio_af_cfg_t OUT_0 = '{
+      in_valid: 1'b0,
+      out_valid: 1'b1,
+      in_sel: '{default: -1},
+      out_sel: '{default: TIMER_OUTPUT}
+  };
+
+  localparam gpio_af_cfg_t OUT_0_1_2_3 = '{
+      in_valid: 1'b0,
+      out_valid: 1'b1,
+      in_sel: '{default: -1},
+      out_sel: '{TIMER_OUTPUT, SPI_CSN1, SPI_CSN2, SPI_CSN3}
+  };
+
+  localparam gpio_af_cfg_t OUT_4_5_6_7 = '{
+      in_valid: 1'b0,
+      out_valid: 1'b1,
+      in_sel: '{default: -1},
+      out_sel: '{SPI_CSN4, SPI_CSN5, SPI_CSN6, SPI_CSN7}
+  };
+
+
   localparam gpio_af_cfg_t AF_CFGS[GPIO_COUNT] = '{
-      0: IN_OUT_0_1,
-      1: IN_OUT_0_1,
-      2: IN_OUT_0_1,
-      3: IN_OUT_0_1,
+      0: IN_OUT_0_1_2_3,  // GPIO复用计时器与SPI片选
+      1: IN_OUT_0_1_2_3,
+      2: IN_OUT_0_1_2_3,
+      3: IN_OUT_0_1_2_3,
+      4: OUT_0_1_2_3,  // GPIO复用SPI片选
+      5: OUT_0_1_2_3,
+      6: OUT_0_1_2_3,
+      7: OUT_0_1_2_3,
+      8: OUT_4_5_6_7,  // GPIO复用SPI片选
+      9: OUT_4_5_6_7,
+      10: OUT_4_5_6_7,
+      11: OUT_4_5_6_7,
+      24: OUT_0,  // RGB灯珠
+      25: OUT_0,
+      26: OUT_0,
+      27: OUT_0,
+      28: OUT_0,
+      29: OUT_0,
       default: NONE_AF_CFG
   };
 

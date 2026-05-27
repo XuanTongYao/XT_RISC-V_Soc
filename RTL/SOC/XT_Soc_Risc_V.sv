@@ -1,9 +1,7 @@
 // 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
   import SocConfig::*;
-#(
-    parameter int CSN_COUNT = 2  // 专用SPI片选引脚
-) (
+(
     input                         clk_osc,
     input                         rst_sw,
     input                         download_mode,
@@ -12,17 +10,19 @@ module XT_Soc_Risc_V
     input        [           1:0] sw_raw,
     output logic [           7:0] led,
     output logic [           8:0] ledsd        [2],
-    input                         uart_rx,
-    output logic                  uart_tx,
-    inout                         i2c1_scl,
-    inout                         i2c1_sda,
-    inout                         i2c2_scl,
-    inout                         i2c2_sda,
-    input                         spi_scsn,
-    output logic [ CSN_COUNT-1:0] spi_csn,
-    inout                         spi_clk,
-    inout                         spi_miso,
-    inout                         spi_mosi,
+
+    input        uart_rx,
+    output logic uart_tx,
+
+    inout i2c1_scl,
+    inout i2c1_sda,
+    inout i2c2_scl,
+    inout i2c2_sda,
+
+    output spi_csn,
+    inout  spi_clk,
+    inout  spi_miso,
+    inout  spi_mosi,
 
     input tck,
     input tms,
@@ -275,28 +275,30 @@ module XT_Soc_Risc_V
       .hb      (hb_if[IDX_WISHBONE])
   );
 
-  localparam int ALL_CSN_COUNT = 3;
-  wire ufm_sn = 1;
-  //   wire tc_rst, tc_ic, tc_oc;  // 定时器的功能复用
-  //   wire tc_rstn = !tc_rst;
-  wire [ALL_CSN_COUNT-1:0] all_spi_csn;
-  assign spi_csn = all_spi_csn[CSN_COUNT-1:0];
-  wire [ALL_CSN_COUNT-CSN_COUNT-1:0] af_spi_csn = all_spi_csn[ALL_CSN_COUNT-1:CSN_COUNT];
-  assign funct_out[SPI_CSN] = af_spi_csn;
+  localparam int CSN_COUNT = 8;
+  wire [CSN_COUNT-1:0] all_spi_csn;
+  assign spi_csn = all_spi_csn[0];
+  generate
+    for (genvar i = 0; i < CSN_COUNT - 1; ++i) begin : gen_af_spi_csn
+      assign funct_out[i+SPI_CSN1] = all_spi_csn[i+1];
+    end
+  endgenerate
   efb u_efb (
       .*,
+      .ufm_sn (1'b1),
       .tc_clki(clk_osc),
+
       .i2c1_irqo(irq_source[8]),
       .i2c2_irqo(irq_source[9]),
       .spi_irq(irq_source[10]),
       .tc_int(irq_source[11]),
       .wbc_ufm_irq(irq_source[12]),
+
       .spi_csn(all_spi_csn),
-
-      .tc_ic  (funct_in[TIMER_IN]),
+      .spi_scsn(funct_in[SPI_SCSN]),
+      .tc_ic(funct_in[TIMER_INPUT]),
       .tc_rstn(!funct_in[TIMER_RST]),
-
-      .tc_oc(funct_out[TIMER_OUT])
+      .tc_oc(funct_out[TIMER_OUTPUT])
   );
 
 
@@ -320,25 +322,6 @@ module XT_Soc_Risc_V
       .lb(lb_if[0]),
       .sw_raw({sw_raw, download_mode})
   );
-
-  //   localparam int AF_FUNCT_IN_COUNT = 2;
-  //   wire funct_in[AF_FUNCT_IN_COUNT];
-  //   assign tc_rst = funct_in[0];
-  //   assign tc_ic  = funct_in[1];
-  //   AF_GPIO_LBUS #(
-  //       .COUNT          (GPIO_COUNT),
-  //       .FUNCT_IN_COUNT (AF_FUNCT_IN_COUNT),
-  //       .FUNCT_IN_MASK  ('{32'h0000_00FF, 32'h0000_00FF}),
-  //       .FUNCT_OUT_COUNT(2),
-  //       .FUNCT_OUT_MASK ('{32'h1FE0_0000, 32'h1FE0_0000})
-  //   ) u_AF_GPIO_LBUS (
-  //       .*,
-  //       .gpio_clk (clk),
-  //       .lb       (lb_if[1]),
-  //       .funct_in (funct_in),
-  //       .funct_out({tc_oc, af_spi_csn}),
-  //       .gpio     (gpio)
-  //   );
 
   LED_LBUS #(
       .LED_COUNT(8)
