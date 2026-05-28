@@ -58,20 +58,18 @@ module InstructionExecute
   wire [31:0] alu_xor = operand1 ^ operand2;
   wire [31:0] alu_or = operand1 | operand2;
   wire [31:0] alu_and = operand1 & operand2;
-  wire [31:0] alu_shift_left = operand1 << operand2[4:0];
   wire [31:0] alu_shift_right_l = operand1 >> operand2[4:0];
   wire [31:0] alu_shift_right_a = $signed(operand1) >>> operand2[4:0];
+  wire [31:0] alu_shift_left = {<<{alu_shift_right_l}};  // 位反转，利用右移来实现左移
   wire [31:0] alu_base_addr_offset = id_ex_inst.addr + imm_b;
 
   wire alu_equal = operand1 == operand2;
-  wire alu_less_signed = $signed(operand1) < $signed(operand2);
+  // 优化比较器，共用资源
+  wire sign_diff = operand1[CFG.XLEN-1] ^ operand2[CFG.XLEN-1];
   wire alu_less_unsigned = operand1 < operand2;
-  logic alu_less;
-  always_comb begin
-    // 实际上SLT和SLTI的funct3相同
-    if (funct3 == RV32I_SLT || funct3 == RV32I_SLTI) alu_less = alu_less_signed;
-    else alu_less = alu_less_unsigned;
-  end
+  wire alu_less_signed = sign_diff ? operand1[CFG.XLEN-1] : alu_less_unsigned;
+  // 实际上SLT和SLTI的funct3相同
+  wire alu_less = (funct3 == RV32I_SLT) ? alu_less_signed : alu_less_unsigned;
 
   // Load指令访存数据的高位扩展
   logic extension_bit;

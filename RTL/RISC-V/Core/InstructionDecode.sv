@@ -54,7 +54,7 @@ module InstructionDecode
     id_out.reg_wen = 0;
 
     // 不可能同时读/写，地址计算可以共用加法器
-    access_addr_imm = imm_i;
+    access_addr_imm = 'x;
     id_out.load = 0;
     id_out.store = 0;
     id_out.load_addr = access_addr;
@@ -113,13 +113,17 @@ module InstructionDecode
         endcase
       end
       RV32I_OP_I: begin
-        id_out.reg_wen  = 1;
-        id_out.operand1 = read_rs1.data;
+        id_out.reg_wen = 1;
+        // 位反转，利用右移来实现左移
+        if (funct3 == RV32I_SLLI) id_out.operand1 = {<<{read_rs1.data}};
+        else id_out.operand1 = read_rs1.data;
         id_out.operand2 = imm_i;
       end
       RV32I_OP_R: begin
-        id_out.reg_wen  = 1;
-        id_out.operand1 = read_rs1.data;
+        id_out.reg_wen = 1;
+        // 位反转，利用右移来实现左移
+        if (funct3 == RV32I_SLL) id_out.operand1 = {<<{read_rs1.data}};
+        else id_out.operand1 = read_rs1.data;
         id_out.operand2 = read_rs2.data;
       end
       RV32I_OP_SYSTEM: begin

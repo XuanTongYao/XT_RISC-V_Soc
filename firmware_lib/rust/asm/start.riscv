@@ -11,6 +11,8 @@ _start:
     lla a0, __TRAP_VECTOR__
     ori a0, a0, 1
     csrw mtvec, a0
+    # 关闭所有中断
+    csrw mie, x0
     # 清空 未初始化段
     lla a0, __BSS_START__
 	lla a1, __BSS_END__

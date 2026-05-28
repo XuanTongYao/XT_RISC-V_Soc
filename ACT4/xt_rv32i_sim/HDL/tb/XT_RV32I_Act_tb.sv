@@ -3,10 +3,32 @@ module XT_RV32I_Act_tb
 #(
     parameter int unsigned RAM_WORD_DEPTH = 32'h000F_0000,
     parameter int unsigned RAM_BASE_ADDR  = 32'h80000000
-) (
-    input clk,
-    input rst
-);
+) ();
+
+  // 时钟生成(周期为两个时间单位)
+  logic clk, rst;
+  always begin
+    clk = 0;
+    #1;
+    clk = 1;
+    #1;
+  end
+  // 复位与超时检测逻辑
+  initial begin
+    rst = 1;
+    #4;
+    rst = 0;
+  end
+
+
+  // 调试器接口
+  dm_hart_minimal_if dm_hart ();
+  assign dm_hart.ackhavereset = 0;
+  assign dm_hart.haltreq = 0;
+  assign dm_hart.resumereq = 0;
+  dm_register_if command0 ();
+  assign command0.transfer = 0;
+  assign command0.write = 0;
 
   wire stall_req = 0;
   wire core_stall_n;
@@ -21,6 +43,7 @@ module XT_RV32I_Act_tb
   wire msoftware_int = 0;
   wire mtimer_int = 0;
   wire [30:0] custom_int_code = 0;
+  int_source_if mint (.*);
   RISC_V_Core #(
       .CFG(CORE_DEFAULT_CFG),
       .INST_FETCH_REG(0),
@@ -55,7 +78,7 @@ module XT_RV32I_Act_tb
 
   always @(posedge clk, posedge rst) begin
     if (rst) begin
-      htif.check_halt <= 0;
+      htif.check_halt = 0;
     end else begin
       htif.capture_write();
     end

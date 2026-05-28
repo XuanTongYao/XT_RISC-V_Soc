@@ -16,7 +16,6 @@ ENTRY = "rvtest_entry_point"
 RISCV_ARCH_TEST = Path("./riscv-arch-test")
 DUT_CONFIG = Path("./xt_rv32i")
 HDL = Path("./xt_rv32i_sim/HDL")
-VERILATOR_CPP = Path("./xt_rv32i_sim/verilator_cpp")
 
 # Pin to front(.sv) 置顶文件名数组
 # Verilog对文件出现的顺序很严格，某些文件必须放到列表最前面
@@ -42,7 +41,7 @@ def main():
         )
     ENTRY_POINT = get_symbols(elf_file, [ENTRY], OBJDUMP_EXE).get(ENTRY)
     if ENTRY_POINT is None:
-        raise Exception("The symbol {ENTRY} was not found. 没有找到 {ENTRY} 符号")
+        raise Exception(f"The symbol {ENTRY} was not found. 没有找到 {ENTRY} 符号")
 
     exe = build_verilator_simulation_exe(ENTRY_POINT)
     run_test(ENTRY_POINT, ELFS_DIR, OBJDUMP_EXE, exe, MAX_CYCLES_FACTOR)
@@ -85,11 +84,11 @@ def build_verilator_simulation_exe(ram_base: int):
     non_pkgs = [p for p in sv_files if p not in pkgs]
     all_files = [str(file.resolve()) for file in (pkgs + non_pkgs)]
 
-    (VERILATOR_CPP / "rtl.files").write_text("\n".join(all_files), "utf-8")
+    Path("rtl.files").write_text("\n".join(all_files), "utf-8")
 
-    cmd = f"verilator {TRACE_ARGS} --top {TOP_TB} -f rtl.files -cc --exe --build sim_main.cpp -GRAM_WORD_DEPTH={RAM_WORD_DEPTH} -GRAM_BASE_ADDR={ram_base}".split()
-    subprocess.run(cmd, cwd=VERILATOR_CPP, text=True, check=True)
-    return VERILATOR_CPP / "obj_dir" / f"V{TOP_TB}"
+    cmd = f"verilator {TRACE_ARGS} --top {TOP_TB} -f rtl.files --binary -GRAM_WORD_DEPTH={RAM_WORD_DEPTH} -GRAM_BASE_ADDR={ram_base}".split()
+    subprocess.run(cmd, text=True, check=True)
+    return Path("obj_dir", f"V{TOP_TB}")
 
 
 # 执行测试
@@ -123,12 +122,9 @@ def run_test(
         signature.parent.mkdir(parents=True, exist_ok=True)
         hex.parent.mkdir(parents=True, exist_ok=True)
         # 转换为16进制文本文件
+        verilog_args = f"-O verilog --verilog-data-width 4 --change-addresses -{entry_point:#X}".split()
         subprocess.run(
-            [str(OBJCOPY_EXE)]
-            + f"-O verilog --verilog-data-width 4 --change-addresses -{entry_point:#X}".split()
-            + [str(elf)]
-            + [str(hex)],
-            check=True,
+            [str(OBJCOPY_EXE), *verilog_args, str(elf), str(hex)], check=True
         )
         # 运行仿真
         cmd = [

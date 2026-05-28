@@ -23,15 +23,22 @@ module CoreReg
   logic wen;
   logic [4:0] waddr;
   logic [CFG.XLEN-1:0] wdata;
+
+  logic [4:0] raddr1;
+  assign debug_read_gpr.data = read_rs1.data;
   always_comb begin
     if (debug_override_gpr) begin
-      wen   = debug_write_gpr.en;
+      wen = debug_write_gpr.en;
       waddr = debug_write_gpr.addr;
       wdata = debug_write_gpr.data;
+
+      raddr1 = debug_write_gpr.addr;
     end else begin
-      wen   = write_rd.en;
+      wen = write_rd.en;
       waddr = write_rd.addr;
       wdata = write_rd.data;
+
+      raddr1 = read_rs1.addr;
     end
   end
 
@@ -40,12 +47,12 @@ module CoreReg
 
   //----------数据控制----------//
   always_comb begin
-    if (read_rs1.addr == 0) begin
+    if (raddr1 == 0) begin
       read_rs1.data = 0;
-    end else if (wen && read_rs1.addr == waddr) begin
+    end else if (wen && raddr1 == waddr) begin
       read_rs1.data = wdata;
     end else begin
-      read_rs1.data = core_reg[read_rs1.addr];
+      read_rs1.data = core_reg[raddr1];
     end
   end
 
@@ -59,13 +66,6 @@ module CoreReg
     end
   end
 
-  always_comb begin
-    if (debug_read_gpr.addr == 0) begin
-      debug_read_gpr.data = 0;
-    end else begin
-      debug_read_gpr.data = core_reg[debug_read_gpr.addr];
-    end
-  end
 
   always_ff @(posedge clk) begin
     if (!rst && (stall_n || debug.halted) && wen && waddr != 0) begin

@@ -14,7 +14,7 @@ module ActRam #(
 
   logic [3:0][7:0] ram[WORD_DEPTH];
   initial begin
-    string firmware_file = "firmware.hex";
+    static string firmware_file = "firmware.hex";
     $value$plusargs("firmware=%s", firmware_file);
     $readmemh(firmware_file, ram);  // 从 0 开始全加载
   end

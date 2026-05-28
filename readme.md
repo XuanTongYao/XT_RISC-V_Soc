@@ -12,6 +12,8 @@
 
 [RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)
 
+处理器内核消耗约**2061**个LUT4(参考)
+
 PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。外设基本是围绕[该核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
 
 ## 目录
@@ -55,6 +57,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 - 精简的CSR寄存器([详见RTL代码](RTL/RISC-V/Core/CSR.sv))
 - 支持外部调试(最小 RISC-V 调试规范)
 - 调试模式时始终禁用中断
+- 可配置为RV32E内核
 
 #### 异常/中断控制器
 
@@ -64,7 +67,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 #### 调试模块
 
-- 最小 RISC-V 调试规范
+- 遵循最小 RISC-V 调试规范
 - Jtag调试传输模块
 - 支持查询与控制内核运行状态(停止/恢复)
 - 在内核停止时可执行**访问寄存器抽象命令**，可访问所有允许软件访问的寄存器
