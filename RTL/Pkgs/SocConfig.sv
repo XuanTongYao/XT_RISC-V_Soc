@@ -23,7 +23,8 @@ package SocConfig;
 
   // 高速总线主设备索引分配
   typedef enum int {
-    M_IDX_CORE = 0  // 内核
+    M_IDX_CORE = 0,  // 内核
+    M_IDX_DM         // 调试模块
   } xt_hb_master_idx_t;
   xt_hb_master_idx_t _xt_hb_master_idx_t = _xt_hb_master_idx_t.first;
   localparam int HB_MASTER_COUNT = _xt_hb_master_idx_t.num;

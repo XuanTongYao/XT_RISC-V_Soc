@@ -219,7 +219,7 @@ module JtagDTM
       .data_out     ({dmi.req_addr, dmi.req_data, dmi.req_op})
   );
 
-  logic [31:0] dm_data = 0;
+  logic [31:0] dm_data;
   logic [1:0] dm_op = 0, dm_op_bypass;
   always_ff @(posedge tck) begin
     if (dm_ack) begin

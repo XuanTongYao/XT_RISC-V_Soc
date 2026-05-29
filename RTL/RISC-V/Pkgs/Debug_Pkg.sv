@@ -202,8 +202,8 @@ package Debug_Pkg;
 
   typedef struct packed {
     logic        aamvirtual;
-    logic [2:0]  aarsize;
-    logic        aarpostincrement;
+    logic [2:0]  aamsize;
+    logic        aampostincrement;
     logic [1:0]  zero_2;
     logic        write;
     logic [1:0]  target_specific;

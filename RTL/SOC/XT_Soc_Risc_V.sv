@@ -74,26 +74,6 @@ module XT_Soc_Risc_V
       .rst_o_n(rst_n)
   );
 
-  //----------调试器----------//
-  dmi_if #(.ABITS(7)) dmi ();
-  wire dm_rst;
-  JtagDTM #(
-      .ABITS       (7),
-      .IDCODE_VALUE(32'h0000_0001)
-  ) u_JtagDTM (
-      .*,
-      .dm_clk(clk)
-  );
-
-  dm_hart_minimal_if dm_hart ();
-  dm_register_if access_register ();
-  DM #(
-      .DATACOUNT(4'd1)
-  ) u_DM (
-      .*,
-      .dm_clk  (clk),
-      .dm_rst_n(pll_lock)
-  );
 
 
   //----------XT_HB高速总线互联定义----------//
@@ -118,6 +98,30 @@ module XT_Soc_Risc_V
       .master(hb_master),
       .rsp_master(hb_rsp_master),
       .devices(hb_if)
+  );
+
+
+  // 调试器
+  dmi_if #(.ABITS(7)) dmi ();
+  wire dm_rst;
+  JtagDTM #(
+      .ABITS       (7),
+      .IDCODE_VALUE(32'h0000_0001)
+  ) u_JtagDTM (
+      .*,
+      .dm_clk(clk)
+  );
+
+  dm_hart_minimal_if dm_hart ();
+  dm_register_if access_register ();
+  DM #(
+      .DATACOUNT(4'd2)
+  ) u_DM (
+      .*,
+      .dm_clk(clk),
+      .dm_rst_n(pll_lock),
+      .memory(hb_master[M_IDX_DM]),
+      .memory_rsp(hb_rsp_master[M_IDX_DM])
   );
 
 

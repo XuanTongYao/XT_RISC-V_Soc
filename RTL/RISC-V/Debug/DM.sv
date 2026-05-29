@@ -5,7 +5,7 @@
 module DM
   import Debug_Pkg::*;
 #(
-    parameter bit [3:0] DATACOUNT = 4'd1
+    parameter bit [3:0] DATACOUNT = 4'd2
 ) (
     input dm_clk,
     input dm_rst_n,  // 因时钟发生故障而复位
@@ -15,7 +15,9 @@ module DM
     output logic ndmreset  /* 复位除调试以外的所有逻辑 */,
 
     dm_hart_minimal_if.dm dm_hart,
-    dm_register_if.dm access_register
+    dm_register_if.dm access_register,
+    memory_direct_if.master memory,
+    xt_hbus_rsp_if.master memory_rsp
 );
   localparam int unsigned SBADDRESS_COUNT = 1;
   localparam int unsigned SBDATA_COUNT = 1;
@@ -60,14 +62,22 @@ module DM
   command_t command;
   logic busy_err;
 
-  logic cmd_0;
-  command_access_register_t cmd_ar;
-  assign cmd_ar = command.control;
+  logic [2:0] cmd_pending;
+  wire command_access_register_t cmd_ar = command.control;
   assign access_register.aarsize = cmd_ar.aarsize;
-  assign access_register.transfer = cmd_ar.transfer && cmd_0;
+  assign access_register.transfer = cmd_ar.transfer && cmd_pending[0];
   assign access_register.write = cmd_ar.write;
   assign access_register.regno = cmd_ar.regno;
   assign access_register.wdata = data[0];
+
+  wire command_access_memory_t cmd_am = command.control;
+  assign memory.read = !cmd_am.write && cmd_pending[2];
+  assign memory.write = cmd_am.write && cmd_pending[2];
+  assign memory.read_size = cmd_am.aamsize[1:0];
+  assign memory.write_size = cmd_am.aamsize[1:0];
+  assign memory.raddr = data[1];
+  assign memory.waddr = data[1];
+  assign memory.wdata = data[0];
 
 
   // sbcs_t              sbcs;
@@ -87,6 +97,7 @@ module DM
       if (dmi.req_op == 2'b01) begin  // 读取
         unique case (dmi.req_addr)
           DM_DATA_BASE: dmi.rsp_data <= data[0];
+          DM_DATA_BASE + 'd1: dmi.rsp_data <= data[1];
           DM_DMSTATUS: dmi.rsp_data <= PadDmstatus(dmstatus);
           DM_ABSTRACTCS: dmi.rsp_data <= PadAbstractcs(abstractcs, 0, DATACOUNT);
           DM_COMMAND: dmi.rsp_data <= command;
@@ -95,6 +106,8 @@ module DM
       end else if (dmi.req_op == 2'b10) begin  // 写入
         if (dmi.req_addr == DM_DATA_BASE) begin
           data[0] <= dmi.req_data;
+        end else if (dmi.req_addr == (DM_DATA_BASE + 'd1)) begin
+          data[1] <= dmi.req_data;
         end
       end
     end
@@ -109,10 +122,12 @@ module DM
     end
 
     //----------抽象命令----------//
-    if (cmd_0 && access_register.completed) begin  // 等待完成
+    if (cmd_pending[0] && access_register.completed) begin  // 等待完成
       if (!access_register.failed) begin
         data[0] <= access_register.rdata;
       end
+    end else if (cmd_pending[2] && !memory_rsp.stall_req) begin
+      data[0] <= memory.rdata;
     end
   end
 
@@ -123,7 +138,7 @@ module DM
       dmcontrol            <= 0;
       abstractcs           <= '{default: 0};
       command              <= 0;
-      cmd_0                <= 0;
+      cmd_pending          <= 0;
       busy_err             <= 0;
 
       dm_hart.ackhavereset <= 0;
@@ -179,19 +194,29 @@ module DM
 
       //----------抽象命令----------//
       if (abstractcs.busy) begin
-        if (cmd_0) begin  // 等待完成
+        if (cmd_pending[0]) begin  // 等待完成
           if (access_register.completed) begin
             if (busy_err) begin
               abstractcs.cmderr <= ERR_BUSY;
             end else if (access_register.failed) begin
               abstractcs.cmderr <= ERR_NOT_SUPPORTED;
             end
-            cmd_0 <= 0;
+            cmd_pending <= 0;
+            abstractcs.busy <= 0;
+          end
+        end else if (cmd_pending[2]) begin
+          if (!memory_rsp.stall_req) begin
+            if (busy_err) begin
+              abstractcs.cmderr <= ERR_BUSY;
+            end
+            cmd_pending <= 0;
             abstractcs.busy <= 0;
           end
         end else begin  // 启动命令
           unique case (command.cmdtype)
-            ACCESS_REGISTER: cmd_0 <= 1;
+            ACCESS_REGISTER: cmd_pending <= 3'b001;
+            // QUICK_ACCESS: cmd_pending <= 3'b010;
+            ACCESS_MEMORY:   cmd_pending <= 3'b100;
             default: begin
               abstractcs.busy   <= 0;
               abstractcs.cmderr <= ERR_NOT_SUPPORTED;
