@@ -106,7 +106,7 @@ module XT_Soc_Risc_V
   wire dm_rst;
   JtagDTM #(
       .ABITS       (7),
-      .IDCODE_VALUE(32'h0000_0001)
+      .IDCODE_VALUE(32'h0000_00E1)
   ) u_JtagDTM (
       .*,
       .dm_clk(clk)

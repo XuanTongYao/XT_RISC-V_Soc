@@ -98,9 +98,10 @@ module DM
         unique case (dmi.req_addr)
           DM_DATA_BASE: dmi.rsp_data <= data[0];
           DM_DATA_BASE + 'd1: dmi.rsp_data <= data[1];
-          DM_DMSTATUS: dmi.rsp_data <= PadDmstatus(dmstatus);
+          DM_DMSTATUS: dmi.rsp_data <= PadDmstatus(dmstatus, 4'd3);
           DM_ABSTRACTCS: dmi.rsp_data <= PadAbstractcs(abstractcs, 0, DATACOUNT);
           DM_COMMAND: dmi.rsp_data <= command;
+          DM_SBCS: dmi.rsp_data <= UNSUPPORTED_SBCS;
           default: ;
         endcase
       end else if (dmi.req_op == 2'b10) begin  // 写入
@@ -157,7 +158,7 @@ module DM
       if (dmi_req && dmcontrol.dmactive && dmi.req_op == 2'b10) begin
         unique case (dmi.req_addr)
           DM_ABSTRACTCS: begin
-            if (req_abstractcs.cmderr == 'd1) begin
+            if (&req_abstractcs.cmderr) begin
               abstractcs.cmderr <= ERR_NONE;
             end
           end

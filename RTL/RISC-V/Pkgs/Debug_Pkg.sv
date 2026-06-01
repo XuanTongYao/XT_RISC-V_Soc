@@ -114,7 +114,7 @@ package Debug_Pkg;
     logic anyrunning;
     logic anyhalted;
   } dmstatus_minimal_t;
-  function automatic dmstatus_t PadDmstatus(dmstatus_minimal_t partially);
+  function automatic dmstatus_t PadDmstatus(dmstatus_minimal_t partially, logic [3:0] version);
     dmstatus_t fully;
     fully = '{
         allhavereset: partially.anyhavereset,
@@ -128,7 +128,7 @@ package Debug_Pkg;
         allhalted: partially.anyhalted,
         anyhalted: partially.anyhalted,
         authenticated: 1'b1,
-        version: 4'd3,
+        version: version,
         default: 0
     };
     return fully;
@@ -228,5 +228,6 @@ package Debug_Pkg;
     logic       sbaccess16;
     logic       sbaccess8;
   } sbcs_t;
+  localparam sbcs_t UNSUPPORTED_SBCS = '{default: 0, sbversion: 'd1};
 
 endpackage
