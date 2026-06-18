@@ -1,124 +1,65 @@
-// 模块: 改进哈佛架构32位系统主存，数据存储器按字节寻址
-// 功能: 分别包含指令存储器与数据存储器RAM(!!!只是实现字节寻址的处理接口，内部例化的RAM不代表拥有功能)
-//       数据存储器(双端口，按字节寻址)只允许对齐访问
-//       指令存储器(真双端口，按字节寻址)只允许对齐访问，A口始终是指令读取接口，B口是总线读写接口
+// 模块: 改进哈佛结构32位系统主存，按字节寻址，仅支持对齐访问
+// 功能: 包含一个真双端口RAM(!!!只是实现字节寻址的处理接口，内部例化的RAM不代表拥有功能)
+//       A口始终是指令读取接口，B口始终是总线读写接口
+//       可以并行访问指令与数据
 //       为保证对齐，读取时可能会读取到周围字节的信息，自行截断
-module HarvardSystemRAM_BUS #(
-    parameter int DATA_RAM_DEPTH = 512,  // 字深度(最大为2^30对应4GB字节)
-    parameter int INST_RAM_DEPTH = 512
-) (
-    input inst_fetch_clk_en,
 
-    // 数据RAM
-    xt_hbus_if.port data_ram,
-    // 指令RAM
-    xt_hbus_if.port inst_ram,
+//       若基准ID不是0，且跨越多个ID，务必重新计算访问地址！！！
+module HarvardSystemRAM_BUS #(
+    parameter int RAM_DEPTH = 1024  // 字深度(最大为2^30对应4GB字节)
+) (
+    // 总线接口
+    xt_hbus_if.port hb,
+    // 指令接口
+    input inst_fetch_clk_en,
     input [31:0] inst_fetch_addr,
     output logic [31:0] inst_fetch
 );
-  localparam int DATA_WIDTH = $clog2(DATA_RAM_DEPTH);
-  localparam int INST_WIDTH = $clog2(INST_RAM_DEPTH);
+  localparam int WIDTH = $clog2(RAM_DEPTH);
 
-  //----------数据存储器----------//
-  wire data_wen = data_ram.wen;
-  wire data_ren = data_ram.ren;
-  always_ff @(posedge data_ram.clk) begin
-    if (data_ram.read_finish) begin
-      data_ram.read_finish <= 0;
-    end else if (data_ren) begin
-      data_ram.read_finish <= 1;
-    end
-  end
-  assign data_ram.write_finish = 1;
+  // A口
+  wire [WIDTH-1:0] fetch_addr = WIDTH'(inst_fetch_addr >> 2);
 
-  logic [1:0] data_ram_read_byte_offset;
-  always_ff @(posedge data_ram.clk) begin
-    if (data_ren) data_ram_read_byte_offset <= data_ram.raddr[1:0];
-  end
-
-  wire [31:0] data_ram_wdata;
-  wire [3:0] data_ram_byte_en;
-
-  wire [3:0][7:0] data_ram_byte_rdata;
-  AlignedRAM_Adapter u_AlignedRAM_Adapter_data_ram (
-      .write_size       (data_ram.write_size),
-      .write_byte_offset(data_ram.waddr[1:0]),
-      .raw_wdata        (data_ram.wdata),
-      .wdata            (data_ram_wdata),
-      .byte_en          (data_ram_byte_en),
-
-      .read_byte_offset(data_ram_read_byte_offset),
-      .byte_rdata      (data_ram_byte_rdata),
-      .rdata           (data_ram.rdata)
-  );
-
-
-  // 除以4计算 字的地址(对齐)
-  wire [DATA_WIDTH-1:0] data_word_waddr = DATA_WIDTH'(data_ram.waddr >> 2);
-  wire [DATA_WIDTH-1:0] data_word_raddr = DATA_WIDTH'(data_ram.raddr >> 2);
-  // 省略端口
-  wire Reset = 0;
-  wire RdClock = data_ram.clk, WrClock = data_ram.clk;
-  SystemDataRAM u_DataRAM (
-      .*,
-      .WrAddress(data_word_waddr),
-      .RdAddress(data_word_raddr),
-      .Data(data_ram_wdata),
-      .ByteEn(data_ram_byte_en),
-      .WE(data_wen),
-      .RdClockEn(data_ren),
-      .WrClockEn(1'b1),
-      .Q(data_ram_byte_rdata)
-  );
-
-
-
-  //----------指令存储器----------//
-  // A口始终是指令读取接口
-  wire [INST_WIDTH-1:0] fetch_addr = INST_WIDTH'(inst_fetch_addr >> 2);
-  // B口是总线读写接口
-
+  // B口
   // 读优先
-  wire inst_wen = inst_ram.wen && !inst_ram.ren;
-  wire inst_ren = inst_ram.ren;
-  always_ff @(posedge inst_ram.clk) begin
-    if (inst_ram.read_finish) begin
-      inst_ram.read_finish <= 0;
-    end else if (inst_ren) begin
-      inst_ram.read_finish <= 1;
+  wire ren = hb.ren;
+  logic [1:0] read_byte_offset;
+  wire [3:0][7:0] byte_rdata;
+  always_ff @(posedge hb.clk) begin
+    if (hb.read_finish) begin
+      hb.read_finish <= 0;
+    end else if (ren) begin
+      hb.read_finish   <= 1;
+      read_byte_offset <= hb.raddr[1:0];
     end
   end
-  assign inst_ram.write_finish = inst_wen;
 
-  logic [1:0] inst_ram_read_byte_offset;
-  always_ff @(posedge inst_ram.clk) begin
-    if (inst_ren) inst_ram_read_byte_offset <= inst_ram.raddr[1:0];
-  end
 
-  wire [31:0] inst_ram_wdata;
-  wire [3:0] inst_ram_byte_en;
+  wire wen = hb.wen && !hb.ren;
+  assign hb.write_finish = wen;
 
-  wire [3:0][7:0] inst_ram_byte_rdata;
-  AlignedRAM_Adapter u_AlignedRAM_Adapter_inst_ram (
-      .write_size       (inst_ram.write_size),
-      .write_byte_offset(inst_ram.waddr[1:0]),
-      .raw_wdata        (inst_ram.wdata),
-      .wdata            (inst_ram_wdata),
-      .byte_en          (inst_ram_byte_en),
+  wire [31:0] wdata;
+  wire [ 3:0] byte_en;
+  AlignedRAM_Adapter u_AlignedRAM_Adapte (
+      .write_size       (hb.write_size),
+      .write_byte_offset(hb.waddr[1:0]),
+      .raw_wdata        (hb.wdata),
+      .wdata            (wdata),
+      .byte_en          (byte_en),
 
-      .read_byte_offset(inst_ram_read_byte_offset),
-      .byte_rdata      (inst_ram_byte_rdata),
-      .rdata           (inst_ram.rdata)
+      .read_byte_offset(read_byte_offset),
+      .byte_rdata      (byte_rdata),
+      .rdata           (hb.rdata)
   );
 
-  wire [INST_WIDTH-1:0] inst_word_waddr = INST_WIDTH'(inst_ram.waddr >> 2);
-  wire [INST_WIDTH-1:0] inst_word_raddr = INST_WIDTH'(inst_ram.raddr >> 2);
-  wire [INST_WIDTH-1:0] AddressB = inst_wen ? inst_word_waddr : inst_word_raddr;
+  wire [WIDTH-1:0] word_waddr = WIDTH'(hb.waddr >> 2);
+  wire [WIDTH-1:0] word_raddr = WIDTH'(hb.raddr >> 2);
+  wire [WIDTH-1:0] AddressB = wen ? word_waddr : word_raddr;
 
   // 省略端口
   wire ResetA = 0, ResetB = 0;
-  wire ClockA = inst_ram.clk, ClockB = inst_ram.clk;
-  SystemInstructionRAM u_InstructionRAM (
+  wire ClockA = hb.clk, ClockB = hb.clk;
+  SystemRAM u_SystemRAM (
       .*,
       .DataInA('0),
       .ByteEnA('0),
@@ -127,12 +68,12 @@ module HarvardSystemRAM_BUS #(
       .WrA(1'b0),
       .QA(inst_fetch),
 
-      .DataInB(inst_ram_wdata),
-      .ByteEnB(inst_ram_byte_en),
+      .DataInB(wdata),
+      .ByteEnB(byte_en),
       .AddressB(AddressB),
       .ClockEnB(1'b1),
-      .WrB(inst_wen),
-      .QB(inst_ram_byte_rdata)
+      .WrB(wen),
+      .QB(byte_rdata)
   );
 
 

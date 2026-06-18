@@ -6,13 +6,10 @@ ENTRY(_start)
 
 MEMORY
 {
-    INST_RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x1000
-    DATA_RAM (rwx) : ORIGIN = 0x00001000, LENGTH = 0x1000
+    RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x2000
 }
-PROVIDE(__inst_origin = ORIGIN(INST_RAM));
-PROVIDE(__inst_length = LENGTH(INST_RAM));
-PROVIDE(__data_origin = ORIGIN(DATA_RAM));
-PROVIDE(__data_length = LENGTH(DATA_RAM));
+PROVIDE(__ram_origin = ORIGIN(RAM));
+PROVIDE(__ram_length = LENGTH(RAM));
 
 PROVIDE(__stack_size = 512);
 
@@ -26,25 +23,26 @@ SECTIONS
         KEEP (*(SORT_NONE(.trap.delete_handler)))
         KEEP (*(SORT_NONE(.trap.error_handler)))
         *(.text .text.*)
-    } > INST_RAM
+    } > RAM
 
 
+    . = ALIGN(4);
     .rodata : 
     {
         *(.srodata .srodata.*)
         *(.rodata .rodata.*)
-    } > DATA_RAM
+    } > RAM
 
     .data           :
     {
         __DATA_BEGIN__ = .;
         *(.data .data.*)
-    } > DATA_RAM
+    } > RAM
     .sdata          :
     {
         __SDATA_BEGIN__ = .;
         *(.sdata .sdata.* .sdata2 .sdata2.*)
-    } > DATA_RAM
+    } > RAM
 
     . = ALIGN(4);
     __BSS_START__ = .;
@@ -53,11 +51,11 @@ SECTIONS
         *(.sbss .sbss.* .scommon)
         *(.bss .bss.*)
         *(COMMON)
-    } > DATA_RAM
+    } > RAM
     . = ALIGN(4);
     __BSS_END__ = .;
 
-    _sstack = ORIGIN(DATA_RAM) + LENGTH(DATA_RAM);
+    _sstack = ORIGIN(RAM) + LENGTH(RAM);
     _estack = _sstack - __stack_size;
     __global_pointer$ = MIN(__SDATA_BEGIN__ + 0x800,
         MAX(__DATA_BEGIN__ + 0x800, __BSS_END__ - 0x800));

@@ -7,13 +7,10 @@ package SocConfig;
   localparam core_cfg_t CORE_CFG = ComputeCoreCfg(CORE_RAW_CFG);
 
 
-  //----------主存----------//
-  // 实际上由IP核决定，这里不一定对
-  localparam int INST_RAM_DEPTH = 1024;
-  localparam int DATA_RAM_DEPTH = 1024;
+  localparam int RAM_DEPTH = 2048;
 
 
-
+  //----------高速总线----------//
   // XT_HB的地址，高位是识别符，低位是偏移量，基地址在识别符上对齐
   // 只使用一个识别符的设备，地址偏移量可以直接作为访问地址使用
   // 使用多个识别符的设备，用完整地址减去基地址作为访问地址使用
@@ -31,8 +28,7 @@ package SocConfig;
 
   // 高速总线IO设备索引分配
   typedef enum int {
-    IDX_INST_RAM = 0,  // 指令RAM
-    IDX_DATA_RAM,      // 数据RAM
+    IDX_RAM      = 0,  // 主存RAM
     IDX_HB32,          // 32bit对齐总线适配器
     IDX_WISHBONE,      // WISHBONE
     IDX_XT_LB          // XT_LB
@@ -40,7 +36,7 @@ package SocConfig;
   xt_hb_idx_t _xt_hb_idx_t = _xt_hb_idx_t.first;
   localparam int HB_DEVICE_COUNT = _xt_hb_idx_t.num;
   // 设备基准ID分配，分别是上面那些设备
-  localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_COUNT-1] = '{3'd1, 3'd2, 3'd3, 3'd4};
+  localparam bit [HB_ID_WIDTH-1:0] DEVICE_BASE_ID[HB_DEVICE_COUNT-1] = '{3'd2, 3'd3, 3'd4};
 
 
 

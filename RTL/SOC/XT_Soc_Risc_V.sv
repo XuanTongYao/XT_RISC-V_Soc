@@ -169,18 +169,15 @@ module XT_Soc_Risc_V
 
 
 
-  // 系统RAM
+  // 系统主存
   HarvardSystemRAM_BUS #(
       // 字深度(最大为2^30对应4GB字节)
-      .DATA_RAM_DEPTH(DATA_RAM_DEPTH),
-      .INST_RAM_DEPTH(INST_RAM_DEPTH)
+      .RAM_DEPTH(RAM_DEPTH)
   ) u_HarvardSystemRAM (
-      .*,
+      // 总线接口
+      .hb               (hb_if[IDX_RAM]),
+      // 指令接口
       .inst_fetch_clk_en(core_inst_if.enable),
-      // 数据RAM
-      .data_ram         (hb_if[IDX_DATA_RAM]),
-      // 指令RAM
-      .inst_ram         (hb_if[IDX_INST_RAM]),
       .inst_fetch_addr  (core_inst_if.addr),
       .inst_fetch       (user_instruction)
   );
