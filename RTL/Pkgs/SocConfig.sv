@@ -7,7 +7,7 @@ package SocConfig;
   localparam core_cfg_t CORE_CFG = ComputeCoreCfg(CORE_RAW_CFG);
 
 
-  localparam int RAM_DEPTH = 2048;
+  localparam int RAM_DEPTH = 2048;  // 记得与IP核相同
 
 
   //----------高速总线----------//
@@ -42,7 +42,7 @@ package SocConfig;
 
   // HB32从设备ID(也是索引)分配
   typedef enum int {
-    IDX_BOOTLOADER   = 0,
+    IDX_BOOT_CTRL = 0,
     IDX_EINT_CTRL,
     IDX_SYSTEM_TIMER,
     IDX_UART,

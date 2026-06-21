@@ -3,9 +3,11 @@
 // 寄存器布局
 // 0-debug寄存器
 // 1-预加载字符串地址 2-预加载字符串
-module HarvardBootstrap (
+module HarvardBootstrap
+  import Rom_Pkg::*;
+(
     // 指令选择
-    input [31:0] bootloader_instruction,
+    input [31:0] boot_instruction,
     input [31:0] user_instruction,
     instruction_if.responder core_inst_if,
 
@@ -18,9 +20,13 @@ module HarvardBootstrap (
   // 地址读后自增(使用前必须写入正确地址)
   logic [5:0] rom_addr;
   wire  [7:0] rom_data;
-  rom_str u_rom_str (
-      .Address(rom_addr),
-      .Q      (rom_data)
+  ROM #(
+      .DEPTH(PRELOAD_STR_DEPTH),
+      .WIDTH(PRELOAD_STR_WIDTH),
+      .DATA (PRELOAD_STR)
+  ) u_ROM (
+      .address(rom_addr),
+      .q      (rom_data)
   );
   always_ff @(posedge hb.clk) begin
     if (hb.wen && hb.waddr == 'd1) begin
@@ -44,7 +50,7 @@ module HarvardBootstrap (
     end
   end
 
-  assign core_inst_if.inst = normal_mode ? user_instruction : bootloader_instruction;
+  assign core_inst_if.inst = normal_mode ? user_instruction : boot_instruction;
 
   //----------读寄存器----------//
   always_ff @(posedge hb.clk) begin

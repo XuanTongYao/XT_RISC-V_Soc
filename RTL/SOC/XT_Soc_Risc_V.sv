@@ -1,6 +1,7 @@
 // 新增GPIO复用功能后，rgb移入GPIO
 module XT_Soc_Risc_V
   import SocConfig::*;
+  import Rom_Pkg::*;
 (
     input                         clk_osc,
     input                         rst_sw,
@@ -151,20 +152,23 @@ module XT_Soc_Risc_V
   );
 
   // 提前声明，指令选择
-  wire [31:0] bootloader_instruction;
+  wire [31:0] boot_instruction;
   wire [31:0] user_instruction;
 
 
 
-  // Bootloader和Debug固化程序
-  localparam int ROM_DEPTH = 128;
-  localparam int ROM_ADDR_WIDTH = $clog2(ROM_DEPTH * 4);
-  rom_boot u_ROM (
-      .Address(core_inst_if.addr[ROM_ADDR_WIDTH-1:2]),
-      .OutClock(clk),
-      .OutClockEn(core_inst_if.enable),
-      .Reset(1'b0),
-      .Q(bootloader_instruction)
+  // Bootstrap固化程序
+  localparam int BOOT_ROM_ADDR_WIDTH = $clog2(BOOT_DEPTH * 4);
+  ROM_Reg #(
+      .DEPTH(BOOT_DEPTH),
+      .WIDTH(BOOT_WIDTH),
+      .DATA (BOOT)
+  ) u_ROM_Reg (
+      .clk    (clk),
+      .clk_en (core_inst_if.enable),
+      .rst    (1'b0),
+      .address(core_inst_if.addr[BOOT_ROM_ADDR_WIDTH-1:2]),
+      .q      (boot_instruction)
   );
 
 
@@ -198,7 +202,7 @@ module XT_Soc_Risc_V
   // 从ROM自举启动和UART程序下载
   HarvardBootstrap u_HarvardBootstrap (
       .*,
-      .hb(hb32_if[IDX_BOOTLOADER])
+      .hb(hb32_if[IDX_BOOT_CTRL])
   );
 
   // 外部中断控制器
