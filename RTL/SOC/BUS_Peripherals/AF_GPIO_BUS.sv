@@ -1,5 +1,5 @@
 // 带功能复用设计的GPIO模块
-// 每个IO端口的复用配置占用2bit，可从4个复用中选择
+// 每个IO端口的复用选择占用2bit，可从4个复用中选择
 // 端口方向配置为不同模式时，复用的功能是不同的
 // 每个IO端口总共可复用8个功能（输入4个，输出4个）
 // 多个端口可配置为相同的复用输入/输出功能
@@ -10,8 +10,8 @@
 // 0 - DIR   方向寄存器
 // 1 - DATA  数据寄存器
 // 2 - AF_EN 复用功能启用寄存器
-// 3 - AFL   复用配置低位(每个配置2bit，可从4个复用中选择)
-// 4 - AFH   复用配置高位
+// 3 - AFL   复用选择低位(每个选择2bit，可从4个复用中选择)
+// 4 - AFH   复用选择高位
 module AF_GPIO_BUS
   import AfGpio_Pkg::*;
 #(
@@ -19,7 +19,6 @@ module AF_GPIO_BUS
     parameter int COUNT = 10,
     parameter int FUNCT_IN_COUNT = 1,
     parameter int FUNCT_OUT_COUNT = 1,
-    parameter bit FUNCT_IN_RESET_VAL[FUNCT_IN_COUNT] = '{default: 1'b0},
     parameter gpio_af_cfg_t AF_CFGS[COUNT] = '{default: NONE_AF_CFG}
 ) (
     xt_hbus32_if.port hb,
@@ -42,7 +41,7 @@ module AF_GPIO_BUS
   logic [COUNT-1:0] out_reg;
   // 复用功能启用寄存器
   logic [COUNT-1:0] af_en_reg;  // 地址2
-  // 复用配置寄存器
+  // 复用选择寄存器
   logic [COUNT-1:0][1:0] af_reg;  // 地址3和地址4
 
 
@@ -78,7 +77,7 @@ module AF_GPIO_BUS
 
   always_comb begin
     for (int i = 0; i < FUNCT_IN_COUNT; ++i) begin
-      funct_in[i] = FUNCT_IN_RESET_VAL[i];
+      funct_in[i] = 1'b0;
       for (int io = 0; io < COUNT; ++io) begin
         if (AF_CFGS[io].in_sel[af_reg[io]] == i) funct_in[i] |= af_in[io];
       end
