@@ -122,7 +122,7 @@ pub struct BootstrapPreloadStr {
 type PreloadStr = BootstrapPreloadStr;
 #[cfg(feature = "emoji_prompt")]
 impl Bootstrap {
-    // "💾:0x56,🛫:0xF1"
+    // "💾:0x56,🛫:0xF1\n"
     pub const CMD: PreloadStr = PreloadStr { addr: 0, len: 20 };
     // "Len="
     pub const LEN: PreloadStr = PreloadStr { addr: 20, len: 4 };
