@@ -4,7 +4,7 @@ module LED_LBUS #(
     parameter int LED_COUNT = 8
 ) (
     xt_lbus_if.port lb,
-    output logic [LED_COUNT-1:0] led = {LED_COUNT{1'b1}}
+    output logic [LED_COUNT-1:0] led = '1
 );
 
   always_ff @(posedge lb.clk) begin

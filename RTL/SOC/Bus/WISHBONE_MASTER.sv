@@ -68,7 +68,7 @@ module WISHBONE_MASTER #(
     if (wb_cyc_o) begin  // 进行中
       if (wb_ack_i) begin
         if (!wb_we_o) begin  // 读周期
-          hb.rdata <= {24'b0, wb_dat_i};
+          hb.rdata <= 32'(wb_dat_i);
         end
       end
     end else if (start_rw) begin  // 空闲

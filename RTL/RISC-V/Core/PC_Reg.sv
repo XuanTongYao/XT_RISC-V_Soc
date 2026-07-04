@@ -29,7 +29,7 @@ module PC_Reg
     end else if (jump) begin
       pc <= jump_addr;
     end else if (stall_n) begin
-      pc <= pc + {29'b0, pc_increase};
+      pc <= pc + 32'(pc_increase);
     end
   end
 

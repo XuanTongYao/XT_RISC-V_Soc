@@ -50,7 +50,7 @@ module ExceptionCtrl
   // assign new_mtval  = 0;
   always_comb begin
     trap.jump_addr = {trap.mtvec.base, 2'b0};
-    code = PadExceptionCode(raise_code);
+    code = 31'(raise_code);
     if (ready_for_int) begin
       // 优先级: 外部->软件->定时器，这和中断号的顺序不一样
       if (trap.mie.meie && trap.mip.meip) begin

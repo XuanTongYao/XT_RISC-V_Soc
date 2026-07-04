@@ -100,7 +100,7 @@ module JtagDTM
       SHIFT_DR: begin
         if (ir_update.idcode) dr_idcode <= {tdi, dr_idcode[31:1]};
         else if (ir_update.dtmcs) dr_dtmcs <= {tdi, dr_dtmcs[31:1]};
-        else if (ir_update.dmi) dr_dmi <= {tdi, dr_dmi[$size(dmi_t)-1:1]};
+        else if (ir_update.dmi) dr_dmi <= {tdi, dr_dmi[$bits(dmi_t)-1:1]};
         else dr_bypass <= tdi;
 
         if (tms) tap_state <= EXIT1_DR;
@@ -203,7 +203,7 @@ module JtagDTM
   wire dm_send_ready;
   wire dm_ack;
   CDC_MCP_Formulation #(
-      .CDC_DATA_WIDTH($size(dmi_t))
+      .CDC_DATA_WIDTH($bits(dmi_t))
   ) u_CDC_MCP_Formulation (
       .clk_send  (tck),
       .rst_send  (dm_rst),

@@ -44,7 +44,7 @@ module AlignedRAM_Adapter (
     unique case (read_byte_offset)
       2'd0: rdata = byte_rdata;  // 字对齐
       2'd1: rdata[7:0] = byte_rdata[1];  // 字节对齐
-      2'd2: rdata[15:0] = {byte_rdata[3], byte_rdata[2]};  // 半字对齐
+      2'd2: rdata[15:0] = byte_rdata[3:2];  // 半字对齐
       2'd3: rdata[7:0] = byte_rdata[3];  // 字节对齐
     endcase
   end

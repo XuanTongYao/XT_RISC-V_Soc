@@ -40,11 +40,6 @@ package Exception_Pkg;
   } exception_t;
 
 
-  //----------实用函数----------//
-  function automatic logic [30:0] PadExceptionCode(logic [USED_CODE_LEN-1:0] code);
-    return {{(31 - USED_CODE_LEN) {1'b0}}, code};
-  endfunction
-
 endpackage
 
 
