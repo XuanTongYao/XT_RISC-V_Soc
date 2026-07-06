@@ -84,11 +84,12 @@ module XT_Soc_Risc_V
   memory_direct_if hb_master[HB_MASTER_COUNT] ();
   // 高速总线 IO设备接口
   xt_hbus_if #(.ADDR_WIDTH(HB_ADDR_WIDTH)) hb_if[HB_DEVICE_COUNT] ();
-  // 高速总线
+  // 高速总线 主设备反馈接口
   xt_hbus_rsp_if hb_rsp_master[HB_MASTER_COUNT] ();
+  // 高速总线
   XT_HB #(
-      .ADDR_WIDTH    (HB_ADDR_WIDTH),    // 总线上主设备的数量
-      .ID_WIDTH      (HB_ID_WIDTH),      // 总线上主设备的数量
+      .ADDR_WIDTH    (HB_ADDR_WIDTH),    // 总线地址总位宽
+      .ID_WIDTH      (HB_ID_WIDTH),      // 总线识别符位宽
       .MASTER_COUNT  (HB_MASTER_COUNT),  // 总线上主设备的数量
       .DEVICE_COUNT  (HB_DEVICE_COUNT),  // 总线上IO设备的数量
       .DEVICE_BASE_ID(DEVICE_BASE_ID)

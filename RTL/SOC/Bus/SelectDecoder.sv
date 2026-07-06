@@ -11,7 +11,8 @@ module SelectDecoder #(
     parameter int ADDR_COUNT = 2,
     parameter int DEVICE_COUNT = 4,
     localparam int IDX_WIDTH = (DEVICE_COUNT == 1) ? 1 : $clog2(DEVICE_COUNT),
-    parameter bit [ID_WIDTH-1:0] BASE_ID[DEVICE_COUNT-1] = '{default: 'd0}
+    localparam int BASE_ID_SIZE = (DEVICE_COUNT == 1) ? 1 : DEVICE_COUNT - 1,
+    parameter bit [ID_WIDTH-1:0] BASE_ID[BASE_ID_SIZE] = '{default: 'd0}
 ) (
     input [ID_WIDTH-1:0] device_id[ADDR_COUNT],
     output logic [DEVICE_COUNT-1:0] sel[ADDR_COUNT],
