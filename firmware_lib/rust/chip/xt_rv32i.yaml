@@ -1,0 +1,33 @@
+---
+# The name of the chip family.
+name: XT RISC-V
+# A list of all the chips in the family.
+variants:
+  # The name of the chip.
+  - name: XT_RV32I
+    # Descriptions of the CPU cores.
+    cores:
+      # The name of the core.
+      - name: main
+        # Architecture
+        type: riscv
+        # Core-specific options. Can be one of: `!Arm {}`, `!Riscv {}`, `!Xtensa {}`
+        core_access_options: !Riscv
+          hart_id: 0
+          jtag_tap: 0
+    # A list of all the available memories and their properties.
+    memory_map:
+      # The type of the memory. Possible are [!Ram, !Nvm, !Generic].
+      # There needs to be at least one of !Ram and !Nvm present.
+      - !Ram
+        range:
+          # The start address of the memory (inclusive).
+          start: 0x00000000
+          # The end address of the memory (exclusive).
+          end: 0x00010000
+        # Marks the memory as the memory which the chip boots from.
+        access:
+          boot: true
+        # List of cores that can access this region
+        cores:
+          - main
