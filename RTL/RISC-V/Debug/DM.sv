@@ -200,7 +200,7 @@ module DM
             if (busy_err) begin
               abstractcs.cmderr <= ERR_BUSY;
             end else if (access_register.failed) begin
-              abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+              abstractcs.cmderr <= access_register.error_state ? ERR_HALT_OR_RESUME : ERR_NOT_SUPPORTED;
             end
             cmd_pending <= 0;
             abstractcs.busy <= 0;

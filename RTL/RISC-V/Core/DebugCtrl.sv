@@ -81,16 +81,20 @@ module DebugCtrl
   logic completed;
 
   wire [15:0] regno = command0.regno;
+  wire invalid_command0_arg = command0.aarsize != 'd2 || regno >= FPR_NO_BASE;
   always_comb begin
     if (!command0.transfer) begin
       command0.completed = 1;
       command0.failed = 0;
-    end else if (!debug.halted || command0.aarsize != 'd2 || regno >= FPR_NO_BASE) begin
+      command0.error_state = 0;
+    end else if (!debug.halted || invalid_command0_arg) begin
       command0.completed = 1;
       command0.failed = 1;
+      command0.error_state = !invalid_command0_arg;  // 因处理器状态而失败
     end else begin
       command0.completed = completed;
       command0.failed = 0;
+      command0.error_state = 0;
     end
   end
 

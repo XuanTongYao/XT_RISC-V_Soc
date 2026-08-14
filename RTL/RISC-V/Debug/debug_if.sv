@@ -42,8 +42,9 @@ interface dm_register_if;
 
   logic [31:0] rdata;
   logic completed, failed;
+  logic error_state;  // 指示因处理器状态而失败
 
-  modport dm(output aarsize, transfer, write, regno, wdata, input rdata, completed, failed);
-  modport hart(input aarsize, transfer, write, regno, wdata, output rdata, completed, failed);
+  modport dm(output aarsize, transfer, write, regno, wdata, input rdata, completed, failed, error_state);
+  modport hart(input aarsize, transfer, write, regno, wdata, output rdata, completed, failed, error_state);
 
 endinterface
