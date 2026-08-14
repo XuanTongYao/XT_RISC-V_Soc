@@ -215,9 +215,23 @@ module DM
           end
         end else begin  // 启动命令
           unique case (command.cmdtype)
-            ACCESS_REGISTER: cmd_pending <= 3'b001;
+            ACCESS_REGISTER: begin
+              if (cmd_ar.aarpostincrement || cmd_ar.postexec) begin
+                abstractcs.busy   <= 0;
+                abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+              end else begin
+                cmd_pending <= 3'b001;
+              end
+            end
             // QUICK_ACCESS: cmd_pending <= 3'b010;
-            ACCESS_MEMORY:   cmd_pending <= 3'b100;
+            ACCESS_MEMORY: begin
+              if (cmd_am.aampostincrement) begin
+                abstractcs.busy   <= 0;
+                abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+              end else begin
+                cmd_pending <= 3'b100;
+              end
+            end
             default: begin
               abstractcs.busy   <= 0;
               abstractcs.cmderr <= ERR_NOT_SUPPORTED;
