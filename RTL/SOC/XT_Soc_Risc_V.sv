@@ -48,9 +48,12 @@ module XT_Soc_Risc_V
       .POWER_ON_PERIOD(0)
   ) u_ClockMonitor (
       .*,
-      .independent_clk(clk_inner_osc),
-      .extern_pll_rst (rst_sw)
+      .independent_clk(clk_inner_osc)
   );
+
+  // 复位按钮
+  logic rst_sw_sync;
+  always_ff @(posedge clk_inner_osc) rst_sw_sync <= rst_sw;
 
   wire clk;
   wire systemtimer_clk;  // 1MHz
@@ -71,7 +74,7 @@ module XT_Soc_Risc_V
   wire rst = ~rst_n;
   SyncAsyncReset u_SyncAsyncReset (
       .clk    (clk),
-      .rst_i_n(pll_lock & ~ndmreset),
+      .rst_i_n(pll_lock & ~ndmreset & ~rst_sw_sync),
       .rst_o_n(rst_n)
   );
 
