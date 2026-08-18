@@ -257,31 +257,20 @@ module XT_Soc_Risc_V
 
 
   //----------WISHBONE总线外设----------//
-  wire wb_rst_i, wb_clk_i;
+  localparam int WB_PORT_SIZE = 8;
+  wishbone_syscon_if wb_sys ();
   WISHBONE_SYSCON u_WISHBONE_SYSCON (
       .*,
-      .wb_clk_o(wb_clk_i),
-      .wb_rst_o(wb_rst_i)
+      .wb(wb_sys)
   );
 
-  wire wb_ack_o;
-  wire [7:0] wb_dat_o, wb_dat_i;
-  wire wb_cyc_i, wb_stb_i, wb_we_i;
-  wire [7:0] wb_adr_i;
-  WISHBONE_MASTER #(
-      .PORT_SIZE(8)
-  ) u_WISHBONE_MASTER (
-      .*,
-      // 与从设备
-      .wb_ack_i(wb_ack_o),
-      .wb_dat_i(wb_dat_o),
-      .wb_dat_o(wb_dat_i),
-      .wb_cyc_o(wb_cyc_i),
-      .wb_stb_o(wb_stb_i),
-      .wb_we_o (wb_we_i),
-      .wb_adr_o(wb_adr_i),
-      // 与XT_HB总线
-      .hb      (hb_if[IDX_WISHBONE])
+  wishbone_if #(.PORT_SIZE(WB_PORT_SIZE)) efb_wb ();
+  WISHBONE_Adapter #(
+      .PORT_SIZE(WB_PORT_SIZE)
+  ) u_WISHBONE_Adapter (
+      .syscon(wb_sys),
+      .wb    (efb_wb),
+      .hb    (hb_if[IDX_WISHBONE])
   );
 
   localparam int CSN_COUNT = 8;
@@ -294,6 +283,16 @@ module XT_Soc_Risc_V
   endgenerate
   efb u_efb (
       .*,
+      .wb_clk_i(wb_sys.clk),
+      .wb_rst_i(wb_sys.rst),
+      .wb_cyc_i(efb_wb.cyc),
+      .wb_stb_i(efb_wb.stb),
+      .wb_we_i (efb_wb.we),
+      .wb_adr_i(efb_wb.adr),
+      .wb_dat_i(efb_wb.dat_master),
+      .wb_dat_o(efb_wb.dat_slave),
+      .wb_ack_o(efb_wb.ack),
+
       .ufm_sn (1'b1),
       .tc_clki(clk_osc),
 

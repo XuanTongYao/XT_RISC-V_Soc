@@ -1,11 +1,10 @@
 module WISHBONE_SYSCON (
     input clk,
     input rst,
-    output logic wb_clk_o,
-    output logic wb_rst_o
+    wishbone_syscon_if.syscon wb
 );
 
-  assign wb_clk_o = clk;
-  assign wb_rst_o = rst;
+  assign wb.clk = clk;
+  assign wb.rst = rst;
 
 endmodule
