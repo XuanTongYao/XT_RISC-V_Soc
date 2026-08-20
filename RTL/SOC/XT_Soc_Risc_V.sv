@@ -30,9 +30,10 @@ module XT_Soc_Risc_V
     input tdi,
     output logic tdo
 );
+  localparam int WB_PORT_SIZE = 8;
 
 
-  //----------时钟树----------//
+  //----------时钟树与复位----------//
   wire clk_inner_osc;
   OSCH #("2.15") osc_int (  //2.15MHz for XO2
       .STDBY(1'b0),
@@ -40,25 +41,12 @@ module XT_Soc_Risc_V
       .SEDSTDBY()
   );
 
-  // FIXME 外部复位有点小问题
-  wire pll_lock;
-  wire pll_rst;
-  ClockMonitor #(
-      .MAX_LOCK_PERIOD((2_150_000 / 1_000) * 40),
-      .POWER_ON_PERIOD(0)
-  ) u_ClockMonitor (
-      .*,
-      .independent_clk(clk_inner_osc)
-  );
-
-  // 复位按钮
-  logic rst_sw_sync;
-  always_ff @(posedge clk_inner_osc) rst_sw_sync <= rst_sw;
 
   wire clk;
   wire systemtimer_clk;  // 1MHz
   wire sampling_clk;  // 153_846，生成19200波特率误差0.16%
   wire lb_clk;  // 100K
+  wire pll_lock, pll_rst;
   SystemPLL u_SystmePLL (
       .CLKI(clk_osc),
       .CLKOP(clk),
@@ -69,13 +57,32 @@ module XT_Soc_Risc_V
       .LOCK(pll_lock)
   );
 
-  wire ndmreset;  // 提前声明
-  wire rst_n;
-  wire rst = ~rst_n;
-  SyncAsyncReset u_SyncAsyncReset (
-      .clk    (clk),
-      .rst_i_n(pll_lock & ~ndmreset & ~rst_sw_sync),
-      .rst_o_n(rst_n)
+
+  wire  ndmreset;  // 提前声明. JTAG调试器复位
+  wire  rst;
+
+  logic rst_sw_sync;  // 复位按钮
+  always_ff @(posedge clk) rst_sw_sync <= rst_sw;
+
+
+  wishbone_syscon_if wb_sys ();
+  WISHBONE_SYSCON u_WISHBONE_SYSCON (
+      .*,
+      .wb(wb_sys)
+  );
+
+
+  wire wb_idle, wb_override;  // 提前声明. 见 ResetWishboneOverride
+  wishbone_if #(.PORT_SIZE(WB_PORT_SIZE)) reset_wb ();
+  ResetController #(
+      .MAX_LOCK_PERIOD((2_150_000 / 1_000) * 15)
+  ) u_ResetController (
+      .*,
+      .independent_clk(clk_inner_osc),
+      .syscon         (wb_sys),
+      .wb             (reset_wb),
+      .reset_req      (ndmreset | rst_sw_sync),
+      .reset          (rst)
   );
 
 
@@ -257,13 +264,6 @@ module XT_Soc_Risc_V
 
 
   //----------WISHBONE总线外设----------//
-  localparam int WB_PORT_SIZE = 8;
-  wishbone_syscon_if wb_sys ();
-  WISHBONE_SYSCON u_WISHBONE_SYSCON (
-      .*,
-      .wb(wb_sys)
-  );
-
   wishbone_if #(.PORT_SIZE(WB_PORT_SIZE)) efb_wb ();
   WISHBONE_Adapter #(
       .PORT_SIZE(WB_PORT_SIZE)
@@ -271,6 +271,16 @@ module XT_Soc_Risc_V
       .syscon(wb_sys),
       .wb    (efb_wb),
       .hb    (hb_if[IDX_WISHBONE])
+  );
+
+  wishbone_if #(.PORT_SIZE(WB_PORT_SIZE)) wb ();
+  ResetWishboneOverride u_ResetWishboneOverride (
+      .override(wb_override),
+      .idle    (wb_idle),
+      .syscon  (wb_sys),
+      .efb_wb  (efb_wb),
+      .reset_wb(reset_wb),
+      .wb      (wb)
   );
 
   localparam int CSN_COUNT = 8;
@@ -285,13 +295,13 @@ module XT_Soc_Risc_V
       .*,
       .wb_clk_i(wb_sys.clk),
       .wb_rst_i(wb_sys.rst),
-      .wb_cyc_i(efb_wb.cyc),
-      .wb_stb_i(efb_wb.stb),
-      .wb_we_i (efb_wb.we),
-      .wb_adr_i(efb_wb.adr),
-      .wb_dat_i(efb_wb.dat_master),
-      .wb_dat_o(efb_wb.dat_slave),
-      .wb_ack_o(efb_wb.ack),
+      .wb_cyc_i(wb.cyc),
+      .wb_stb_i(wb.stb),
+      .wb_we_i (wb.we),
+      .wb_adr_i(wb.adr),
+      .wb_dat_i(wb.dat_master),
+      .wb_dat_o(wb.dat_slave),
+      .wb_ack_o(wb.ack),
 
       .ufm_sn (1'b1),
       .tc_clki(clk_osc),
