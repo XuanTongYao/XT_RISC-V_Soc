@@ -62,11 +62,7 @@ module DebugCtrl
     end
   end
 
-  // TODO 复位停止内核，按照标准应该在复位完成后立即停止
 
-  // NOTE: 理论上复位停止内核，应该把if_id和id_ex的地址清0
-  // 这样`resume_addr`才是正确的(暂停到第一条指令)
-  // 但是`debug.halt`延迟一下，刚好使pc=0传播到了id_ex（纯属巧合）
   assign debug.new_dpc = resume_addr;
   always_ff @(posedge clk) begin
     if (debug.valid_haltreq) begin
