@@ -5,12 +5,11 @@ module XT_Soc_Risc_V
 (
     input                         clk_osc,
     input                         rst_sw,
-    input                         download_mode,
     inout        [GPIO_COUNT-1:0] gpio,
     input        [           3:0] key_raw,
-    input        [           1:0] sw_raw,
+    input        [           2:0] sw_raw,
     output logic [           7:0] led,
-    output logic [           8:0] ledsd        [2],
+    output logic [           8:0] ledsd  [2],
 
     input        uart_rx,
     output logic uart_tx,
@@ -213,6 +212,7 @@ module XT_Soc_Risc_V
   // 从ROM自举启动和UART程序下载
   HarvardBootstrap u_HarvardBootstrap (
       .*,
+      .download_key(~key_raw[0]),
       .hb(hb32_if[IDX_BOOT_CTRL])
   );
 
@@ -337,8 +337,7 @@ module XT_Soc_Risc_V
 
   SW_KEY_LBUS u_SW_KEY_LBUS (
       .*,
-      .lb(lb_if[0]),
-      .sw_raw({sw_raw, download_mode})
+      .lb(lb_if[0])
   );
 
   LED_LBUS #(

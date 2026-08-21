@@ -14,7 +14,7 @@ module HarvardBootstrap
     // 总线接口
     xt_hbus32_if.port hb,
 
-    input download_mode
+    input download_key
 );
 
   // 地址读后自增(使用前必须写入正确地址)
@@ -56,7 +56,7 @@ module HarvardBootstrap
   always_ff @(posedge hb.clk) begin
     if (hb.ren) begin
       if (hb.raddr == 'd0) begin
-        hb.rdata <= 32'(download_mode);
+        hb.rdata <= 32'(download_key);
       end else begin
         hb.rdata <= 32'(rom_data);
       end
