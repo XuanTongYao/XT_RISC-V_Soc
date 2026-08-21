@@ -58,6 +58,7 @@ module XT_Soc_Risc_V
 
 
   wire  ndmreset;  // 提前声明. JTAG调试器复位
+  wire  bootstrapreset;  // 提前声明. 自举控制器复位
   wire  rst;
 
   logic rst_sw_sync;  // 复位按钮
@@ -80,7 +81,7 @@ module XT_Soc_Risc_V
       .independent_clk(clk_inner_osc),
       .syscon         (wb_sys),
       .wb             (reset_wb),
-      .reset_req      (ndmreset | rst_sw_sync),
+      .reset_req      (ndmreset | rst_sw_sync | bootstrapreset),
       .reset          (rst)
   );
 
@@ -213,6 +214,7 @@ module XT_Soc_Risc_V
   HarvardBootstrap u_HarvardBootstrap (
       .*,
       .download_key(~key_raw[0]),
+      .reset_req(bootstrapreset),
       .hb(hb32_if[IDX_BOOT_CTRL])
   );
 

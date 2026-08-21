@@ -51,7 +51,7 @@
 
 #define SET_STR_ARGS(name) lui x5, (STR_##name##_LEN<<8|STR_##name);
 
-#define INTO_RAM_MODE sb x13, BOOTSTRAP_BASE-SP_BASE(x4)
+#define INTO_RAM_MODE sb x0, BOOTSTRAP_BASE-SP_BASE(x4)
 #define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-SP_BASE(x4)
 #define SET_PRELOAD_STR_ADDR(reg) sb reg, BOOTSTRAP_BASE+4-SP_BASE(x4)
 #define GET_PRELOAD_STR_AUTO_INC(reg) lbu reg, BOOTSTRAP_BASE+8-SP_BASE(x4)
@@ -89,7 +89,6 @@ main:
 reset_flash:
     li x7, 0x40
     WRITE_FLASH_CON(x7)
-    WRITE_FLASH_CON(x0)
 enable_transparent_ufm:
     li a0, 0x00000874   # 发送0x74 08 00 00
     jal no_data_frame
@@ -126,7 +125,7 @@ flash_nop:              # 要求a1保存不变 一直为0
     jal command_frame   # nop指令
 boot_ram_mode:
     INTO_RAM_MODE
-    j _start
+1:  j 1b
 error:
     SET_STR_ARGS(ERR)
     jal x15, tx_str_block_auto_increment
