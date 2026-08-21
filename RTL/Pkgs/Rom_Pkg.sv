@@ -1,15 +1,15 @@
 package Rom_Pkg;
 
-  localparam int unsigned PRELOAD_STR_DEPTH = 48;
+  localparam int unsigned PRELOAD_STR_DEPTH = 38;
   localparam int unsigned PRELOAD_STR_WIDTH = 8;
   // verilog_format: off
   localparam bit [PRELOAD_STR_WIDTH-1:0] PRELOAD_STR[PRELOAD_STR_DEPTH] = '{
       // 1
-      8'hF0,8'h9F,8'h92,8'hBE,8'h3A,8'h30,8'h78,8'h35,8'h36,8'h2C,8'hF0,8'h9F,8'h9B,8'hAB,8'h3A,8'h30,8'h78,8'h46,8'h31,8'h0A,
+      8'hF0,8'h9F,8'h94,8'h93,8'h3A,8'h30,8'h78,8'h35,8'h36,8'h0A,
       // 2
       8'h4C,8'h65,8'h6E,8'h3D,
       // 3
-      8'h0A,8'hF0,8'h9F,8'h94,8'h9B,8'h3A,8'h30,8'h78,8'h37,8'h38,
+      8'h0A,8'hF0,8'h9F,8'h92,8'hBE,8'h3A,8'h30,8'h78,8'h37,8'h38,
       // 4
       8'h0A,8'hE2,8'h9C,8'h85,8'h3A,8'h30,8'h78,8'h35,8'h37,
       // 5
@@ -18,7 +18,7 @@ package Rom_Pkg;
   // verilog_format: on
 
 
-  localparam int unsigned BOOT_DEPTH = 127;
+  localparam int unsigned BOOT_DEPTH = 125;
   localparam int unsigned BOOT_WIDTH = 32;
   localparam bit [BOOT_WIDTH-1:0] BOOT[BOOT_DEPTH] = '{
       32'h00002137,
@@ -26,23 +26,22 @@ package Rom_Pkg;
       32'h07018193,
       32'h00002237,
       32'h1E000713,
-      32'h0F100693,
       32'h04000393,
       32'h00718023,
       32'h00001537,
       32'h87450513,
-      32'h140000EF,
+      32'h13C000EF,
       32'h01900293,
       32'hFFF28293,
       32'hFE029EE3,
       32'h00024383,
       32'h06039A63,
-      32'h124000EF,
+      32'h120000EF,
       32'h00000493,
       32'h01001537,
       32'h0CA50513,
       32'h08000593,
-      32'h118000EF,
+      32'h114000EF,
       32'hFF010313,
       32'h00032383,
       32'h00049463,
@@ -56,32 +55,31 @@ package Rom_Pkg;
       32'h02600513,
       32'h00000593,
       32'h00300293,
-      32'h0E4000EF,
+      32'h0E0000EF,
       32'h0FF00513,
       32'h00100293,
-      32'h0D8000EF,
+      32'h0D4000EF,
       32'h00020023,
       32'h0000006F,
-      32'h0042B2B7,
-      32'h128007EF,
+      32'h004212B7,
+      32'h124007EF,
       32'hFF9FF06F,
-      32'h014002B7,
-      32'h11C007EF,
+      32'h00A002B7,
+      32'h118007EF,
       32'h06424383,
       32'h0023F393,
       32'hFE0388E3,
       32'h06024383,
-      32'hF6768CE3,
       32'h05600313,
-      32'hFE7310E3,
-      32'h004142B7,
+      32'hFE7312E3,
+      32'h0040A2B7,
       32'h0E0000EF,
       32'h00851413,
       32'h0DC000EF,
       32'h00A46433,
       32'hFE0406E3,
       32'hFE8764E3,
-      32'h00A182B7,
+      32'h00A0E2B7,
       32'h0C4000EF,
       32'h07800313,
       32'hFEA31AE3,
@@ -105,11 +103,11 @@ package Rom_Pkg;
       32'hFE029EE3,
       32'hFFF40413,
       32'hFC0416E3,
-      32'h009222B7,
+      32'h009182B7,
       32'h064000EF,
       32'h05700313,
       32'hFEA31AE3,
-      32'hF51FF06F,
+      32'hF55FF06F,
       32'h04700513,
       32'h00000593,
       32'h00400293,
