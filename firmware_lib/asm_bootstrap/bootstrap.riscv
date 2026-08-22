@@ -12,7 +12,7 @@
 # x10/a0是函数参数/返回值
 # x11/a1是函数参数/返回值
 # x12/a2可作为一个保存数据
-# x13始终是常量0xF1
+# x13 未定义
 # x14始终是MAX_COPY_PAGE，并在执行boot后变为零(当作计数值使用了)
 # x15始终是第二个返回地址，用于嵌套调用
 
@@ -31,27 +31,26 @@
 .equ SSTACK, 4096+4096
 .equ MAX_COPY_PAGE, (SSTACK - STACK_SIZE)>>4
 
-.equ BOOT_IMM, 0xF1
 
-# "💾:0x56,🛫:0xF1"
+# "🔓:0x56"
 .equ STR_CMD, 0
-.equ STR_CMD_LEN, 20
+.equ STR_CMD_LEN, 10
 # "Len="
-.equ STR_LEN, 20
+.equ STR_LEN, 10
 .equ STR_LEN_LEN, 4
-# "\n🔛:0x78"
-.equ STR_START_DOWNLOAD, 24
+# "\n💾:0x78"
+.equ STR_START_DOWNLOAD, 14
 .equ STR_START_DOWNLOAD_LEN, 10
 # "\n✅:0x57"
-.equ STR_CONFIRM, 34
+.equ STR_CONFIRM, 24
 .equ STR_CONFIRM_LEN, 9
 # "\n❌" 
-.equ STR_ERR, 43
+.equ STR_ERR, 33
 .equ STR_ERR_LEN, 4
 
 #define SET_STR_ARGS(name) lui x5, (STR_##name##_LEN<<8|STR_##name);
 
-#define INTO_RAM_MODE sb x13, BOOTSTRAP_BASE-SP_BASE(x4)
+#define INTO_RAM_MODE sb x0, BOOTSTRAP_BASE-SP_BASE(x4)
 #define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-SP_BASE(x4)
 #define SET_PRELOAD_STR_ADDR(reg) sb reg, BOOTSTRAP_BASE+4-SP_BASE(x4)
 #define GET_PRELOAD_STR_AUTO_INC(reg) lbu reg, BOOTSTRAP_BASE+8-SP_BASE(x4)
@@ -85,11 +84,9 @@ main:
     lla x3, FLASH_BASE
     lla x4, SP_BASE
     li x14, MAX_COPY_PAGE
-    li x13, BOOT_IMM
 reset_flash:
     li x7, 0x40
     WRITE_FLASH_CON(x7)
-    WRITE_FLASH_CON(x0)
 enable_transparent_ufm:
     li a0, 0x00000874   # 发送0x74 08 00 00
     jal no_data_frame
@@ -112,31 +109,21 @@ boot:
     sw x7, 0(s1)
     addi s1, s1, 4
     addi x6, x6, 4
-    bltu x6, x2, 1b     # 地址小于栈顶指针说明还没写完一页
+    bltu x6, x2, 1b     # 地址小于缓冲区顶部指针说明还没写完一页
     addi x14, x14, -1
     bnez x14, 2b
-disable_transparent_ufm:
-    li a0, 0x000026     # 发送0x26 00 00
-    li a1, 0x00         # 不读写
-    li x5, 3            # x5 = 3
-    jal command_frame
-flash_nop:              # 要求a1保存不变 一直为0
-    li a0, 0xFF         # 发送0xFF
-    li x5, 1            # x5 = 1
-    jal command_frame   # nop指令
 boot_ram_mode:
     INTO_RAM_MODE
-    j _start
+1:  j 1b
 error:
     SET_STR_ARGS(ERR)
     jal x15, tx_str_block_auto_increment
     j error
 
-# 可以尝试立即数优化 0xF1和INTO_RAM_MODE用同一个立即数 -1
 # 确认的立即数都换成0x80 -3
 
 # s0保存了页面长度
-# 无限循环除非输入0xF1启动
+# 无限循环，要重新启动请使用复位
 download:
     SET_STR_ARGS(CMD)
     jal x15, tx_str_block_auto_increment
@@ -144,7 +131,6 @@ download:
     andi x7, x7, 0x02
     beqz x7, download # 判断rx_end是否为1
     READ_UART_DATA(x7)
-    beq x13, x7, boot # 直接跳回去
     li x6, 0x56
     bne x6, x7, download
 # 进入下载模式

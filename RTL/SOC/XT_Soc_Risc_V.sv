@@ -5,12 +5,11 @@ module XT_Soc_Risc_V
 (
     input                         clk_osc,
     input                         rst_sw,
-    input                         download_mode,
     inout        [GPIO_COUNT-1:0] gpio,
     input        [           3:0] key_raw,
-    input        [           1:0] sw_raw,
+    input        [           2:0] sw_raw,
     output logic [           7:0] led,
-    output logic [           8:0] ledsd        [2],
+    output logic [           8:0] ledsd  [2],
 
     input        uart_rx,
     output logic uart_tx,
@@ -42,7 +41,7 @@ module XT_Soc_Risc_V
   );
 
 
-  wire clk;
+  wire clk;  // 12MHz
   wire systemtimer_clk;  // 1MHz
   wire sampling_clk;  // 153_846，生成19200波特率误差0.16%
   wire lb_clk;  // 100K
@@ -59,6 +58,7 @@ module XT_Soc_Risc_V
 
 
   wire  ndmreset;  // 提前声明. JTAG调试器复位
+  wire  bootstrapreset;  // 提前声明. 自举控制器复位
   wire  rst;
 
   logic rst_sw_sync;  // 复位按钮
@@ -66,10 +66,7 @@ module XT_Soc_Risc_V
 
 
   wishbone_syscon_if wb_sys ();
-  WISHBONE_SYSCON u_WISHBONE_SYSCON (
-      .*,
-      .wb(wb_sys)
-  );
+  WISHBONE_SYSCON u_WISHBONE_SYSCON (.*);
 
 
   wire wb_idle, wb_override;  // 提前声明. 见 ResetWishboneOverride
@@ -81,7 +78,7 @@ module XT_Soc_Risc_V
       .independent_clk(clk_inner_osc),
       .syscon         (wb_sys),
       .wb             (reset_wb),
-      .reset_req      (ndmreset | rst_sw_sync),
+      .reset_req      (ndmreset | rst_sw_sync | bootstrapreset),
       .reset          (rst)
   );
 
@@ -210,9 +207,11 @@ module XT_Soc_Risc_V
       .devices(hb32_if)
   );
 
-  // 从ROM自举启动和UART程序下载
+  // 自举控制器
   HarvardBootstrap u_HarvardBootstrap (
       .*,
+      .download_key(~key_raw[0]),
+      .reset_req(bootstrapreset),
       .hb(hb32_if[IDX_BOOT_CTRL])
   );
 
@@ -337,8 +336,7 @@ module XT_Soc_Risc_V
 
   SW_KEY_LBUS u_SW_KEY_LBUS (
       .*,
-      .lb(lb_if[0]),
-      .sw_raw({sw_raw, download_mode})
+      .lb(lb_if[0])
   );
 
   LED_LBUS #(
