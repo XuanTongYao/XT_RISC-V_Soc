@@ -27,7 +27,7 @@ pub mod regs {
 
     #[repr(C)]
     pub struct Bootstrap {
-        pub debug: RW<u8>,
+        pub config: RW<u8>,
         __: [u8; 3],
         pub preload_str_addr: WO<u8>,
         ___: [u8; 3],
@@ -91,7 +91,8 @@ pub mod regs {
 
 pub type Bootstrap = Peripheral<regs::Bootstrap, { sp_base(PeripheralId::Bootstrap) }>;
 impl Bootstrap {
-    const INTO_NORMAL_MODE: u8 = 0xF1;
+    const INTO_RAM_MODE: u8 = 0x00;
+    const INTO_ROM_MODE: u8 = 0x55;
     pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
 
     crate::set_value!(
@@ -106,13 +107,23 @@ impl Bootstrap {
 
     #[inline(always)]
     pub fn is_download_mode(&self) -> bool {
-        self.reg().debug.read() != 0
+        self.reg().config.read() != 0
     }
 
-    /// 将指令来源切换至RAM
+    /// 将指令区域映射到RAM
+    /// # Safety
+    /// 使系统硬件复位
     #[inline(always)]
-    pub fn into_ram_mode(&mut self) {
-        unsafe { self.reg().debug.write(Self::INTO_NORMAL_MODE) }
+    pub unsafe fn into_ram_mode(&mut self) {
+        unsafe { self.reg().config.write(Self::INTO_RAM_MODE) }
+    }
+
+    /// 将指令区域映射到ROM
+    /// # Safety
+    /// 使系统硬件复位
+    #[inline(always)]
+    pub unsafe fn into_rom_mode(&mut self) {
+        unsafe { self.reg().config.write(Self::INTO_ROM_MODE) }
     }
 }
 pub struct BootstrapPreloadStr {
@@ -122,29 +133,29 @@ pub struct BootstrapPreloadStr {
 type PreloadStr = BootstrapPreloadStr;
 #[cfg(feature = "emoji_prompt")]
 impl Bootstrap {
-    // "💾:0x56,🛫:0xF1\n"
-    pub const CMD: PreloadStr = PreloadStr { addr: 0, len: 20 };
+    // "🔓:0x56\n"
+    pub const CMD: PreloadStr = PreloadStr { addr: 0, len: 10 };
     // "Len="
-    pub const LEN: PreloadStr = PreloadStr { addr: 20, len: 4 };
-    // "\n🔛:0x78"
-    pub const START_DOWNLOAD: PreloadStr = PreloadStr { addr: 24, len: 10 };
+    pub const LEN: PreloadStr = PreloadStr { addr: 10, len: 4 };
+    // "\n💾:0x78"
+    pub const START_DOWNLOAD: PreloadStr = PreloadStr { addr: 14, len: 10 };
     // "\n✅:0x57"
-    pub const CONFIRM: PreloadStr = PreloadStr { addr: 34, len: 9 };
+    pub const CONFIRM: PreloadStr = PreloadStr { addr: 24, len: 9 };
     // "\n❌"
-    pub const ERR: PreloadStr = PreloadStr { addr: 43, len: 4 };
+    pub const ERR: PreloadStr = PreloadStr { addr: 33, len: 4 };
 }
 #[cfg(feature = "zh_cn_prompt")]
 impl Bootstrap {
-    // "下载:0x56,启动:0xF1\n"
-    pub const CMD: PreloadStr = PreloadStr { addr: 0, len: 24 };
+    // "下载:0x56\n"
+    pub const CMD: PreloadStr = PreloadStr { addr: 0, len: 12 };
     // "Len="
-    pub const LEN: PreloadStr = PreloadStr { addr: 24, len: 4 };
+    pub const LEN: PreloadStr = PreloadStr { addr: 12, len: 4 };
     // "\n开始:0x78"
-    pub const START_DOWNLOAD: PreloadStr = PreloadStr { addr: 28, len: 12 };
+    pub const START_DOWNLOAD: PreloadStr = PreloadStr { addr: 16, len: 12 };
     // "\n完成:0x57"
-    pub const CONFIRM: PreloadStr = PreloadStr { addr: 40, len: 12 };
+    pub const CONFIRM: PreloadStr = PreloadStr { addr: 28, len: 12 };
     // "\nERROR"
-    pub const ERR: PreloadStr = PreloadStr { addr: 52, len: 6 };
+    pub const ERR: PreloadStr = PreloadStr { addr: 40, len: 6 };
 }
 
 pub type EintController =

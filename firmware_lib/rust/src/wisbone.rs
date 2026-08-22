@@ -757,7 +757,6 @@ impl Flash {
     pub const PAGE_MASK: u16 = 0x3FFF;
 
     //=== 命令定义 ===//
-    // LSC和ISC到底指代什么东西，我也不知道，Lattice的手册就是依托答辩
     // 通用命令
     pub const LSC_READ_STATUS: u8 = 0x3C;
     pub const LSC_CHECK_BUSY: u8 = 0xF0;
@@ -830,17 +829,12 @@ impl Flash {
 
     #[inline(always)]
     pub fn reset(&mut self) {
-        unsafe {
-            self.reg().control.write(0x40.into());
-            self.reg().control.write(0x00.into());
-        }
+        unsafe { self.reg().control.write(0x40.into()) }
     }
 
     #[inline(always)]
     pub fn nop(&mut self) {
-        self.command(|fl| unsafe {
-            fl.reg().write_data.write(Self::ISC_NOOP);
-        });
+        self.command(|fl| flash_write!(fl, Self::ISC_NOOP));
     }
 
     #[inline]

@@ -41,7 +41,7 @@ module XT_Soc_Risc_V
   );
 
 
-  wire clk;
+  wire clk;  // 12MHz
   wire systemtimer_clk;  // 1MHz
   wire sampling_clk;  // 153_846，生成19200波特率误差0.16%
   wire lb_clk;  // 100K
@@ -66,10 +66,7 @@ module XT_Soc_Risc_V
 
 
   wishbone_syscon_if wb_sys ();
-  WISHBONE_SYSCON u_WISHBONE_SYSCON (
-      .*,
-      .wb(wb_sys)
-  );
+  WISHBONE_SYSCON u_WISHBONE_SYSCON (.*);
 
 
   wire wb_idle, wb_override;  // 提前声明. 见 ResetWishboneOverride
@@ -210,7 +207,7 @@ module XT_Soc_Risc_V
       .devices(hb32_if)
   );
 
-  // 从ROM自举启动和UART程序下载
+  // 自举控制器
   HarvardBootstrap u_HarvardBootstrap (
       .*,
       .download_key(~key_raw[0]),
