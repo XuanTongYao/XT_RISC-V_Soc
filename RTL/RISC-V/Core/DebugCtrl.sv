@@ -28,6 +28,7 @@ module DebugCtrl
   wire ebreak_debug = exception_commit.raise && exception_commit.code == BREAKPOINT && debug.dcsr.ebreakm;
   wire step_debug = debug.dcsr.step && !flushing_pipeline;  // 等指令真正执行完成
 
+  // FIXME ebreakm似乎有点问题，异常会在halt前发生？
   // 因为触发调试是异步的，采用与中断相同的策略
   // 等本条指令执行完成后再处理
   assign debug.bypass_wfi = dm_hart.haltreq;  // 跳过wfi

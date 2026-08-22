@@ -5,15 +5,11 @@
 一个极其简易的`RV32I_Zicsr_Sdext`指令集**单核MCU**，所有用户级与特权级指令支持，仅运行在机器模式或外部调试模式。
 
 1. [RTL](RTL)包含了所有Verilog代码，顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
-2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和[Rust版本](firmware_lib/rust)，C语言固件库已不再维护
+2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和[Rust版本](firmware_lib/rust)，C语言固件库已**不再维护**
 3. `rust_release/debug`是rust程序默认的构建输出位置
-4. [ACT4](ACT4)包含了架构认证测试相关的内容(最新的ACT4框架)
+4. [ACT4](ACT4)包含了[RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)相关的内容
 
-[RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)
-
-处理器内核消耗约**2061**个LUT4(参考)
-
-PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。外设基本是围绕[该核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)设计的，但是处理器内核可以很方便移植到其他FPGA上。
+部分模块与IP核(PLL, EFB, RAM)依赖了**LCMXO2-4000HC-4MG132C**器件与其[核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)上的专有资源，但是处理器内核可以很方便移植到其他设备上。IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。
 
 ## 目录
 
@@ -23,7 +19,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
     - [RV32I\_Zicsr\_Sdext内核](#rv32i_zicsr_sdext内核)
       - [异常/中断控制器](#异常中断控制器)
       - [调试模块](#调试模块)
-    - [时钟树](#时钟树)
+    - [时钟树与复位](#时钟树与复位)
     - [其他核心模块](#其他核心模块)
       - [外部中断控制器](#外部中断控制器)
       - [MTime和Mtimecmp(机器计时器)](#mtime和mtimecmp机器计时器)
@@ -35,8 +31,8 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
     - [地址分配与MMIO](#地址分配与mmio)
     - [等待机制](#等待机制)
   - [XT低速总线](#xt低速总线)
+  - [编译工具链](#编译工具链)
   - [BOOTSTRAP](#bootstrap)
-    - [编译工具链](#编译工具链)
     - [程序下载](#程序下载)
   - [引脚与GPIO](#引脚与gpio)
   - [TODO\_LIST](#todo_list)
@@ -51,8 +47,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 - 三级流水线：取指、译码、执行
 - FENCE指令空实现(等效NOP)
-- ECALL指令跳转异常
-- WFI指令暂停流水线
+- WFI指令暂停流水线并等待中断
 - 精简的CSR寄存器([详见RTL代码](RTL/RISC-V/Core/CSR.sv))
 - 支持外部调试(最小 RISC-V 调试规范)
 - 调试模式时始终禁用中断
@@ -62,7 +57,7 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 - 支持标准中断：定时器中断、软件中断、外部中断
 - 所有外部中断，由自定义的外部中断控制器进行重定向，完成中断向量跳转
-- 不支持中断嵌套
+- 不在硬件层面实现中断嵌套
 
 #### 调试模块
 
@@ -72,13 +67,13 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 - 在内核停止时可执行**访问寄存器抽象命令**，可访问所有允许软件访问的寄存器
 - 允许复位MCU上的所有非调试逻辑
 
-### 时钟树
+### 时钟树与复位
 
-时钟频率可根据实际情况修改。
+时钟频率可根据实际情况修改。由于MXO2系列芯片在开启Flash接口时全局复位/置位(GSR)会被禁用，复位控制器在复位前会自动关闭Flash接口。同时它还监控PLL状态，若出现脱锁将自动重置PLL并执行复位。
 
-- 内部振荡器频率**2.15MHz**，作为时钟监视器的独立时钟源
-- 时钟监视器监控PLL状态，若出现脱锁将自动重置PLL并发出全局`RST`信号
-- 时钟监视器可设置上电等待时间、PLL锁定等待时间，拥有一个外部重置源，通过按钮可重置系统
+拨码开关4(SW4)作为外部复位开关，允许用户手动复位系统。
+
+- 内部振荡器频率**2.15MHz**，作为复位控制器的独立时钟源
 - PLL输入时钟频率**12MHz**
 - 核心、高速总线、WISHBONE总线位于同一时钟域，基准频率**12MHz**
 - 机器计时器固定频率**1MHz**
@@ -121,11 +116,10 @@ PLL等IP核适用于**LCMXO2-4000HC-4MG132C**FPGA器件，IP核仅包含`ipx`和
 
 1. 左PLL动态配置 **TODO**
 2. 右PLL动态配置 **TODO**
-3. 1号I2C接口
-4. 2号I2C接口
-5. SPI接口
-6. 16bit定时器/计数器
-7. 程序存储Flash
+3. 1号/2号 I2C接口
+4. SPI接口
+5. 16bit定时器/计数器
+6. 程序存储Flash
 
 ## XT高速总线
 
@@ -182,44 +176,53 @@ XT_HB通过[CDC_MCP_Formulation模块](RTL/Utils/Clock/CDC_MCP_Formulation.sv)�
 
 ![XT_LB读写时序](https://svg.wavedrom.com/github/XuanTongYao/XT_RISC-V_Soc/main/assets/waveform/xt_lb.json5)
 
-## BOOTSTRAP
-
-自举加载流程：
-
-1. 初始化加载ROM中的bootstrap程序
-2. 把FLASH中的数据逐个拷贝到主存(RAM)中
-3. 指令地址跳转到0
-4. 触发脉冲将MUX切换到主存(RAM)
-
-### 编译工具链
+## 编译工具链
 
 [SiFive riscv64-unknown-elf-gcc-8.3.0](https://github.com/sifive/freedom-tools/releases/tag/v2020.04.0-Toolchain.Only)已停止更新但**程序尺寸最小**~~，自举程序由此编译~~
 
 [riscv-none-elf-gcc-xpack](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack)标准最新，默认情况下**推荐使用**
 
-rust需要安装`riscv32i-unknown-none-elf`编译目标，同时为了在rust中使用异常处理函数，请选择`nightly`版本。
+rust需要安装`riscv32i-unknown-none-elf`编译目标。为了使用构建脚本，还需要安装[`cargo-binutils`](https://github.com/rust-embedded/cargo-binutils)。同时为了在rust中使用中断处理函数，请选择`nightly`版本。详见[#111889](https://github.com/rust-lang/rust/issues/111889),[RFC 3246](https://github.com/rust-lang/rfcs/pull/3246)
+
+## BOOTSTRAP
+
+内核在异步复位时始终将PC寄存器复位到0x0（代码中可设置的参数值），此地址(包括)往上的一部分内存区域就是指令区域。自举控制器会对指令接口进行映射，可以将指令区域映射到ROM或RAM。**上电时**会映射到ROM，可以通过自举控制器的寄存器修改映射模式，修改映射模式会使系统自动复位。
+
+![指令区域映射更新时序](https://svg.wavedrom.com/github/XuanTongYao/XT_RISC-V_Soc/main/assets/waveform/inst_remap.json5)
+
+自举加载流程：
+
+1. 松开下载开关(按钮1, K1)并从ROM启动
+2. 执行ROM中的bootstrap程序
+3. 把Flash中存储的程序加载到主存RAM中
+4. 将映射模式修改为RAM
+5. 死循环等待系统复位
+
+如果Flash中缺少有效的程序，在第3步会持续向串口打印错误信息。
 
 ### 程序下载
 
-`1页 == 16字节`
-`1 page == 16 byte`
+当内核从ROM启动时，其中的自举程序可以完成程序下载，使用串口下载程序二进制文件到Flash中。
+
+`1页 == 16字节`,`1 page == 16 byte`
 
 最大页数由Flash决定，当前器件为767
 
-综合前请使用[自举程序](firmware_lib/asm_bootstrap)和[字符串文件](RTL/mem_files/preload_emoji.txt)重新生成`rom_boot`与`rom_str`IP核
+综合前最好使用[自举程序](firmware_lib/asm_bootstrap)和[字符串文件](RTL/mem_files/preload_emoji.txt)更新[Rom_Pkg.sv](RTL/Pkgs/Rom_Pkg.sv)中的数据，必要时请重新编译自举程序。
 
-emoji提示`💾下载 🛫启动 🔛开始 ✅完成 ❌错误`
+emoji提示:`🔓开始 💾下载 ✅完成 ❌错误`
 
-1. 将下载开关(拨码开关1)拨动到高电平位置
+1. 按住下载开关(按钮1, K1)并从ROM启动
 2. 连接电脑并打开串口程序
-3. 选择下载操作；**操作提示：*💾:0x56,🛫:0xF1***
+3. 开始下载操作；**操作提示：*🔓:0x56***
 4. 发送程序的页数(共两字节，先高位)；**操作提示：*Len=***
-5. 确认开始下载；**操作提示：*🔛:0x78***
+5. 确认开始下载；**操作提示：*💾:0x78***
 6. 发送程序二进制文件（确保已经补零对齐到页长度）
 7. 确认下载完成；**操作提示：*✅:0x57***
-8. 启动程序；**操作提示：*💾:0x56,🛫:0xF1***
+8. 程序回到第3步
+9. 若要完成自举加载，松开下载开关并从ROM启动(可使用复位开关, SW4)
 
-![alt text](img/程序下载.png)
+![程序下载演示](img/程序下载.png)
 
 ## 引脚与GPIO
 
