@@ -181,12 +181,12 @@ module CSR
         dcsr.cause <= debug.new_cause;
       end else if (trap.occurred) begin
         mstatus.mpie <= mstatus.mie;
-        mstatus.mie  <= 0;
+        mstatus.mie <= 0;
         // mstatus.mpp <= MACHINE;
+        mcause <= trap.new_mcause;
       end else if (trap.returned) begin
         mstatus.mpie <= 1'b1;
-        mstatus.mie <= mstatus.mpie;
-        mcause <= trap.new_mcause;
+        mstatus.mie  <= mstatus.mpie;
       end
     end
   end
