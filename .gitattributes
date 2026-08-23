@@ -1,0 +1,14 @@
+*.v         text eol=lf
+*.sv        text eol=lf
+*.svh       text eol=lf
+*.rs        text eol=lf
+*.riscv     text eol=lf
+*.c         text eol=lf
+*.h         text eol=lf
+*.py        text eol=lf
+*.toml      text eol=lf
+*.yaml      text eol=lf
+*.md        text eol=lf
+*.json5     text eol=lf
+
+*.html  linguist-detectable=false
