@@ -31,7 +31,6 @@ pub mod rv_core;
 pub mod wisbone;
 
 pub use rv_core::*;
-pub use xt_riscv_mcu_macros::entry;
 
 mod common {
 

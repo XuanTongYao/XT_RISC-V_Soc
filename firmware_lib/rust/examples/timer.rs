@@ -4,7 +4,7 @@
 
 use core::sync::atomic::{AtomicU16, Ordering};
 use riscv::interrupt::Interrupt;
-use xt_riscv_mcu::entry;
+use riscv_macros::entry;
 use xt_riscv_mcu::hb32::{EintController, Gpio, Uart};
 use xt_riscv_mcu::lb::LEDSD;
 use xt_riscv_mcu::wisbone::Timer;

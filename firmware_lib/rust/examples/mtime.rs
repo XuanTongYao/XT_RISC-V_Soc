@@ -3,7 +3,7 @@
 #![feature(abi_riscv_interrupt)]
 
 use riscv::interrupt::Interrupt::*;
-use xt_riscv_mcu::entry;
+use riscv_macros::entry;
 use xt_riscv_mcu::hb32::{EintController, Mtime, Uart};
 use xt_riscv_mcu::lb::{LED, LEDSD};
 use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, set_interrupt};

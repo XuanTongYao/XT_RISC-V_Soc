@@ -20,4 +20,4 @@ pastey = "0.2.3"
 riscv = { version = "0.16.1" }
 seq-macro = "0.3.6"
 volatile-register = "0.2.2"
-xt-riscv-mcu-macros = { path = "./macros" }
+riscv-macros = { version = "0.4.1", features = ["riscv-rt"] }

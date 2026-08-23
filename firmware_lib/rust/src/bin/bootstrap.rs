@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use xt_riscv_mcu::entry;
+use riscv_macros::entry;
 use xt_riscv_mcu::hb32::BootstrapPreloadStr;
 use xt_riscv_mcu::hb32::{Bootstrap, Uart};
 use xt_riscv_mcu::wisbone::Flash;

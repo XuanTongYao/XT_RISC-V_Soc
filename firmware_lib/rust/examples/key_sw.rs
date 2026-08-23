@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use xt_riscv_mcu::entry;
+use riscv_macros::entry;
 use xt_riscv_mcu::lb::{KeySwitch, LEDSD};
 
 #[entry]

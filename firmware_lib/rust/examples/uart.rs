@@ -3,7 +3,7 @@
 
 use core::mem::MaybeUninit;
 
-use xt_riscv_mcu::entry;
+use riscv_macros::entry;
 use xt_riscv_mcu::hb32::Uart;
 
 // 这里也会出现C程序的问题，'!'字符打印不出来，怀疑是其他部分

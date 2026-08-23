@@ -6,7 +6,7 @@
 #![feature(abi_riscv_interrupt)]
 
 use riscv::interrupt::Interrupt::*;
-use xt_riscv_mcu::entry;
+use riscv_macros::entry;
 use xt_riscv_mcu::lb::LEDSD;
 use xt_riscv_mcu::rv_core::{enable_global_interrupt, set_interrupt};
 
