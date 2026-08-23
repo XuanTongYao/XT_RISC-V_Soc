@@ -8,6 +8,7 @@
 2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和[Rust版本](firmware_lib/rust)，C语言固件库已**不再维护**
 3. `rust_release/debug`是rust程序默认的构建输出位置
 4. [ACT4](ACT4)包含了[RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)相关的内容
+5. [synthesis_report](synthesis_report)包含了此项目某一次的[综合报告](synthesis_report/readme.md)，为资源消耗情况提供参考
 
 部分模块与IP核(PLL, EFB, RAM)依赖了**LCMXO2-4000HC-4MG132C**器件与其[核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)上的专有资源，但是处理器内核可以很方便移植到其他设备上。IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。
 

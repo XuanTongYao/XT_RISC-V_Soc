@@ -1,0 +1,985 @@
+<HTML>
+<HEAD><TITLE>Lattice Map TRACE Report</TITLE>
+<STYLE TYPE="text/css">
+<!--
+ body,pre{    font-family:'Courier New', monospace;    color: #000000;    font-size:88%;    background-color: #ffffff;}h1 {    font-weight: bold;    margin-top: 24px;    margin-bottom: 10px;    border-bottom: 3px solid #000;    font-size: 1em;}h2 {    font-weight: bold;    margin-top: 18px;    margin-bottom: 5px;    font-size: 0.90em;}h3 {    font-weight: bold;    margin-top: 12px;    margin-bottom: 5px;    font-size: 0.80em;}p {    font-size:78%;}P.Table {    margin-top: 4px;    margin-bottom: 4px;    margin-right: 4px;    margin-left: 4px;}table{    border-width: 1px 1px 1px 1px;    border-style: solid solid solid solid;    border-color: black black black black;    border-collapse: collapse;}th {    font-weight:bold;    padding: 4px;    border-width: 1px 1px 1px 1px;    border-style: solid solid solid solid;    border-color: black black black black;    vertical-align:top;    text-align:left;    font-size:78%;}td {    padding: 4px;    border-width: 1px 1px 1px 1px;    border-style: solid solid solid solid;    border-color: black black black black;    vertical-align:top;    font-size:78%;}a {    color:#013C9A;    text-decoration:none;}a:visited {    color:#013C9A;}a:hover, a:active {    text-decoration:underline;    color:#5BAFD4;}.pass{background-color: #00ff00;}.fail{background-color: #ff0000;}.comment{    font-size: 90%;    font-style: italic;}
+-->
+</STYLE>
+</HEAD>
+<PRE><A name="Map_Twr"></A><B><U><big>Map TRACE Report</big></U></B>
+
+Loading design for application trce from file gittest_impl1_map.ncd.
+Design name: XT_Soc_Risc_V
+NCD version: 3.3
+Vendor:      LATTICE
+Device:      LCMXO2-4000HC
+Package:     CSBGA132
+Performance: 4
+Loading device for application trce from file 'xo2c4000.nph' in environment: D:/ProgramFiles/Develop/lscc/diamond/3.13/ispfpga.
+Package Status:                     Final          Version 1.44.
+Performance Hardware Data Status:   Final          Version 34.4.
+Setup and Hold Report
+
+--------------------------------------------------------------------------------
+<A name="Map_Twr_setup"></A><B><U><big>Lattice TRACE Report - Setup, Version Diamond (64-bit) 3.13.0.56.2</big></U></B>
+Sat Aug 22 17:54:28 2026
+
+Copyright (c) 1991-1994 by NeoCAD Inc. All rights reserved.
+Copyright (c) 1995 AT&T Corp.   All rights reserved.
+Copyright (c) 1995-2001 Lucent Technologies Inc.  All rights reserved.
+Copyright (c) 2001 Agere Systems   All rights reserved.
+Copyright (c) 2002-2023 Lattice Semiconductor Corporation,  All rights reserved.
+
+<A name="mtw1_set_ri"></A><B><U><big>Report Information</big></U></B>
+------------------
+Command line:    trce -v 1 -gt -mapchkpnt 0 -sethld -o GitTest_impl1.tw1 -gui -msgset D:/PROJECTS/Github/GitTest/promote.xml GitTest_impl1_map.ncd GitTest_impl1.prf 
+Design file:     gittest_impl1_map.ncd
+Preference file: gittest_impl1.prf
+Device,speed:    LCMXO2-4000HC,4
+Report level:    verbose report, limited to 1 item per preference
+--------------------------------------------------------------------------------
+
+<A name="mtw1_set_ps"></A><B><U><big>Preference Summary</big></U></B>
+
+<LI><A href='#map_twr_pref_0_0' Target='right'>FREQUENCY NET "clk_inner_osc" 2.150000 MHz (0 errors)</A></LI>            312 items scored, 0 timing errors detected.
+Report:  125.000MHz is the maximum frequency for this preference.
+
+<LI><A href='#map_twr_pref_0_1' Target='right'>FREQUENCY NET "clk_osc_c" 12.000000 MHz (0 errors)</A></LI>            16 items scored, 0 timing errors detected.
+Report:  102.312MHz is the maximum frequency for this preference.
+
+<LI><A href='#map_twr_pref_0_2' Target='right'>FREQUENCY NET "clk" 12.000000 MHz (0 errors)</A></LI>            4096 items scored, 0 timing errors detected.
+Report:   34.440MHz is the maximum frequency for this preference.
+
+<LI><A href='#map_twr_pref_0_3' Target='right'>FREQUENCY NET "lb_clk" 0.100000 MHz (0 errors)</A></LI>            220 items scored, 0 timing errors detected.
+Report:    4.099MHz is the maximum frequency for this preference.
+
+<LI><A href='#map_twr_pref_0_4' Target='right'>FREQUENCY NET "sampling_clk" 0.153846 MHz (0 errors)</A></LI>            145 items scored, 0 timing errors detected.
+Report:  125.000MHz is the maximum frequency for this preference.
+
+<LI><A href='#map_twr_pref_0_5' Target='right'>FREQUENCY NET "systemtimer_clk" 1.000000 MHz (0 errors)</A></LI>            1 item scored, 0 timing errors detected.
+Report:  400.000MHz is the maximum frequency for this preference.
+
+<LI><A href='#map_twr_pref_0_6' Target='right'>FREQUENCY PORT "tck" 4.000000 MHz (0 errors)</A></LI>            1089 items scored, 0 timing errors detected.
+Report:   62.492MHz is the maximum frequency for this preference.
+
+BLOCK ASYNCPATHS
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+<A name="map_twr_pref_0_0"></A>Preference: FREQUENCY NET "clk_inner_osc" 2.150000 MHz ;
+            312 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed:  The following path meets requirements by 457.116ns
+         The internal maximum frequency of the following component is 125.000 MHz
+
+ Logical Details:  Cell type  Pin name       Component name
+
+   Destination:    SLICE      LSR            u_ResetController/SLICE_1077
+
+   Delay:               8.000ns -- based on Minimum Pulse Width
+
+
+Passed: The following path meets requirements by 458.889ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_ResetController/pll_reseting  (from clk_inner_osc +)
+   Destination:    FF         Data in        u_ResetController/lock_counter[14]  (to clk_inner_osc +)
+
+   Delay:               6.061ns  (59.1% logic, 40.9% route), 10 logic levels.
+
+ Constraint Details:
+
+      6.061ns physical path delay u_ResetController/SLICE_1086 to u_ResetController/SLICE_1084 meets
+    465.116ns delay constraint less
+      0.166ns DIN_SET requirement (totaling 464.950ns) by 458.889ns
+
+ Physical Path Details:
+
+      Data path u_ResetController/SLICE_1086 to u_ResetController/SLICE_1084:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452 *LICE_1086.CLK to *SLICE_1086.Q0 u_ResetController/SLICE_1086 (from clk_inner_osc)
+ROUTE        19   e 1.234 *SLICE_1086.Q0 to */SLICE_202.B0 u_ResetController/pll_reseting
+C0TOFCO_DE  ---     1.023 */SLICE_202.B0 to *SLICE_202.FCO u_ResetController/SLICE_202
+ROUTE         1   e 0.001 *SLICE_202.FCO to *SLICE_209.FCI u_ResetController/un1_lock_counter_1_cry_0
+FCITOFCO_D  ---     0.162 *SLICE_209.FCI to *SLICE_209.FCO u_ResetController/SLICE_209
+ROUTE         1   e 0.001 *SLICE_209.FCO to *SLICE_208.FCI u_ResetController/un1_lock_counter_1_cry_2
+FCITOFCO_D  ---     0.162 *SLICE_208.FCI to *SLICE_208.FCO u_ResetController/SLICE_208
+ROUTE         1   e 0.001 *SLICE_208.FCO to *SLICE_207.FCI u_ResetController/un1_lock_counter_1_cry_4
+FCITOFCO_D  ---     0.162 *SLICE_207.FCI to *SLICE_207.FCO u_ResetController/SLICE_207
+ROUTE         1   e 0.001 *SLICE_207.FCO to *SLICE_206.FCI u_ResetController/un1_lock_counter_1_cry_6
+FCITOFCO_D  ---     0.162 *SLICE_206.FCI to *SLICE_206.FCO u_ResetController/SLICE_206
+ROUTE         1   e 0.001 *SLICE_206.FCO to *SLICE_205.FCI u_ResetController/un1_lock_counter_1_cry_8
+FCITOFCO_D  ---     0.162 *SLICE_205.FCI to *SLICE_205.FCO u_ResetController/SLICE_205
+ROUTE         1   e 0.001 *SLICE_205.FCO to *SLICE_204.FCI u_ResetController/un1_lock_counter_1_cry_10
+FCITOFCO_D  ---     0.162 *SLICE_204.FCI to *SLICE_204.FCO u_ResetController/SLICE_204
+ROUTE         1   e 0.001 *SLICE_204.FCO to *SLICE_203.FCI u_ResetController/un1_lock_counter_1_cry_12
+FCITOF1_DE  ---     0.643 *SLICE_203.FCI to */SLICE_203.F1 u_ResetController/SLICE_203
+ROUTE         1   e 1.234 */SLICE_203.F1 to *SLICE_1084.A0 u_ResetController/un1_lock_counter_1_cry_13_0_S1
+CTOF_DEL    ---     0.495 *SLICE_1084.A0 to *SLICE_1084.F0 u_ResetController/SLICE_1084
+ROUTE         1   e 0.001 *SLICE_1084.F0 to *LICE_1084.DI0 u_ResetController/lock_counter_4[14] (to clk_inner_osc)
+                  --------
+                    6.061   (59.1% logic, 40.9% route), 10 logic levels.
+
+Report:  125.000MHz is the maximum frequency for this preference.
+
+
+================================================================================
+<A name="map_twr_pref_0_1"></A>Preference: FREQUENCY NET "clk_osc_c" 12.000000 MHz ;
+            16 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed:  The following path meets requirements by 73.559ns
+         The internal maximum frequency of the following component is 102.312 MHz
+
+ Logical Details:  Cell type  Pin name       Component name
+
+   Destination:    EFB        TCCLKI         u_efb/EFBInst_0
+
+   Delay:               9.774ns -- based on Minimum Pulse Width
+
+
+Passed: The following path meets requirements by 75.513ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_AF_GPIO_BUS/af_en_reg[3]  (from clk +)
+   Destination:    EFB        Port           u_efb/EFBInst_0(ASIC)  (to clk_osc_c +)
+
+   Delay:               9.577ns  (30.6% logic, 69.4% route), 6 logic levels.
+
+ Constraint Details:
+
+      9.577ns physical path delay SLICE_1498 to u_efb/EFBInst_0 meets
+     83.333ns delay constraint less
+     -1.757ns TCIC_SET requirement (totaling 85.090ns) by 75.513ns
+
+ Physical Path Details:
+
+      Data path SLICE_1498 to u_efb/EFBInst_0:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452 SLICE_1498.CLK to  SLICE_1498.Q1 SLICE_1498 (from clk)
+ROUTE         3   e 1.234  SLICE_1498.Q1 to *SLICE_1505.C1 u_AF_GPIO_BUS/af_en_reg[3]
+CTOF_DEL    ---     0.495 *SLICE_1505.C1 to *SLICE_1505.F1 u_AF_GPIO_BUS/SLICE_1505
+ROUTE         3   e 1.234 *SLICE_1505.F1 to  SLICE_2348.A0 u_AF_GPIO_BUS/af_in[3]
+CTOF_DEL    ---     0.495  SLICE_2348.A0 to  SLICE_2348.F0 SLICE_2348
+ROUTE         1   e 1.234  SLICE_2348.F0 to  SLICE_1503.B0 u_AF_GPIO_BUS/N_885
+CTOF_DEL    ---     0.495  SLICE_1503.B0 to  SLICE_1503.F0 SLICE_1503
+ROUTE         1   e 0.480  SLICE_1503.F0 to  SLICE_1503.A1 u_AF_GPIO_BUS/funct_in[0]_9_0_0
+CTOF_DEL    ---     0.495  SLICE_1503.A1 to  SLICE_1503.F1 SLICE_1503
+ROUTE         1   e 1.234  SLICE_1503.F1 to  SLICE_2006.A0 u_AF_GPIO_BUS/funct_in[0]_9_0_1
+CTOF_DEL    ---     0.495  SLICE_2006.A0 to  SLICE_2006.F0 SLICE_2006
+ROUTE         1   e 1.234  SLICE_2006.F0 to *FBInst_0.TCIC funct_in[0] (to clk_osc_c)
+                  --------
+                    9.577   (30.6% logic, 69.4% route), 6 logic levels.
+
+Report:  102.312MHz is the maximum frequency for this preference.
+
+
+================================================================================
+<A name="map_twr_pref_0_2"></A>Preference: FREQUENCY NET "clk" 12.000000 MHz ;
+            4096 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 54.297ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_DM/u_OncePulse_dmcontrol_reset/gen_normal.shift[0]  (from clk +)
+   Destination:    FF         Data in        u_RISC_V_Core/u_CSR/mstatus.mpie  (to clk +)
+
+   Delay:              28.754ns  (32.3% logic, 67.7% route), 17 logic levels.
+
+ Constraint Details:
+
+     28.754ns physical path delay SLICE_698 to u_RISC_V_Core/SLICE_1027 meets
+     83.333ns delay constraint less
+      0.282ns CE_SET requirement (totaling 83.051ns) by 54.297ns
+
+ Physical Path Details:
+
+      Data path SLICE_698 to u_RISC_V_Core/SLICE_1027:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452  SLICE_698.CLK to   SLICE_698.Q1 SLICE_698 (from clk)
+ROUTE         2   e 1.234   SLICE_698.Q1 to  SLICE_2341.B0 u_DM/u_OncePulse_dmcontrol_reset/shift[0]
+CTOF_DEL    ---     0.495  SLICE_2341.B0 to  SLICE_2341.F0 SLICE_2341
+ROUTE         2   e 1.234  SLICE_2341.F0 to SLICE_1616.LSR u_DM/un1_dm_rst_n_i
+LSR2Q_DEL   ---     0.951 SLICE_1616.LSR to  SLICE_1616.Q0 SLICE_1616
+ROUTE        35   e 1.234  SLICE_1616.Q0 to *SLICE_658.LSR u_DM/u_SyncAsyncReset/rst_n
+LSR2Q_DEL   ---     0.951 *SLICE_658.LSR to */SLICE_658.Q1 u_DM/SLICE_658
+ROUTE        17   e 1.234 */SLICE_658.Q1 to *SLICE_1982.C1 u_DM.cmd_pending[2]
+CTOF_DEL    ---     0.495 *SLICE_1982.C1 to *SLICE_1982.F1 u_XT_HB/SLICE_1982
+ROUTE        10   e 0.480 *SLICE_1982.F1 to *SLICE_1982.B0 u_XT_HB.hb_ren
+CTOF_DEL    ---     0.495 *SLICE_1982.B0 to *SLICE_1982.F0 u_XT_HB/SLICE_1982
+ROUTE         1   e 1.234 *SLICE_1982.F0 to */SLICE_702.A1 hb_if[0].ren
+CTOF_DEL    ---     0.495 */SLICE_702.A1 to */SLICE_702.F1 u_HarvardSystemRAM/SLICE_702
+ROUTE        21   e 1.234 */SLICE_702.F1 to *SLICE_1978.C0 hb_if[0].write_finish
+CTOF_DEL    ---     0.495 *SLICE_1978.C0 to *SLICE_1978.F0 u_XT_HB/SLICE_1978
+ROUTE         1   e 1.234 *SLICE_1978.F0 to *SLICE_1981.D0 u_XT_HB/un13_write_finished_1[0]
+CTOF_DEL    ---     0.495 *SLICE_1981.D0 to *SLICE_1981.F0 u_XT_HB/SLICE_1981
+ROUTE         2   e 1.234 *SLICE_1981.F0 to *SLICE_1668.D1 u_XT_HB.un13_write_finished[0]
+CTOF_DEL    ---     0.495 *SLICE_1668.D1 to *SLICE_1668.F1 u_RISC_V_Core/u_CoreCtrl/SLICE_1668
+ROUTE         1   e 0.480 *SLICE_1668.F1 to *SLICE_1668.B0 u_RISC_V_Core/u_CoreCtrl/un1_stall_n_1_1_0
+CTOF_DEL    ---     0.495 *SLICE_1668.B0 to *SLICE_1668.F0 u_RISC_V_Core/u_CoreCtrl/SLICE_1668
+ROUTE         3   e 1.234 *SLICE_1668.F0 to *SLICE_1635.B0 u_RISC_V_Core/un1_stall_n_1
+CTOF_DEL    ---     0.495 *SLICE_1635.B0 to *SLICE_1635.F0 u_RISC_V_Core/SLICE_1635
+ROUTE         9   e 1.234 *SLICE_1635.F0 to  SLICE_1485.C1 u_RISC_V_Core/un1_stall_n
+CTOF_DEL    ---     0.495  SLICE_1485.C1 to  SLICE_1485.F1 SLICE_1485
+ROUTE         5   e 1.234  SLICE_1485.F1 to  SLICE_1896.A1 u_RISC_V_Core/u_CSR/atomic_rw_en
+CTOF_DEL    ---     0.495  SLICE_1896.A1 to  SLICE_1896.F1 SLICE_1896
+ROUTE        38   e 1.234  SLICE_1896.F1 to */SLICE_952.D1 u_RISC_V_Core/u_CSR/mie9
+CTOF_DEL    ---     0.495 */SLICE_952.D1 to */SLICE_952.F1 u_RISC_V_Core/u_CSR/SLICE_952
+ROUTE         2   e 1.234 */SLICE_952.F1 to *SLICE_1675.A1 u_RISC_V_Core/u_CSR/occurred_0
+CTOF_DEL    ---     0.495 *SLICE_1675.A1 to *SLICE_1675.F1 u_RISC_V_Core/SLICE_1675
+ROUTE         1   e 1.234 *SLICE_1675.F1 to *SLICE_1484.D0 u_RISC_V_Core/u_CSR/returned
+CTOF_DEL    ---     0.495 *SLICE_1484.D0 to *SLICE_1484.F0 u_RISC_V_Core/u_CSR/SLICE_1484
+ROUTE         2   e 1.234 *SLICE_1484.F0 to *SLICE_1027.CE u_RISC_V_Core/u_CSR/mie10_4_i (to clk)
+                  --------
+                   28.754   (32.3% logic, 67.7% route), 17 logic levels.
+
+Report:   34.440MHz is the maximum frequency for this preference.
+
+
+================================================================================
+<A name="map_twr_pref_0_3"></A>Preference: FREQUENCY NET "lb_clk" 0.100000 MHz ;
+            220 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 81.339ns (weighted slack = 9756.036ns)
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_XT_LB/u_CDC_MCP_Formulation/data_in_dff[2]  (from clk +)
+   Destination:    FF         Data in        u_XT_LB/u_CDC_MCP_Formulation/data_out[2]  (to lb_clk +)
+
+   Delay:               1.686ns  (26.8% logic, 73.2% route), 1 logic levels.
+
+ Constraint Details:
+
+      1.686ns physical path delay SLICE_1210 to SLICE_1221 meets
+     83.373ns delay constraint less
+      0.348ns M_SET requirement (totaling 83.025ns) by 81.339ns
+
+ Physical Path Details:
+
+      Data path SLICE_1210 to SLICE_1221:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452 SLICE_1210.CLK to  SLICE_1210.Q0 SLICE_1210 (from clk)
+ROUTE         1   e 1.234  SLICE_1210.Q0 to  SLICE_1221.M1 u_XT_LB/u_CDC_MCP_Formulation/data_in_dff[2] (to lb_clk)
+                  --------
+                    1.686   (26.8% logic, 73.2% route), 1 logic levels.
+
+Report:    4.099MHz is the maximum frequency for this preference.
+
+
+================================================================================
+<A name="map_twr_pref_0_4"></A>Preference: FREQUENCY NET "sampling_clk" 0.153846 MHz ;
+            145 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed:  The following path meets requirements by 6492.007ns
+         The internal maximum frequency of the following component is 125.000 MHz
+
+ Logical Details:  Cell type  Pin name       Component name
+
+   Destination:    SLICE      LSR            u_UART/SLICE_1136
+
+   Delay:               8.000ns -- based on Minimum Pulse Width
+
+
+Passed: The following path meets requirements by 6493.975ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_UART/sample_count[1]  (from sampling_clk +)
+   Destination:    FF         Data in        u_UART/rx_state[0]  (to sampling_clk +)
+
+   Delay:               5.866ns  (36.9% logic, 63.1% route), 4 logic levels.
+
+ Constraint Details:
+
+      5.866ns physical path delay u_UART/SLICE_1156 to u_UART/SLICE_1154 meets
+    6500.007ns delay constraint less
+      0.166ns DIN_SET requirement (totaling 6499.841ns) by 6493.975ns
+
+ Physical Path Details:
+
+      Data path u_UART/SLICE_1156 to u_UART/SLICE_1154:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452 *LICE_1156.CLK to *SLICE_1156.Q0 u_UART/SLICE_1156 (from sampling_clk)
+ROUTE         7   e 1.234 *SLICE_1156.Q0 to *SLICE_1155.B1 u_UART/sample_count[1]
+CTOF_DEL    ---     0.495 *SLICE_1155.B1 to *SLICE_1155.F1 u_UART/SLICE_1155
+ROUTE         6   e 1.234 *SLICE_1155.F1 to *SLICE_1263.D1 u_UART/symbol_end
+CTOOFX_DEL  ---     0.721 *SLICE_1263.D1 to *ICE_1263.OFX0 u_UART/rx_state_8_1_0_.m3/SLICE_1263
+ROUTE         1   e 1.234 *ICE_1263.OFX0 to *SLICE_1154.B0 u_UART/N_4
+CTOF_DEL    ---     0.495 *SLICE_1154.B0 to *SLICE_1154.F0 u_UART/SLICE_1154
+ROUTE         1   e 0.001 *SLICE_1154.F0 to *LICE_1154.DI0 u_UART/rx_state_8[0] (to sampling_clk)
+                  --------
+                    5.866   (36.9% logic, 63.1% route), 4 logic levels.
+
+Report:  125.000MHz is the maximum frequency for this preference.
+
+
+================================================================================
+<A name="map_twr_pref_0_5"></A>Preference: FREQUENCY NET "systemtimer_clk" 1.000000 MHz ;
+            1 item scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed:  The following path meets requirements by 997.500ns
+         The internal maximum frequency of the following component is 400.000 MHz
+
+ Logical Details:  Cell type  Pin name       Component name
+
+   Destination:    SLICE      CLK            u_SystemTimer/SLICE_1100
+
+   Delay:               2.500ns -- based on Minimum Pulse Width
+
+
+Passed: The following path meets requirements by 998.406ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_SystemTimer/time_update_tff  (from systemtimer_clk +)
+   Destination:    FF         Data in        u_SystemTimer/time_update_tff  (to systemtimer_clk +)
+
+   Delay:               1.428ns  (66.3% logic, 33.7% route), 2 logic levels.
+
+ Constraint Details:
+
+      1.428ns physical path delay u_SystemTimer/SLICE_1100 to u_SystemTimer/SLICE_1100 meets
+    1000.000ns delay constraint less
+      0.166ns DIN_SET requirement (totaling 999.834ns) by 998.406ns
+
+ Physical Path Details:
+
+      Data path u_SystemTimer/SLICE_1100 to u_SystemTimer/SLICE_1100:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452 *LICE_1100.CLK to *SLICE_1100.Q0 u_SystemTimer/SLICE_1100 (from systemtimer_clk)
+ROUTE         2   e 0.480 *SLICE_1100.Q0 to *SLICE_1100.A0 u_SystemTimer/time_update_tff
+CTOF_DEL    ---     0.495 *SLICE_1100.A0 to *SLICE_1100.F0 u_SystemTimer/SLICE_1100
+ROUTE         1   e 0.001 *SLICE_1100.F0 to *LICE_1100.DI0 u_SystemTimer/time_update_tff_i (to systemtimer_clk)
+                  --------
+                    1.428   (66.3% logic, 33.7% route), 2 logic levels.
+
+Report:  400.000MHz is the maximum frequency for this preference.
+
+
+================================================================================
+<A name="map_twr_pref_0_6"></A>Preference: FREQUENCY PORT "tck" 4.000000 MHz ;
+            1089 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 116.999ns (weighted slack = 233.998ns)
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_JtagDTM/dr_bypass  (from tck_c +)
+   Destination:    FF         Data in        u_JtagDTM_tdo_1io  (to tck_c -)
+
+   Delay:               7.848ns  (31.0% logic, 69.0% route), 5 logic levels.
+
+ Constraint Details:
+
+      7.848ns physical path delay u_JtagDTM/SLICE_750 to tdo_MGIOL meets
+    125.000ns delay constraint less
+      0.153ns DO_SET requirement (totaling 124.847ns) by 116.999ns
+
+ Physical Path Details:
+
+      Data path u_JtagDTM/SLICE_750 to tdo_MGIOL:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.452 *SLICE_750.CLK to */SLICE_750.Q0 u_JtagDTM/SLICE_750 (from tck_c)
+ROUTE         1   e 1.234 */SLICE_750.Q0 to  SLICE_1207.A1 u_JtagDTM/dr_bypass
+CTOF_DEL    ---     0.495  SLICE_1207.A1 to  SLICE_1207.F1 SLICE_1207
+ROUTE         1   e 1.234  SLICE_1207.F1 to *SLICE_1971.A1 u_JtagDTM/N_898
+CTOF_DEL    ---     0.495 *SLICE_1971.A1 to *SLICE_1971.F1 u_JtagDTM/SLICE_1971
+ROUTE         1   e 0.480 *SLICE_1971.F1 to *SLICE_1971.A0 u_JtagDTM/N_899
+CTOF_DEL    ---     0.495 *SLICE_1971.A0 to *SLICE_1971.F0 u_JtagDTM/SLICE_1971
+ROUTE         1   e 1.234 *SLICE_1971.F0 to *SLICE_1970.B0 u_JtagDTM/N_903
+CTOF_DEL    ---     0.495 *SLICE_1970.B0 to *SLICE_1970.F0 u_JtagDTM/SLICE_1970
+ROUTE         1   e 1.234 *SLICE_1970.F0 to tdo_MGIOL.OPOS un1_dr_idcode_iv_0 (to tck_c)
+                  --------
+                    7.848   (31.0% logic, 69.0% route), 5 logic levels.
+
+Report:   62.492MHz is the maximum frequency for this preference.
+
+<A name="mtw1_set_rs"></A><B><U><big>Report Summary</big></U></B>
+--------------
+----------------------------------------------------------------------------
+Preference                              |   Constraint|       Actual|Levels
+----------------------------------------------------------------------------
+                                        |             |             |
+FREQUENCY NET "clk_inner_osc" 2.150000  |             |             |
+MHz ;                                   |    2.150 MHz|  125.000 MHz|   0  
+                                        |             |             |
+FREQUENCY NET "clk_osc_c" 12.000000 MHz |             |             |
+;                                       |   12.000 MHz|  102.312 MHz|   0  
+                                        |             |             |
+FREQUENCY NET "clk" 12.000000 MHz ;     |   12.000 MHz|   34.440 MHz|  17  
+                                        |             |             |
+FREQUENCY NET "lb_clk" 0.100000 MHz ;   |    0.100 MHz|    4.099 MHz|   1  
+                                        |             |             |
+FREQUENCY NET "sampling_clk" 0.153846   |             |             |
+MHz ;                                   |    0.154 MHz|  125.000 MHz|   0  
+                                        |             |             |
+FREQUENCY NET "systemtimer_clk"         |             |             |
+1.000000 MHz ;                          |    1.000 MHz|  400.000 MHz|   0  
+                                        |             |             |
+FREQUENCY PORT "tck" 4.000000 MHz ;     |    4.000 MHz|   62.492 MHz|   5  
+                                        |             |             |
+----------------------------------------------------------------------------
+
+
+All preferences were met.
+
+
+<A name="mtw1_set_clkda"></A><B><U><big>Clock Domains Analysis</big></U></B>
+------------------------
+
+Found 14 clocks:
+
+Clock Domain: u_efb/spi_clk_o   Source: u_efb/EFBInst_0.SPISCKO   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/spi_clk_i   Source: spi_clk.PAD   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c2_sclo   Source: u_efb/EFBInst_0.I2C2SCLO   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c2_scli   Source: i2c2_scl.PAD   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c1_sclo   Source: u_efb/EFBInst_0.I2C1SCLO   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c1_scli   Source: i2c1_scl.PAD   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_UART.band_clk   Source: u_UART/u_ClockDivider/SLICE_1135.Q0   Loads: 10
+   No transfer within this clock domain is found
+
+Clock Domain: tck_c   Source: tck.PAD   Loads: 114
+   Covered under: FREQUENCY PORT "tck" 4.000000 MHz ;
+
+   Data transfers from:
+   Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP
+      Not reported because source and destination domains are unrelated.
+
+Clock Domain: systemtimer_clk   Source: u_SystmePLL/PLLInst_0.CLKOS   Loads: 1
+   Covered under: FREQUENCY NET "systemtimer_clk" 1.000000 MHz ;
+
+Clock Domain: sampling_clk   Source: u_SystmePLL/PLLInst_0.CLKOS2   Loads: 17
+   Covered under: FREQUENCY NET "sampling_clk" 0.153846 MHz ;
+
+Clock Domain: lb_clk   Source: u_SystmePLL/PLLInst_0.CLKOS3   Loads: 41
+   Covered under: FREQUENCY NET "lb_clk" 0.100000 MHz ;
+
+   Data transfers from:
+   Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP
+      Covered under: FREQUENCY NET "lb_clk" 0.100000 MHz ;   Transfers: 17
+
+Clock Domain: clk_osc_c   Source: clk_osc.PAD   Loads: 2
+   No transfer within this clock domain is found
+
+   Data transfers from:
+   Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP
+      Covered under: FREQUENCY NET "clk_osc_c" 12.000000 MHz ;   Transfers: 16
+
+Clock Domain: clk_inner_osc   Source: osc_int.OSC   Loads: 10
+   Covered under: FREQUENCY NET "clk_inner_osc" 2.150000 MHz ;
+
+Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP   Loads: 915
+   Covered under: FREQUENCY NET "clk" 12.000000 MHz ;
+
+   Data transfers from:
+   Clock Domain: u_UART.band_clk   Source: u_UART/u_ClockDivider/SLICE_1135.Q0
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 1
+
+   Clock Domain: tck_c   Source: tck.PAD
+      Not reported because source and destination domains are unrelated.
+
+   Clock Domain: systemtimer_clk   Source: u_SystmePLL/PLLInst_0.CLKOS
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 1
+
+   Clock Domain: sampling_clk   Source: u_SystmePLL/PLLInst_0.CLKOS2
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 9
+
+   Clock Domain: lb_clk   Source: u_SystmePLL/PLLInst_0.CLKOS3
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 10
+
+
+<A name="mtw1_set_ts"></A><B><U><big>Timing summary (Setup):</big></U></B>
+---------------
+
+Timing errors: 0  Score: 0
+Cumulative negative slack: 0
+
+Constraints cover 1102703 paths, 7 nets, and 16703 connections (93.36% coverage)
+
+--------------------------------------------------------------------------------
+<A name="Map_Twr_hold"></A><B><U><big>Lattice TRACE Report - Hold, Version Diamond (64-bit) 3.13.0.56.2</big></U></B>
+Sat Aug 22 17:54:28 2026
+
+Copyright (c) 1991-1994 by NeoCAD Inc. All rights reserved.
+Copyright (c) 1995 AT&T Corp.   All rights reserved.
+Copyright (c) 1995-2001 Lucent Technologies Inc.  All rights reserved.
+Copyright (c) 2001 Agere Systems   All rights reserved.
+Copyright (c) 2002-2023 Lattice Semiconductor Corporation,  All rights reserved.
+
+<A name="mtw1_hold_ri"></A><B><U><big>Report Information</big></U></B>
+------------------
+Command line:    trce -v 1 -gt -mapchkpnt 0 -sethld -o GitTest_impl1.tw1 -gui -msgset D:/PROJECTS/Github/GitTest/promote.xml GitTest_impl1_map.ncd GitTest_impl1.prf 
+Design file:     gittest_impl1_map.ncd
+Preference file: gittest_impl1.prf
+Device,speed:    LCMXO2-4000HC,M
+Report level:    verbose report, limited to 1 item per preference
+--------------------------------------------------------------------------------
+
+<A name="mtw1_hold_ps"></A><B><U><big>Preference Summary</big></U></B>
+
+<LI><A href='#map_twr_pref_1_0' Target='right'>FREQUENCY NET "clk_inner_osc" 2.150000 MHz (0 errors)</A></LI>            312 items scored, 0 timing errors detected.
+
+<LI><A href='#map_twr_pref_1_1' Target='right'>FREQUENCY NET "clk_osc_c" 12.000000 MHz (0 errors)</A></LI>            16 items scored, 0 timing errors detected.
+
+<LI><A href='#map_twr_pref_1_2' Target='right'>FREQUENCY NET "clk" 12.000000 MHz (0 errors)</A></LI>            4096 items scored, 0 timing errors detected.
+
+<LI><A href='#map_twr_pref_1_3' Target='right'>FREQUENCY NET "lb_clk" 0.100000 MHz (0 errors)</A></LI>            220 items scored, 0 timing errors detected.
+
+<LI><A href='#map_twr_pref_1_4' Target='right'>FREQUENCY NET "sampling_clk" 0.153846 MHz (0 errors)</A></LI>            145 items scored, 0 timing errors detected.
+
+<LI><A href='#map_twr_pref_1_5' Target='right'>FREQUENCY NET "systemtimer_clk" 1.000000 MHz (0 errors)</A></LI>            1 item scored, 0 timing errors detected.
+
+<LI><A href='#map_twr_pref_1_6' Target='right'>FREQUENCY PORT "tck" 4.000000 MHz (0 errors)</A></LI>            1089 items scored, 0 timing errors detected.
+
+BLOCK ASYNCPATHS
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+<A name="map_twr_pref_1_0"></A>Preference: FREQUENCY NET "clk_inner_osc" 2.150000 MHz ;
+            312 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.351ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_ResetController/pll_lock_sync[0]  (from clk_inner_osc +)
+   Destination:    FF         Data in        u_ResetController/pll_lock_sync[1]  (to clk_inner_osc +)
+
+   Delay:               0.332ns  (40.1% logic, 59.9% route), 1 logic levels.
+
+ Constraint Details:
+
+      0.332ns physical path delay u_ResetController/SLICE_1985 to u_ResetController/SLICE_1985 meets
+     -0.019ns M_HLD and
+      0.000ns delay constraint requirement (totaling -0.019ns) by 0.351ns
+
+ Physical Path Details:
+
+      Data path u_ResetController/SLICE_1985 to u_ResetController/SLICE_1985:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 *LICE_1985.CLK to *SLICE_1985.Q0 u_ResetController/SLICE_1985 (from clk_inner_osc)
+ROUTE         1   e 0.199 *SLICE_1985.Q0 to *SLICE_1985.M1 u_ResetController/pll_lock_sync[0] (to clk_inner_osc)
+                  --------
+                    0.332   (40.1% logic, 59.9% route), 1 logic levels.
+
+
+================================================================================
+<A name="map_twr_pref_1_1"></A>Preference: FREQUENCY NET "clk_osc_c" 12.000000 MHz ;
+            16 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.651ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_AF_GPIO_BUS/af_reg[2][0]  (from clk +)
+   Destination:    EFB        Port           u_efb/EFBInst_0(ASIC)  (to clk_osc_c +)
+
+   Delay:               1.264ns  (18.5% logic, 81.5% route), 2 logic levels.
+
+ Constraint Details:
+
+      1.264ns physical path delay SLICE_2051 to u_efb/EFBInst_0 meets
+      0.613ns TCIC_HLD and
+      0.000ns delay constraint requirement (totaling 0.613ns) by 0.651ns
+
+ Physical Path Details:
+
+      Data path SLICE_2051 to u_efb/EFBInst_0:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 SLICE_2051.CLK to  SLICE_2051.Q0 SLICE_2051 (from clk)
+ROUTE         5   e 0.515  SLICE_2051.Q0 to  SLICE_2006.C0 u_AF_GPIO_BUS/af_reg[2][0]
+CTOF_DEL    ---     0.101  SLICE_2006.C0 to  SLICE_2006.F0 SLICE_2006
+ROUTE         1   e 0.515  SLICE_2006.F0 to *FBInst_0.TCIC funct_in[0] (to clk_osc_c)
+                  --------
+                    1.264   (18.5% logic, 81.5% route), 2 logic levels.
+
+
+================================================================================
+<A name="map_twr_pref_1_2"></A>Preference: FREQUENCY NET "clk" 12.000000 MHz ;
+            4096 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.351ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_XT_LB/u_CDC_MCP_Formulation/u_OncePulse_ack/gen_normal.shift[1]  (from clk +)
+   Destination:    FF         Data in        u_XT_LB/u_CDC_MCP_Formulation/u_OncePulse_ack/gen_normal.shift[2]  (to clk +)
+
+   Delay:               0.332ns  (40.1% logic, 59.9% route), 1 logic levels.
+
+ Constraint Details:
+
+      0.332ns physical path delay SLICE_1207 to SLICE_1207 meets
+     -0.019ns M_HLD and
+      0.000ns delay constraint requirement (totaling -0.019ns) by 0.351ns
+
+ Physical Path Details:
+
+      Data path SLICE_1207 to SLICE_1207:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 SLICE_1207.CLK to  SLICE_1207.Q0 SLICE_1207 (from clk)
+ROUTE         4   e 0.199  SLICE_1207.Q0 to  SLICE_1207.M1 u_XT_LB/shift[1] (to clk)
+                  --------
+                    0.332   (40.1% logic, 59.9% route), 1 logic levels.
+
+
+================================================================================
+<A name="map_twr_pref_1_3"></A>Preference: FREQUENCY NET "lb_clk" 0.100000 MHz ;
+            220 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.351ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_XT_LB/u_CDC_MCP_Formulation/u_OncePulse_en/gen_normal.shift[1]  (from lb_clk +)
+   Destination:    FF         Data in        u_XT_LB/u_CDC_MCP_Formulation/u_OncePulse_en/gen_normal.shift[2]  (to lb_clk +)
+
+   Delay:               0.332ns  (40.1% logic, 59.9% route), 1 logic levels.
+
+ Constraint Details:
+
+      0.332ns physical path delay SLICE_1218 to SLICE_1218 meets
+     -0.019ns M_HLD and
+      0.000ns delay constraint requirement (totaling -0.019ns) by 0.351ns
+
+ Physical Path Details:
+
+      Data path SLICE_1218 to SLICE_1218:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 SLICE_1218.CLK to  SLICE_1218.Q0 SLICE_1218 (from lb_clk)
+ROUTE         3   e 0.199  SLICE_1218.Q0 to  SLICE_1218.M1 u_XT_LB/u_CDC_MCP_Formulation/shift[1] (to lb_clk)
+                  --------
+                    0.332   (40.1% logic, 59.9% route), 1 logic levels.
+
+
+================================================================================
+<A name="map_twr_pref_1_4"></A>Preference: FREQUENCY NET "sampling_clk" 0.153846 MHz ;
+            145 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.351ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         Sync_RAM   Q              u_UART/rx_buffer[7]  (from sampling_clk +)
+   Destination:    FF         Data in        u_UART/rx_buffer[6]  (to sampling_clk +)
+
+   Delay:               0.332ns  (40.1% logic, 59.9% route), 1 logic levels.
+
+ Constraint Details:
+
+      0.332ns physical path delay u_UART/SLICE_217 to u_UART/SLICE_217 meets
+     -0.019ns M_HLD and
+      0.000ns delay constraint requirement (totaling -0.019ns) by 0.351ns
+
+ Physical Path Details:
+
+      Data path u_UART/SLICE_217 to u_UART/SLICE_217:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 *SLICE_217.CLK to */SLICE_217.Q1 u_UART/SLICE_217 (from sampling_clk)
+ROUTE         3   e 0.199 */SLICE_217.Q1 to */SLICE_217.M0 u_UART/rx_buffer[7] (to sampling_clk)
+                  --------
+                    0.332   (40.1% logic, 59.9% route), 1 logic levels.
+
+
+================================================================================
+<A name="map_twr_pref_1_5"></A>Preference: FREQUENCY NET "systemtimer_clk" 1.000000 MHz ;
+            1 item scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.447ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_SystemTimer/time_update_tff  (from systemtimer_clk +)
+   Destination:    FF         Data in        u_SystemTimer/time_update_tff  (to systemtimer_clk +)
+
+   Delay:               0.434ns  (53.9% logic, 46.1% route), 2 logic levels.
+
+ Constraint Details:
+
+      0.434ns physical path delay u_SystemTimer/SLICE_1100 to u_SystemTimer/SLICE_1100 meets
+     -0.013ns DIN_HLD and
+      0.000ns delay constraint requirement (totaling -0.013ns) by 0.447ns
+
+ Physical Path Details:
+
+      Data path u_SystemTimer/SLICE_1100 to u_SystemTimer/SLICE_1100:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 *LICE_1100.CLK to *SLICE_1100.Q0 u_SystemTimer/SLICE_1100 (from systemtimer_clk)
+ROUTE         2   e 0.199 *SLICE_1100.Q0 to *SLICE_1100.A0 u_SystemTimer/time_update_tff
+CTOF_DEL    ---     0.101 *SLICE_1100.A0 to *SLICE_1100.F0 u_SystemTimer/SLICE_1100
+ROUTE         1   e 0.001 *SLICE_1100.F0 to *LICE_1100.DI0 u_SystemTimer/time_update_tff_i (to systemtimer_clk)
+                  --------
+                    0.434   (53.9% logic, 46.1% route), 2 logic levels.
+
+
+================================================================================
+<A name="map_twr_pref_1_6"></A>Preference: FREQUENCY PORT "tck" 4.000000 MHz ;
+            1089 items scored, 0 timing errors detected.
+--------------------------------------------------------------------------------
+
+
+Passed: The following path meets requirements by 0.351ns
+
+ Logical Details:  Cell type  Pin type       Cell/ASIC name  (clock net +/-)
+
+   Source:         FF         Q              u_JtagDTM/u_CDC_MCP_Formulation/u_OncePulse_ack/gen_normal.shift[1]  (from tck_c +)
+   Destination:    FF         Data in        u_JtagDTM/u_CDC_MCP_Formulation/u_OncePulse_ack/gen_normal.shift[2]  (to tck_c +)
+
+   Delay:               0.332ns  (40.1% logic, 59.9% route), 1 logic levels.
+
+ Constraint Details:
+
+      0.332ns physical path delay SLICE_1636 to SLICE_1636 meets
+     -0.019ns M_HLD and
+      0.000ns delay constraint requirement (totaling -0.019ns) by 0.351ns
+
+ Physical Path Details:
+
+      Data path SLICE_1636 to SLICE_1636:
+
+   Name    Fanout   Delay (ns)          Site               Resource
+REG_DEL     ---     0.133 SLICE_1636.CLK to  SLICE_1636.Q0 SLICE_1636 (from tck_c)
+ROUTE         3   e 0.199  SLICE_1636.Q0 to  SLICE_1636.M1 u_JtagDTM/u_CDC_MCP_Formulation/shift_0[1] (to tck_c)
+                  --------
+                    0.332   (40.1% logic, 59.9% route), 1 logic levels.
+
+<A name="mtw1_hold_rs"></A><B><U><big>Report Summary</big></U></B>
+--------------
+----------------------------------------------------------------------------
+Preference(MIN Delays)                  |   Constraint|       Actual|Levels
+----------------------------------------------------------------------------
+                                        |             |             |
+FREQUENCY NET "clk_inner_osc" 2.150000  |             |             |
+MHz ;                                   |     0.000 ns|     0.351 ns|   1  
+                                        |             |             |
+FREQUENCY NET "clk_osc_c" 12.000000 MHz |             |             |
+;                                       |     0.000 ns|     0.651 ns|   2  
+                                        |             |             |
+FREQUENCY NET "clk" 12.000000 MHz ;     |     0.000 ns|     0.351 ns|   1  
+                                        |             |             |
+FREQUENCY NET "lb_clk" 0.100000 MHz ;   |     0.000 ns|     0.351 ns|   1  
+                                        |             |             |
+FREQUENCY NET "sampling_clk" 0.153846   |             |             |
+MHz ;                                   |     0.000 ns|     0.351 ns|   1  
+                                        |             |             |
+FREQUENCY NET "systemtimer_clk"         |             |             |
+1.000000 MHz ;                          |     0.000 ns|     0.447 ns|   2  
+                                        |             |             |
+FREQUENCY PORT "tck" 4.000000 MHz ;     |            -|            -|   1  
+                                        |             |             |
+----------------------------------------------------------------------------
+
+
+All preferences were met.
+
+
+<A name="mtw1_hold_clkda"></A><B><U><big>Clock Domains Analysis</big></U></B>
+------------------------
+
+Found 14 clocks:
+
+Clock Domain: u_efb/spi_clk_o   Source: u_efb/EFBInst_0.SPISCKO   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/spi_clk_i   Source: spi_clk.PAD   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c2_sclo   Source: u_efb/EFBInst_0.I2C2SCLO   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c2_scli   Source: i2c2_scl.PAD   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c1_sclo   Source: u_efb/EFBInst_0.I2C1SCLO   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_efb/i2c1_scli   Source: i2c1_scl.PAD   Loads: 1
+   No transfer within this clock domain is found
+
+Clock Domain: u_UART.band_clk   Source: u_UART/u_ClockDivider/SLICE_1135.Q0   Loads: 10
+   No transfer within this clock domain is found
+
+Clock Domain: tck_c   Source: tck.PAD   Loads: 114
+   Covered under: FREQUENCY PORT "tck" 4.000000 MHz ;
+
+   Data transfers from:
+   Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP
+      Not reported because source and destination domains are unrelated.
+
+Clock Domain: systemtimer_clk   Source: u_SystmePLL/PLLInst_0.CLKOS   Loads: 1
+   Covered under: FREQUENCY NET "systemtimer_clk" 1.000000 MHz ;
+
+Clock Domain: sampling_clk   Source: u_SystmePLL/PLLInst_0.CLKOS2   Loads: 17
+   Covered under: FREQUENCY NET "sampling_clk" 0.153846 MHz ;
+
+Clock Domain: lb_clk   Source: u_SystmePLL/PLLInst_0.CLKOS3   Loads: 41
+   Covered under: FREQUENCY NET "lb_clk" 0.100000 MHz ;
+
+   Data transfers from:
+   Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP
+      Covered under: FREQUENCY NET "lb_clk" 0.100000 MHz ;   Transfers: 17
+
+Clock Domain: clk_osc_c   Source: clk_osc.PAD   Loads: 2
+   No transfer within this clock domain is found
+
+   Data transfers from:
+   Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP
+      Covered under: FREQUENCY NET "clk_osc_c" 12.000000 MHz ;   Transfers: 16
+
+Clock Domain: clk_inner_osc   Source: osc_int.OSC   Loads: 10
+   Covered under: FREQUENCY NET "clk_inner_osc" 2.150000 MHz ;
+
+Clock Domain: clk   Source: u_SystmePLL/PLLInst_0.CLKOP   Loads: 915
+   Covered under: FREQUENCY NET "clk" 12.000000 MHz ;
+
+   Data transfers from:
+   Clock Domain: u_UART.band_clk   Source: u_UART/u_ClockDivider/SLICE_1135.Q0
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 1
+
+   Clock Domain: tck_c   Source: tck.PAD
+      Not reported because source and destination domains are unrelated.
+
+   Clock Domain: systemtimer_clk   Source: u_SystmePLL/PLLInst_0.CLKOS
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 1
+
+   Clock Domain: sampling_clk   Source: u_SystmePLL/PLLInst_0.CLKOS2
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 9
+
+   Clock Domain: lb_clk   Source: u_SystmePLL/PLLInst_0.CLKOS3
+      Covered under: FREQUENCY NET "clk" 12.000000 MHz ;   Transfers: 10
+
+
+<A name="mtw1_hold_ts"></A><B><U><big>Timing summary (Hold):</big></U></B>
+---------------
+
+Timing errors: 0  Score: 0
+Cumulative negative slack: 0
+
+Constraints cover 1102703 paths, 7 nets, and 17145 connections (95.83% coverage)
+
+
+
+<A name="mtw1_ts"></A><B><U><big>Timing summary (Setup and Hold):</big></U></B>
+---------------
+
+Timing errors: 0 (setup), 0 (hold)
+Score: 0 (setup), 0 (hold)
+Cumulative negative slack: 0 (0+0)
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+
+
+
+
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+</PRE></FONT>
+</BODY>
+</HTML>
