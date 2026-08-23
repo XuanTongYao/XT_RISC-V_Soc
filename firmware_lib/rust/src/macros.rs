@@ -22,7 +22,7 @@ macro_rules! set_field {
         $crate::set_field!(@impl $(#[$doc])*, (), $name, $($reg)?, $field, $t);
     };
     (@impl $(#[$doc:meta])*, ($($unsafe:tt)?), $name:ident, $($reg:ident)?, $field:ident, $t:ty) => {
-        paste::paste! {
+        pastey::paste! {
             $(#[$doc])*
             #[inline(always)]
             pub $($unsafe)? fn [<set_ $name>](&mut self, value: $t) {
@@ -68,7 +68,7 @@ macro_rules! set_value {
         $crate::set_value!(@impl $(#[$doc])*, (), $name, $($reg)?, $t);
     };
     (@impl $(#[$doc:meta])*, ($($unsafe:tt)?), $name:ident, $($reg:ident)?, $t:ty) => {
-        paste::paste! {
+        pastey::paste! {
             $(#[$doc])*
             #[inline(always)]
             pub $($unsafe)? fn [<set_ $name>](&mut self, value: $t) {
@@ -87,7 +87,7 @@ macro_rules! modify_value {
         $crate::modify_value!(@impl $(#[$doc])*, (), $name, $($reg)?, $t);
     };
     (@impl $(#[$doc:meta])*, ($($unsafe:tt)?), $name:ident, $($reg:ident)?, $t:ty) => {
-        paste::paste! {
+        pastey::paste! {
             $(#[$doc])*
             #[inline(always)]
             pub $($unsafe)? fn [<modify_ $name>]<F>(&mut self, f: F)

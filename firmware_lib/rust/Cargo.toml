@@ -17,7 +17,7 @@ zh_cn_prompt = []                       # 自举程序 汉字提示
 [dependencies]
 bitfield-struct = "0.12.1"
 bitflags = "2.11.0"
-paste = "1.0.15"
+pastey = "0.2.3"
 riscv = { version = "0.16.0" }
 seq-macro = "0.3.6"
 volatile-register = "0.2.2"
