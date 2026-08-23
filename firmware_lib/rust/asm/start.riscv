@@ -13,7 +13,7 @@ _start:
     csrw mtvec, a0
     # 关闭所有中断
     csrw mie, x0
-    # 清空 未初始化段
+    # 清空 .bss 段
     lla a0, __BSS_START__
 	lla a1, __BSS_END__
 	bgeu a0, a1, 2f
@@ -67,78 +67,13 @@ _custom_int:
 # 弃置的自陷处理函数
 .section .trap.delete_handler,"ax",@progbits
 .global delete_IRQ_handler
-delete_IRQ_handler:
-    mret
-
-
-.section .trap.error_handler,"ax",@progbits
-# 未处理(致命)错误死循环
 .global UnhandledFault
+# 未实现的中断处理函数死循环 没办法清空待处理中断位 应该死循环
+delete_IRQ_handler:
+    j delete_IRQ_handler
+
+# 未处理错误死循环
 UnhandledFault:
     j UnhandledFault
-
-.global Exception_Handler
-.global _Exception_Exit
-.equ eh_stack, 64
-Exception_Handler:
-    # 保存"调用者保存寄存器"
-    addi    sp,sp,-eh_stack
-    sw t3, 60(sp)
-    sw t4, 56(sp)
-    sw t5, 52(sp)
-    sw t6, 48(sp)
-    sw ra, 44(sp)
-    sw a0, 40(sp)
-    sw a1, 36(sp)
-    sw a2, 32(sp)
-    sw a3, 28(sp)
-    sw a4, 24(sp)
-    sw a5, 20(sp)
-    sw a6, 16(sp)
-    sw a7, 12(sp)
-    sw t0, 8(sp)
-    sw t1, 4(sp)
-    sw t2, 0(sp)
-
-    lla ra, _Exception_Exit # 返回地址重定向
-    csrr t1, mcause # 读取异常类型
-    # 判断异常类型
-    li t0, 11
-    beq t0, t1, 11f
-    li t0, 6 
-    beq t0, t1, 6f
-    li t0, 4 
-    beq t0, t1, 4f
-    li t0, 2 
-    beq t0, t1, 2f
-    j UnhandledFault
-2:
-    j Illegal_inst_ErrorHandler             # 异常号2
-4:
-    j Load_addr_misaligned_ErrorHandler     # 异常号4
-6:
-    j Store_addr_misaligned_ErrorHandler    # 异常号6
-11:
-    j Ecall_ErrorHandler                    # 异常号11
-
-_Exception_Exit:
-    lw t3, 60(sp)
-    lw t4, 56(sp)
-    lw t5, 52(sp)
-    lw t6, 48(sp)
-    lw ra, 44(sp)
-    lw a0, 40(sp)
-    lw a1, 36(sp)
-    lw a2, 32(sp)
-    lw a3, 28(sp)
-    lw a4, 24(sp)
-    lw a5, 20(sp)
-    lw a6, 16(sp)
-    lw a7, 12(sp)
-    lw t0, 8(sp)
-    lw t1, 4(sp)
-    lw t2, 0(sp)
-    addi    sp,sp,eh_stack
-    mret
 
 

@@ -23,6 +23,15 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {}
 }
 
+#[cfg(all(
+    feature = "start_asm",
+    not(feature = "bare_start"),
+    not(feature = "no_trap_start")
+))]
+unsafe extern "C" {
+    pub unsafe fn UnhandledFault();
+}
+
 mod macros;
 
 pub mod hb32;

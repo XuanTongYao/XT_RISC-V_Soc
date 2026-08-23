@@ -21,7 +21,6 @@ SECTIONS
         __TRAP_VECTOR__ = .;
         KEEP (*(SORT_NONE(.trap.vector)))
         KEEP (*(SORT_NONE(.trap.delete_handler)))
-        KEEP (*(SORT_NONE(.trap.error_handler)))
         *(.text .text.*)
     } > RAM
 
