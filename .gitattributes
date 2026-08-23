@@ -11,4 +11,4 @@
 *.md        text eol=lf
 *.json5     text eol=lf
 
-*.html  linguist-detectable=false
+*.html      -linguist-detectable
