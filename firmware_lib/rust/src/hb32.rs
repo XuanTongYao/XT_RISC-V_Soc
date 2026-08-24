@@ -124,7 +124,7 @@ pub struct BootstrapPreloadStr {
     pub len: u8,
 }
 type PreloadStr = BootstrapPreloadStr;
-#[cfg(feature = "emoji_prompt")]
+#[cfg(not(feature = "zh_cn_prompt"))]
 impl Bootstrap {
     // "🔓:0x56\n"
     pub const CMD: PreloadStr = PreloadStr { addr: 0, len: 10 };
