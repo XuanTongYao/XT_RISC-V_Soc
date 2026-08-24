@@ -9,7 +9,7 @@ core::arch::global_asm!(include_str!("../asm/trap.riscv"));
 
 #[cfg(not(feature = "no_trap"))]
 unsafe extern "C" {
-    pub unsafe fn UnhandledFault();
+    pub unsafe fn UnhandledFault() -> !;
 }
 
 // #[inline(never)]

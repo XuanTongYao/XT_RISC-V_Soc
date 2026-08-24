@@ -1,4 +1,4 @@
-//! 低速总线外设，包含按钮、gpio等
+//! 低速总线外设，包含按钮、LED、数码管等
 
 use volatile_register::RW;
 
