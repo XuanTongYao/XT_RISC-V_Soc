@@ -18,6 +18,9 @@ SECTIONS
     .text :
     {
         KEEP (*(SORT_NONE(.init)))
+        KEEP (*(SORT_NONE(.init.clear_bss)))
+        KEEP (*(SORT_NONE(.init.trap)))
+        KEEP (*(SORT_NONE(.init.call_main)))
         __TRAP_VECTOR__ = .;
         KEEP (*(SORT_NONE(.trap.vector)))
         KEEP (*(SORT_NONE(.trap.delete_handler)))

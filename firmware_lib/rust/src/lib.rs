@@ -1,35 +1,21 @@
 #![no_std]
 
-#[cfg(all(
-    feature = "start_asm",
-    not(feature = "bare_start"),
-    not(feature = "no_trap_start")
-))]
+#[cfg(not(feature = "no_start"))]
 core::arch::global_asm!(include_str!("../asm/start.riscv"));
-#[cfg(feature = "no_trap_start")]
-core::arch::global_asm!(include_str!("../asm/no_trap_start.riscv"));
-#[cfg(feature = "bare_start")]
-core::arch::global_asm!(include_str!("../asm/bare_start.riscv"));
+#[cfg(not(feature = "no_bss"))]
+core::arch::global_asm!(include_str!("../asm/init_bss.riscv"));
+#[cfg(not(feature = "no_trap"))]
+core::arch::global_asm!(include_str!("../asm/trap.riscv"));
 
-#[cfg(all(feature = "no_trap_start", feature = "bare_start"))]
-compile_error!(
-    r#"Error: Multiple start assembly files cannot be enabled at the same time
-    错误: 不允许同时启用多种start汇编文件"#
-);
+#[cfg(not(feature = "no_trap"))]
+unsafe extern "C" {
+    pub unsafe fn UnhandledFault();
+}
 
 // #[inline(never)]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {}
-}
-
-#[cfg(all(
-    feature = "start_asm",
-    not(feature = "bare_start"),
-    not(feature = "no_trap_start")
-))]
-unsafe extern "C" {
-    pub unsafe fn UnhandledFault();
 }
 
 mod macros;

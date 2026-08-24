@@ -10,6 +10,7 @@ const LB_OFFSET_LEN: usize = LB_ADDR_LEN - LB_ID_LEN;
 const LB_ID_START_BIT: usize = LB_OFFSET_LEN;
 enum PeripheralId {
     KeySwitch,
+    #[allow(dead_code)]
     AfGpio, // 暂时占用，避免改变原地址
     LED,
     LEDSD,
