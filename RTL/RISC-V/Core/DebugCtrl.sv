@@ -29,11 +29,12 @@ module DebugCtrl
   wire step_debug = debug.dcsr.step && !flushing_pipeline;  // 等指令真正执行完成
 
   // FIXME ebreakm似乎有点问题，异常会在halt前发生？
-  // 因为触发调试是异步的，采用与中断相同的策略
-  // 等本条指令执行完成后再处理
+  // 由haltreq触发调试是异步的，采用与中断相同的策略: 等本条指令执行完成后再处理
+  // 而其他的ebreak与reset_halt等触发调试是同步的，相当于异常
   assign debug.bypass_wfi = dm_hart.haltreq;  // 跳过wfi
   assign debug.valid_haltreq = (dm_hart.haltreq || ebreak_debug || step_debug) && !debug.halt && stall_n;
   assign debug.resume = dm_hart.resumereq && !dm_hart.haltreq && debug.halted;
+  assign debug.halted = debug.debug_mode;  // 因为没有实现程序缓冲区 调试模式一定停止内核
 
   logic will_havereset;
   always_ff @(posedge clk, posedge rst) begin
@@ -41,7 +42,7 @@ module DebugCtrl
       will_havereset <= 1;
 
       debug.halt <= 0;
-      debug.halted <= 0;
+      debug.debug_mode <= 0;
       dm_hart.dm_state <= UNAVAIL;
     end else begin
       if (will_havereset) begin
@@ -54,10 +55,10 @@ module DebugCtrl
 
       debug.halt <= debug.valid_haltreq;
       if (debug.halt) begin
-        debug.halted <= 1;
+        debug.debug_mode <= 1;
         dm_hart.dm_state <= HALTED;
       end else if (debug.resume) begin
-        debug.halted <= 0;
+        debug.debug_mode <= 0;
         dm_hart.dm_state <= RUNNING;
       end
     end
