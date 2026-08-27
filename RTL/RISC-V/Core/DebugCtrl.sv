@@ -82,7 +82,7 @@ module DebugCtrl
     end else if (delay_halt) begin
       if (dm_hart.haltreq) begin
         debug.new_cause = DEBUG_HALTREQ;
-      end else if (step_debug) begin
+      end else if (debug.dcsr.step) begin
         debug.new_cause = DEBUG_STEP;
       end
     end
