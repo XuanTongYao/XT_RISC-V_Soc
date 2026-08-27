@@ -35,12 +35,13 @@ module DebugCtrl
   assign debug.resume = dm_hart.resumereq && !dm_hart.haltreq && debug.halted;
   assign debug.halted = debug.debug_mode;  // 因为没有实现程序缓冲区 调试模式一定停止内核
 
-  logic will_havereset;
+  logic recover_from_reset;
   logic delay_halt;
-  assign debug.halt = delay_halt || ebreak_debug;
+  wire  reset_halt = (recover_from_reset && dm_hart.haltreq);
+  assign debug.halt = (delay_halt || ebreak_debug || reset_halt) && !debug.debug_mode;
   always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
-      will_havereset <= 1;
+      recover_from_reset <= 1;
 
       delay_halt <= 0;
       debug.debug_mode <= 0;
@@ -52,10 +53,10 @@ module DebugCtrl
         delay_halt <= debug.valid_delay_halt;
       end
 
-      if (will_havereset) begin
-        will_havereset <= 0;
-        dm_hart.havereset <= 1;
-        dm_hart.dm_state <= RUNNING;
+      if (recover_from_reset) begin
+        recover_from_reset <= 0;
+        dm_hart.havereset  <= 1;
+        dm_hart.dm_state   <= RUNNING;
       end else if (dm_hart.ackhavereset) begin
         dm_hart.havereset <= 0;
       end
@@ -70,15 +71,13 @@ module DebugCtrl
     end
   end
 
-  // TODO 复位停止内核，按照标准应该在复位完成后立即停止
 
-  // NOTE: 理论上复位停止内核，应该把if_id和id_ex的地址清0
-  // 这样`resume_addr`才是正确的(暂停到第一条指令)
-  // 但是`debug.halt`延迟一下，刚好使pc=0传播到了id_ex（纯属巧合）
-  assign debug.new_dpc = resume_addr;
+  assign debug.new_dpc = reset_halt ? '0 : resume_addr;
   always_comb begin
     debug.new_cause = 'x;
-    if (ebreak_debug) begin
+    if (reset_halt) begin
+      debug.new_cause = DEBUG_HALTREQ;
+    end else if (ebreak_debug) begin
       debug.new_cause = DEBUG_EBREAK;
     end else if (delay_halt) begin
       if (dm_hart.haltreq) begin
@@ -88,6 +87,7 @@ module DebugCtrl
       end
     end
   end
+
 
 
   //----------读写寄存器----------//
