@@ -30,7 +30,7 @@ module DebugCtrl
 
   // 由haltreq和step触发调试采用与中断相同的策略: 等本条指令执行完成后再处理
   // 而其他的ebreak与reset_halt等触发调试立即发生，相当于异常
-  assign debug.bypass_wfi = dm_hart.haltreq;  // 跳过wfi
+  assign debug.bypass_wfi = dm_hart.haltreq || debug.dcsr.step;  // 跳过wfi
   assign debug.valid_delay_halt = (dm_hart.haltreq || step_debug) && !debug.halt && stall_n;
   assign debug.resume = dm_hart.resumereq && !dm_hart.haltreq && debug.halted;
   assign debug.halted = debug.debug_mode;  // 因为没有实现程序缓冲区 调试模式一定停止内核
