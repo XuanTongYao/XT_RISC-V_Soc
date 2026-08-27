@@ -91,11 +91,11 @@ interface debug_if #(
   logic [PC_LEN-1:0] dpc;
   dcsr_sdext_only_t dcsr;
 
-  logic bypass_wfi, valid_haltreq;
+  logic bypass_wfi, valid_delay_halt;
   modport controller(
-      output debug_mode, halted, halt, resume, new_cause, new_dpc, bypass_wfi, valid_haltreq,
+      output debug_mode, halted, halt, resume, new_cause, new_dpc, bypass_wfi, valid_delay_halt,
       input dcsr, dpc
   );
   modport csr(input debug_mode, halted, halt, new_cause, new_dpc, output dcsr, dpc);
-  modport core(input debug_mode, halted, halt, bypass_wfi, valid_haltreq, resume, dcsr, dpc);
+  modport core(input debug_mode, halted, halt, bypass_wfi, valid_delay_halt, resume, dcsr, dpc);
 endinterface

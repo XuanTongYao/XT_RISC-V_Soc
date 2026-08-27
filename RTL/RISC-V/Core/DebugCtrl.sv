@@ -26,25 +26,32 @@ module DebugCtrl
     reg_w_if.core debug_write_gpr
 );
   wire ebreak_debug = exception_commit.raise && exception_commit.code == BREAKPOINT && debug.dcsr.ebreakm;
-  wire step_debug = debug.dcsr.step && !flushing_pipeline;  // 等指令真正执行完成
+  wire step_debug = debug.dcsr.step && !flushing_pipeline;  // 等指令真正到执行模块
 
-  // FIXME ebreakm似乎有点问题，异常会在halt前发生？
-  // 由haltreq触发调试是异步的，采用与中断相同的策略: 等本条指令执行完成后再处理
-  // 而其他的ebreak与reset_halt等触发调试是同步的，相当于异常
+  // 由haltreq和step触发调试采用与中断相同的策略: 等本条指令执行完成后再处理
+  // 而其他的ebreak与reset_halt等触发调试立即发生，相当于异常
   assign debug.bypass_wfi = dm_hart.haltreq;  // 跳过wfi
-  assign debug.valid_haltreq = (dm_hart.haltreq || ebreak_debug || step_debug) && !debug.halt && stall_n;
+  assign debug.valid_delay_halt = (dm_hart.haltreq || step_debug) && !debug.halt && stall_n;
   assign debug.resume = dm_hart.resumereq && !dm_hart.haltreq && debug.halted;
   assign debug.halted = debug.debug_mode;  // 因为没有实现程序缓冲区 调试模式一定停止内核
 
   logic will_havereset;
+  logic delay_halt;
+  assign debug.halt = delay_halt || ebreak_debug;
   always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
       will_havereset <= 1;
 
-      debug.halt <= 0;
+      delay_halt <= 0;
       debug.debug_mode <= 0;
       dm_hart.dm_state <= UNAVAIL;
     end else begin
+      if (delay_halt) begin
+        delay_halt <= 0;
+      end else begin
+        delay_halt <= debug.valid_delay_halt;
+      end
+
       if (will_havereset) begin
         will_havereset <= 0;
         dm_hart.havereset <= 1;
@@ -53,7 +60,6 @@ module DebugCtrl
         dm_hart.havereset <= 0;
       end
 
-      debug.halt <= debug.valid_haltreq;
       if (debug.halt) begin
         debug.debug_mode <= 1;
         dm_hart.dm_state <= HALTED;
@@ -70,14 +76,15 @@ module DebugCtrl
   // 这样`resume_addr`才是正确的(暂停到第一条指令)
   // 但是`debug.halt`延迟一下，刚好使pc=0传播到了id_ex（纯属巧合）
   assign debug.new_dpc = resume_addr;
-  always_ff @(posedge clk) begin
-    if (debug.valid_haltreq) begin
+  always_comb begin
+    debug.new_cause = 'x;
+    if (ebreak_debug) begin
+      debug.new_cause = DEBUG_EBREAK;
+    end else if (delay_halt) begin
       if (dm_hart.haltreq) begin
-        debug.new_cause <= DEBUG_HALTREQ;
-      end else if (ebreak_debug) begin
-        debug.new_cause <= DEBUG_EBREAK;
+        debug.new_cause = DEBUG_HALTREQ;
       end else if (step_debug) begin
-        debug.new_cause <= DEBUG_STEP;
+        debug.new_cause = DEBUG_STEP;
       end
     end
   end
