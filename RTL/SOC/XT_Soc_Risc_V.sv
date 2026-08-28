@@ -239,9 +239,7 @@ module XT_Soc_Risc_V
       .rx_irq(irq_source[0])
   );
 
-  SoftwareINT #(
-      .REG_LEN(16)
-  ) u_SoftwareINT (
+  SoftwareINT u_SoftwareINT (
       .*,
       .hb(hb32_if[IDX_SOFTWARE_INT])
   );

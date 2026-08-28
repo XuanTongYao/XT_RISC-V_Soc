@@ -41,15 +41,15 @@ module CoreCtrl
   // 核心停止和跳转的优先级谁更高？(目前不会出现这种情况)
   always_comb begin
     if (debug.resume) begin
-      jump_addr = XLEN'(64'(debug.dpc) << PC_ZEROS);
-    end else if (!debug.halt && !debug.halted && trap.occurred) begin
+      jump_addr = XLEN'(PadPC(debug.dpc, PC_ZEROS));
+    end else if (trap.occurred) begin
       jump_addr = trap.jump_addr;
     end else begin
       jump_addr = jump_addr_ex;
     end
 
-    jump  = jump_en_ex || (!debug.halt && !debug.halted && trap.occurred) || debug.resume;
-    flush = jump || trap.valid_int_req || debug.valid_haltreq;
+    jump  = jump_en_ex || trap.occurred || debug.resume;
+    flush = jump || trap.valid_int_req || debug.valid_delay_halt;
   end
 
   //----------程序流控制----------//

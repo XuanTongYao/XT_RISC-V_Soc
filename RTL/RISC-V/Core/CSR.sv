@@ -122,7 +122,7 @@ module CSR
             endcase
           end
           2'b01:
-          if (debug.halted) begin
+          if (debug.debug_mode) begin
             unique case (short_addr)
               8'hb0:   rdata = PadDcsr(dcsr);
               8'hb1:   rdata = CFG.XLEN'(PadPC(dpc, CFG.PC_ZEROS));
@@ -172,7 +172,7 @@ module CSR
           // 8'h42: mcause <= csr_wdata;(禁止软件写入)
           default: ;
         endcase
-      end else if (debug.halted) begin
+      end else if (debug.debug_mode) begin
         if (atomic_rw_en && rwaddr.mode == 2'b01 && short_addr == 8'hb0) begin
           dcsr.ebreakm <= write_dcsr.ebreakm;
           dcsr.step <= write_dcsr.step;
@@ -202,7 +202,7 @@ module CSR
         // 8'h44: mip <= csr_wdata;(只读)
         default: ;
       endcase
-    end else if (debug.halted) begin
+    end else if (debug.debug_mode) begin
       if (atomic_rw_en && rwaddr.mode == 2'b01 && short_addr == 8'hb1) begin
         dpc <= wdata[CFG.XLEN-1:CFG.PC_ZEROS];
       end

@@ -41,8 +41,10 @@ module ExceptionCtrl
   end
 
   // 注意防止stall等待时清空流水线
-  assign trap.valid_int_req = trap.any_int_come && trap.mstatus.mie && !raise && !debug.dcsr.step && stall_n;
-  assign trap.occurred = ready_for_int || raise;
+  assign trap.valid_int_req = trap.any_int_come && trap.mstatus.mie && !raise && stall_n && !debug.debug_mode &&
+      !debug.dcsr.step;
+  // 调试停止的优先级大于自陷、调试模式时不发生任何自陷
+  assign trap.occurred = (ready_for_int || raise) && !debug.halt && !debug.debug_mode;
   assign trap.new_mepc = resume_addr;
 
   logic [30:0] code;

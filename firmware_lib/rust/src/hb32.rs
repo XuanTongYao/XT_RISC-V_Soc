@@ -13,7 +13,7 @@ enum PeripheralId {
     EintController,
     Mtime,
     Uart,
-    SoftwareInt,
+    Msip,
     Gpio,
 }
 
@@ -70,13 +70,6 @@ pub mod regs {
         pub rx_full: bool,  // 接收缓冲区已满
         #[bits(28)]
         __: u32,
-    }
-
-    #[bitfield(u32)]
-    pub struct MSoftwareInt {
-        #[bits(31)]
-        pub cause: u32,
-        pub pending: bool,
     }
 
     #[repr(C)]
@@ -316,16 +309,23 @@ impl Uart {
     }
 }
 
-pub type MSoftwareInt = Peripheral<RW<regs::MSoftwareInt>, { sp_base(PeripheralId::SoftwareInt) }>;
-impl MSoftwareInt {
-    pub const SINGLETON: MSoftwareInt = unsafe { MSoftwareInt::from_ptr(MSoftwareInt::BASE as _) };
-
-    crate::getset_field!(cause,,cause,u32);
-    crate::getset_field!(pending,,pending,bool);
-
+pub type Msip = Peripheral<RW<u32>, { sp_base(PeripheralId::Msip) }>;
+impl Msip {
+    pub const SINGLETON: Msip = unsafe { Msip::from_ptr(Msip::BASE as _) };
     #[inline(always)]
-    pub fn set(&mut self, value: u32) {
-        unsafe { self.reg().write(value.into()) }
+    pub fn is_enabled() -> bool {
+        Self::SINGLETON.reg().read() != 0
+    }
+
+    /// # Safety
+    /// 会立即引发软件中断
+    #[inline(always)]
+    pub unsafe fn enable(&mut self) {
+        unsafe { self.reg().write(0x01) }
+    }
+    #[inline(always)]
+    pub fn disable(&mut self) {
+        unsafe { self.reg().write(0x00) }
     }
 }
 

@@ -8,6 +8,7 @@ module DebugCtrl
     input clk,
     input rst,
     input stall_n,
+    input [31:0] pc,
 
     // 连接到外部
     dm_hart_minimal_if.hart dm_hart,
@@ -26,60 +27,77 @@ module DebugCtrl
     reg_w_if.core debug_write_gpr
 );
   wire ebreak_debug = exception_commit.raise && exception_commit.code == BREAKPOINT && debug.dcsr.ebreakm;
-  wire step_debug = debug.dcsr.step && !flushing_pipeline;  // 等指令真正执行完成
+  wire step_debug = debug.dcsr.step && !flushing_pipeline;  // 等指令真正到执行模块
 
-  // FIXME ebreakm似乎有点问题，异常会在halt前发生？
-  // 因为触发调试是异步的，采用与中断相同的策略
-  // 等本条指令执行完成后再处理
-  assign debug.bypass_wfi = dm_hart.haltreq;  // 跳过wfi
-  assign debug.valid_haltreq = (dm_hart.haltreq || ebreak_debug || step_debug) && !debug.halt && stall_n;
+  // 由haltreq和step触发调试采用与中断相同的策略: 等本条指令执行完成后再处理
+  // 而其他的ebreak与reset_halt等触发调试立即发生，相当于异常
+  assign debug.bypass_wfi = dm_hart.haltreq || debug.dcsr.step;  // 跳过wfi
+  assign debug.valid_delay_halt = (dm_hart.haltreq || step_debug) && !debug.halt && stall_n;
   assign debug.resume = dm_hart.resumereq && !dm_hart.haltreq && debug.halted;
+  assign debug.halted = debug.debug_mode;  // 因为没有实现程序缓冲区 调试模式一定停止内核
 
-  logic will_havereset;
+  logic recover_from_reset;
+  logic delay_halt;
+  wire  reset_halt = (recover_from_reset && dm_hart.haltreq);
+  assign debug.halt = (delay_halt || ebreak_debug || reset_halt) && !debug.debug_mode;
   always_ff @(posedge clk, posedge rst) begin
     if (rst) begin
-      will_havereset <= 1;
+      recover_from_reset <= 1;
 
-      debug.halt <= 0;
-      debug.halted <= 0;
+      delay_halt <= 0;
+      debug.debug_mode <= 0;
       dm_hart.dm_state <= UNAVAIL;
     end else begin
-      if (will_havereset) begin
-        will_havereset <= 0;
-        dm_hart.havereset <= 1;
-        dm_hart.dm_state <= RUNNING;
+      if (delay_halt) begin
+        delay_halt <= 0;
+      end else begin
+        delay_halt <= debug.valid_delay_halt;
+      end
+
+      if (recover_from_reset) begin
+        recover_from_reset <= 0;
+        dm_hart.havereset  <= 1;
+        dm_hart.dm_state   <= RUNNING;
       end else if (dm_hart.ackhavereset) begin
         dm_hart.havereset <= 0;
       end
 
-      debug.halt <= debug.valid_haltreq;
       if (debug.halt) begin
-        debug.halted <= 1;
+        debug.debug_mode <= 1;
         dm_hart.dm_state <= HALTED;
       end else if (debug.resume) begin
-        debug.halted <= 0;
+        debug.debug_mode <= 0;
         dm_hart.dm_state <= RUNNING;
       end
     end
   end
 
-  // TODO 复位停止内核，按照标准应该在复位完成后立即停止
+  logic step_trap;  // 因为没有实现stepie，这里只检查异常而不检查中断
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst) begin
+      step_trap <= 0;
+    end else begin
+      if (exception_commit.raise && step_debug) step_trap <= 1;
+      else step_trap <= 0;
+    end
+  end
 
-  // NOTE: 理论上复位停止内核，应该把if_id和id_ex的地址清0
-  // 这样`resume_addr`才是正确的(暂停到第一条指令)
-  // 但是`debug.halt`延迟一下，刚好使pc=0传播到了id_ex（纯属巧合）
-  assign debug.new_dpc = resume_addr;
-  always_ff @(posedge clk) begin
-    if (debug.valid_haltreq) begin
+  assign debug.new_dpc = (reset_halt || step_trap) ? pc[CFG.XLEN-1:CFG.PC_ZEROS] : resume_addr;
+  always_comb begin
+    debug.new_cause = 'x;
+    if (reset_halt) begin
+      debug.new_cause = DEBUG_HALTREQ;
+    end else if (ebreak_debug) begin
+      debug.new_cause = DEBUG_EBREAK;
+    end else if (delay_halt) begin
       if (dm_hart.haltreq) begin
-        debug.new_cause <= DEBUG_HALTREQ;
-      end else if (ebreak_debug) begin
-        debug.new_cause <= DEBUG_EBREAK;
-      end else if (step_debug) begin
-        debug.new_cause <= DEBUG_STEP;
+        debug.new_cause = DEBUG_HALTREQ;
+      end else if (debug.dcsr.step) begin
+        debug.new_cause = DEBUG_STEP;
       end
     end
   end
+
 
 
   //----------读写寄存器----------//
