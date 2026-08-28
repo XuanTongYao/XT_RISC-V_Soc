@@ -8,6 +8,7 @@ module DebugCtrl
     input clk,
     input rst,
     input stall_n,
+    input [31:0] pc,
 
     // 连接到外部
     dm_hart_minimal_if.hart dm_hart,
@@ -71,8 +72,17 @@ module DebugCtrl
     end
   end
 
+  logic step_trap;  // 因为没有实现stepie，这里只检查异常而不检查中断
+  always_ff @(posedge clk, posedge rst) begin
+    if (rst) begin
+      step_trap <= 0;
+    end else begin
+      if (exception_commit.raise && step_debug) step_trap <= 1;
+      else step_trap <= 0;
+    end
+  end
 
-  assign debug.new_dpc = reset_halt ? '0 : resume_addr;
+  assign debug.new_dpc = (reset_halt || step_trap) ? pc[CFG.XLEN-1:CFG.PC_ZEROS] : resume_addr;
   always_comb begin
     debug.new_cause = 'x;
     if (reset_halt) begin

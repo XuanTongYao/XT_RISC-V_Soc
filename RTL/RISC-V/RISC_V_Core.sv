@@ -46,6 +46,8 @@ module RISC_V_Core
 );
   localparam int XLEN = CFG.XLEN;
 
+  wire [31:0] pc;  // 提前声明
+
   //----------核心控制器----------//
   wire [31:0] jump_addr;
   wire jump;
@@ -65,7 +67,7 @@ module RISC_V_Core
   wire exception_t exception_commit;  // 提前声明
 
   // 调试控制器
-  debug_if debug ();
+  debug_if #(.PC_LEN(CFG.PC_LEN)) debug ();
   wire debug_override_csr, debug_override_gpr;
   reg_r_if #(.DATA_LEN(XLEN)) debug_read_gpr ();
   reg_w_if #(.DATA_LEN(XLEN)) debug_write_gpr ();
@@ -80,7 +82,6 @@ module RISC_V_Core
   CoreReg #(.CFG(CFG)) u_CoreReg (.*);
 
   // PC寄存器
-  wire [31:0] pc;
   wire rvc = 0;
   // wire rvc;
   PC_Reg #(

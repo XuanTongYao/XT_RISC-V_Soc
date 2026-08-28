@@ -49,7 +49,7 @@ package CoreConfig;
     int REG_LEN;
 
     int IALIGN;    // 指令对齐位宽,32或16
-    int PC_LEN;
+    int PC_LEN;    // 对齐省略低位后的长度，用于简化mepc,dpc等(不包括pc)，使用时请注意
     int PC_ZEROS;
   } core_cfg_t;
 

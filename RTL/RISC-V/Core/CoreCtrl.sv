@@ -41,7 +41,7 @@ module CoreCtrl
   // 核心停止和跳转的优先级谁更高？(目前不会出现这种情况)
   always_comb begin
     if (debug.resume) begin
-      jump_addr = XLEN'(64'(debug.dpc) << PC_ZEROS);
+      jump_addr = XLEN'(PadPC(debug.dpc, PC_ZEROS));
     end else if (trap.occurred) begin
       jump_addr = trap.jump_addr;
     end else begin
