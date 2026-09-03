@@ -2,15 +2,9 @@
 runner = "my-emulator"
 rustflags = [
     "-C",
-    "link-arg=--nmagic",                           # 禁用页对齐 降低elf文件大小
-    "-C",
-    "link-arg=--relax-gp",
+    "link-arg=--nmagic",            # 禁用页对齐 降低elf文件大小
     "-C",
     "target-feature=+zicsr,+relax",
-    "-C",
-    "link-arg=-Tfirmware_lib/rust/link.x",
-    "-C",
-    "link-arg=-Tfirmware_lib/rust/trap_handler.x",
 ]
 
 [build]
