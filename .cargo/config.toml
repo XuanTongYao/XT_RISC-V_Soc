@@ -9,17 +9,3 @@ rustflags = [
 
 [build]
 target = "riscv32i-unknown-none-elf"
-
-
-[alias]
-rb = "run --bin"
-rrb = "run --release --bin"
-
-# bb = "build --release --bin"
-# bb_debug = "build --bin"
-
-# objdb = "objdump --release --bin"
-# objdbb_debug = "objdump --bin"
-
-dumpex = "objdump --example"
-dumprex = "objdump --release --example"
