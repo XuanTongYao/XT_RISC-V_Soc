@@ -933,7 +933,7 @@ impl Flash {
 
     /// **必须先启用UFM透明传输!**
     pub fn set_ufm_addr(&mut self, addr: u16) {
-        let addr = (addr & Self::PAGE_MASK).to_ne_bytes();
+        let addr = (addr & Self::PAGE_MASK).to_be_bytes();
         let buffer = [0x40u8, 0x00, addr[0], addr[1]];
         self.command_frame_write(Self::LSC_WRITE_ADDRESS, 0, &buffer);
     }
