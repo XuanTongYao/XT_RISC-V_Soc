@@ -1,0 +1,25 @@
+[target.riscv32i-unknown-none-elf]
+rustflags = [
+  "-C",
+  "link-arg=--nmagic",
+  "-C",
+  "link-arg=-Tlink.x",
+  "-C",
+  "link-arg=-Tmemory.x",
+  "-C",
+  "link-arg=--no-relax",            # riscv特有，其他都与模板一致
+  "-C",
+  "code-model=medium",              # riscv特有，其他都与模板一致
+  "-C",
+  "relocation-model=static",        # riscv特有，其他都与模板一致
+  "-C",
+  "llvm-args=--inline-threshold=5",
+  "-C",
+  "no-vectorize-loops",
+  "-C",
+  "force-frame-pointers=no",
+]
+runner = "target-gen test template.yaml xt_rv32i.yaml"
+
+[build]
+target = "riscv32i-unknown-none-elf"

@@ -1,0 +1,64 @@
+name: XT RISC-V
+variants:
+  - name: XT_RV32I
+    cores:
+      - name: main
+        type: riscv
+        core_access_options: !Riscv {}
+    # A list of all the available memories and their properties.
+    memory_map:
+      - !Ram
+        range:
+          # The start address of the memory (inclusive).
+          start: 0x00000000
+          # The end address of the memory (exclusive).
+          end: 0x00002000
+        # List of cores that can access this region
+        cores:
+          - main
+        # Marks the memory as the memory which the chip boots from.
+        access:
+          boot: true
+      - !Nvm
+        name: UFM
+        range:
+          start: 0x00000000
+          end: 0x00002ff0
+        cores:
+          - main
+        access:
+          read: false
+          write: false
+          execute: false
+      - !Generic
+        range:
+          start: 0x00002000
+          end: 0x00008000
+        cores:
+          - main
+    flash_algorithms:
+      - xt_rv32i_ufm
+flash_algorithms:
+  - name: xt_rv32i_ufm
+    description: A flash algorithm for ufm
+    default: true
+    instructions:
+    pc_init: 0x0
+    pc_uninit: 0x0
+    pc_program_page: 0x0
+    pc_erase_sector: 0x0
+    pc_erase_all: 0x0
+    data_section_offset: 0x0
+    flash_properties:
+      address_range:
+        start: 0x0
+        end: 0x0
+      page_size: 0x0
+      erased_byte_value: 0x0
+      program_page_timeout: 0x0
+      erase_sector_timeout: 0x0
+      sectors:
+        - size: 0x0
+          address: 0x0
+    cores:
+      - main

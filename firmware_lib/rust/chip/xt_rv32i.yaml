@@ -1,29 +1,60 @@
----
 name: XT RISC-V
 variants:
   - name: XT_RV32I
     cores:
       - name: main
         type: riscv
-        core_access_options: !Riscv {}
-    # A list of all the available memories and their properties.
+        core_access_options: !Riscv
     memory_map:
       - !Ram
         range:
-          # The start address of the memory (inclusive).
-          start: 0x00000000
-          # The end address of the memory (exclusive).
-          end: 0x00002000
-        # Marks the memory as the memory which the chip boots from.
+          start: 0x0
+          end: 0x2000
+        cores:
+          - main
         access:
           boot: true
-        # List of cores that can access this region
+      - !Nvm
+        name: UFM
+        range:
+          start: 0x0
+          end: 0x2ff0
         cores:
           - main
+        access:
+          read: false
+          write: false
+          execute: false
       - !Generic
         range:
-          start: 0x00002000
-          end: 0x00008000
+          start: 0x2000
+          end: 0x8000
         cores:
           - main
-
+    flash_algorithms:
+      - xt_rv32i_ufm
+flash_algorithms:
+  - name: xt_rv32i_ufm
+    description: A flash algorithm for ufm
+    default: true
+    instructions: FwUAAANFRSZjAgUCEwEB/yMmEQCXAAAA54AAIBMFAACDIMEAEwEBAWeAAAATBRAAZ4AAABcFAAADRQUjYwIFAhMBAf8jJhEAlwAAAOeAwBwTBQAAgyDBABMBAQFngAAAEwUQAGeAAAATAQH/IyYRACMkgQAjIpEAlwQAAAPFxB4TBAYAYwYFAJcAAADngIATEwT0/xMFQABjcKQGNzUAAJMFAAQTBgAIIwi1BiMIxQaTBUAHEwaAAKMItQajCMUGowgFBqMIBQYjCAUGkwWQARMGEAATBQAAk4X1/+OeBf4jhsQegyDBAAMkgQCDJEEAEwEBAWeAAACXAAAA54BAFZcGAACDxkYWY4gGCrc2AACTV0UAEwcACBMIQAsjiOYGo4gGB6OIBgajiAYGo4gGBhMIAASjiAYHExXlAKOIBgYTVaUBo4imBqOI9gYjiAYGEwUAAZMHkAwTCBAAY+qlBCOI5gajiPYGo4gGBqOIBgajiAYHkwgAAZMCBgBjjAgAA8MCAJOCEgCjiGYGk4j4/+OYCP6TCHAnI4gGBpOI+P/jngj+EwYGAZOFBf/j+qX6EwUAAGeAAAATBRAAZ4AAAJcFAAADxUUKYwAFBBMFAAA3NgAAkwYACBMHYAIjCNYGowjmBqMIBgajCAYGIwgGBhMH8P8jCNYGowjmBiMIBgYjggUKZ4AAABMFEABngAAAbwAAADc1AACTBQAIIwi1BpMFsAyjCLUGowgFBqMIBQa3FTAAowgFBpOFFQsjCAUGk4X1/+OeBf5ngAAAEwEB/yMmEQAjJIEAEwQBAZcAAADngED7AAAAAA==
+    load_address: 0x20
+    pc_init: 0x68
+    pc_uninit: 0x1c0
+    pc_program_page: 0x100
+    pc_erase_sector: 0x34
+    pc_erase_all: 0x0
+    data_section_offset: 0x268
+    flash_properties:
+      address_range:
+        start: 0x0
+        end: 0x2ff0
+      page_size: 0x10
+      erased_byte_value: 0x0
+      program_page_timeout: 20
+      erase_sector_timeout: 2000
+      sectors:
+        - size: 0x2ff0
+          address: 0x0
+    cores:
+      - main
