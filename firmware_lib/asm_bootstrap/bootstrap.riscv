@@ -1,9 +1,9 @@
 # 纯汇编自举程序，无栈
 # ra为x1，注意不要使用x1
 
-# x2始终是栈顶指针(-16得到缓冲区地址，与缓冲区指针比较可以知道是否操作完一页)
+# x2 未定义
 # x3始终是Flash基地址
-# x4始终是系统外设基地址
+# x4始终是HB32总线基地址
 # x5始终是临时计数值/计数值参数
 # x6始终是临时数据
 # x7始终是临时数据
@@ -11,13 +11,13 @@
 # x9/s1是一个保存数据
 # x10/a0是函数参数/返回值
 # x11/a1是函数参数/返回值
-# x12/a2可作为一个保存数据
+# x12/a2始终是Flash缓冲区地址(直接把整个内存当缓冲区)
 # x13 未定义
 # x14始终是MAX_COPY_PAGE，并在执行boot后变为零(当作计数值使用了)
 # x15始终是第二个返回地址，用于嵌套调用
 
 
-.equ SP_BASE, 8192
+.equ HB32_BASE, 8192
 .equ BOOTSTRAP_BASE, 8192
 .equ UART_BASE, 8288
 
@@ -50,14 +50,14 @@
 
 #define SET_STR_ARGS(name) lui x5, (STR_##name##_LEN<<8|STR_##name);
 
-#define INTO_RAM_MODE sb x0, BOOTSTRAP_BASE-SP_BASE(x4)
-#define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-SP_BASE(x4)
-#define SET_PRELOAD_STR_ADDR(reg) sb reg, BOOTSTRAP_BASE+4-SP_BASE(x4)
-#define GET_PRELOAD_STR_AUTO_INC(reg) lbu reg, BOOTSTRAP_BASE+8-SP_BASE(x4)
+#define INTO_RAM_MODE sb x0, BOOTSTRAP_BASE-HB32_BASE(x4)
+#define READ_DEBUG(reg) lbu reg, BOOTSTRAP_BASE-HB32_BASE(x4)
+#define SET_PRELOAD_STR_ADDR(reg) sb reg, BOOTSTRAP_BASE+4-HB32_BASE(x4)
+#define GET_PRELOAD_STR_AUTO_INC(reg) lbu reg, BOOTSTRAP_BASE+8-HB32_BASE(x4)
 
-#define WRITE_UART_DATA(reg) sb reg, UART_BASE-SP_BASE(x4)
-#define READ_UART_DATA(reg) lbu reg, UART_BASE-SP_BASE(x4)
-#define READ_UART_STATE(reg) lbu reg, UART_BASE+4-SP_BASE(x4)
+#define WRITE_UART_DATA(reg) sb reg, UART_BASE-HB32_BASE(x4)
+#define READ_UART_DATA(reg) lbu reg, UART_BASE-HB32_BASE(x4)
+#define READ_UART_STATE(reg) lbu reg, UART_BASE+4-HB32_BASE(x4)
 
 #define WRITE_FLASH_CON(reg) sb reg, 0(x3)
 #define WRITE_FLASH_DATA(reg) sb reg, 1(x3)
@@ -80,9 +80,8 @@
 .global _start
 _start:
 main:
-    lla x2, SSTACK
     lla x3, FLASH_BASE
-    lla x4, SP_BASE
+    lla x4, HB32_BASE
     li x14, MAX_COPY_PAGE
 reset_flash:
     li x7, 0x40
@@ -96,22 +95,15 @@ check_download:
     bnez x7, download
 boot:
     jal reset_ufm_addr
-    li s1, 0                # 存储器指针
-# 读取flash并写入内存 双层循环
+# 读取flash并写入Ram
 2:  li a0, 0x010010CA   # 发送0xCA 10 00 01
     li a1, 0x80         # 读
     jal cmd_operands_4_frame
-    addi x6, x2, -PAGE_BYTES    # 加载缓冲区地址
-1:  lw x7, 0(x6)        # 读取缓冲区
-    bnez s1, 3f         # 检查首个指令是否有效
-    beqz x7, error      # flash第0个字为全0，则为无效程序代码或ELF
-3: 
-    sw x7, 0(s1)
-    addi s1, s1, 4
-    addi x6, x6, 4
-    bltu x6, x2, 1b     # 地址小于缓冲区顶部指针说明还没写完一页
     addi x14, x14, -1
     bnez x14, 2b
+check_inst:
+    lw x7, 0(x0)
+    beqz x7, error      # 首个指令为全0，则为无效程序代码
 boot_ram_mode:
     INTO_RAM_MODE
 1:  j 1b
@@ -120,9 +112,10 @@ error:
     jal x15, tx_str_block_auto_increment
     j error
 
-# 确认的立即数都换成0x80 -3
+# 确认的立即数都换成0x55 还能减少两条指令
 
-# s0保存了页面长度
+# s0保存了要下载的页面长度
+# s1保存了要下载的字节数
 # 无限循环，要重新启动请使用复位
 download:
     SET_STR_ARGS(CMD)
@@ -142,6 +135,7 @@ download:
     or s0, s0, a0
     beqz s0, 3b
     bgtu s0, x14, 3b
+    slli s1, s0, 4      # 乘以16得到字节数
 # 确认
 3:
     SET_STR_ARGS(START_DOWNLOAD)
@@ -153,14 +147,16 @@ erase_ufm:
     li a0, 0x000000CB   # 发送0xCB 00 00 00
     jal no_data_frame
     DELAY(14401532)     # 必须等至少1000ms，这里等了约1200ms，频率变化需要修改此处
-from_uart_download:     # 双层循环
-    jal reset_ufm_addr
-3:  addi s1, x2, -PAGE_BYTES    # 加载缓冲区地址
+from_uart_download:
+# 先从uart接收数据到缓冲区
+    li a2, 0            # 缓冲区地址
 1:  jal uart_rx_block
-    sb a0, 0(s1)        # 写入缓冲区
-    addi s1, s1, 1
-    bltu s1, x2, 1b     # 地址小于栈顶指针说明还没写完一页
-    li a0, 0x010000C9   # 发送0xC9 00 00 01
+    sb a0, 0(a2)
+    addi a2, a2, 1
+    bltu a2, s1, 1b     # 地址小于下载字节数说明还没接收完
+# 再写入到Flash
+    jal reset_ufm_addr
+3:  li a0, 0x010000C9   # 发送0xC9 00 00 01
     li a1, 0x02         # 写
     jal cmd_operands_4_frame # 写入flash
     DELAY_US(200)          # 至少等200us
@@ -174,18 +170,19 @@ from_uart_download:     # 双层循环
     bne x6, a0, 3b
     j download
 
-
-
+# 同时也把缓冲区地址设为0，因为重置ufm地址之后就会读写flash
 reset_ufm_addr:
+    li a2, 0            # Ram地址/Flash缓冲区地址
     li a0, 0x00000047   # 发送0x47 00 00 00
 no_data_frame:
     li a1, 0x00         # 不读写
 cmd_operands_4_frame:
-    li x5, 4            # x5 = 4
+    li x5, 4            # 操作数数量 这里并不会关闭ufm，所以用到的命令其实都是4
 
 # x5是操作数数量
 # a0是命令与操作数，低位字节先发送
 # a1控制是否读写 0x00无 0x80是读取 其他是写入
+# a2是缓冲区地址
 command_frame:
     li x7, 0x80 # x7 = 0x80
     WRITE_FLASH_CON(x7)
@@ -196,18 +193,18 @@ command_frame:
     
 # 固定数据长度读写数据
     beqz a1, 4f     # 判断是否有操作
-    addi a0, x2, -PAGE_BYTES # 加载缓冲区地址
+    addi a0, a2, PAGE_BYTES # 缓冲区终点: 起始缓冲区地址+16
 1:  bne a1, x7, 2f  # 不为0x80表示写入
 # 读取
     READ_FLASH_DATA(x6)
-    sb x6, 0(a0)
+    sb x6, 0(a2)
     j 3f
 # 写入
-2:  lbu x6, 0(a0)
+2:  lbu x6, 0(a2)
     WRITE_FLASH_DATA(x6)
 # 循环末尾
-3:  addi a0, a0, 1  # a0 = a0 + 1
-    bltu a0, x2, 1b # 地址小于栈顶指针说明还没写完一页
+3:  addi a2, a2, 1  # 缓冲区地址递增
+    bltu a2, a0, 1b # 地址小于终点说明还没写完一页
 # 函数返回
 4:  WRITE_FLASH_CON(x0)
     ret
