@@ -3,7 +3,7 @@
 
 use riscv_macros::entry;
 use xt_riscv_mcu::hb32::Uart;
-use xt_riscv_mcu::wisbone::Flash;
+use xt_riscv_mcu::wisbone::{Flash, FlashBuffer};
 
 const TEST_DATA: [u8; 16] = arr_range::<16>();
 const DELIMITER: [u8; 2] = [0xF0, 0x0F];
@@ -23,7 +23,7 @@ fn main() -> ! {
             // 两种读取id的方式
             0x00 => uart.tx_bytes_block(&flash.flash_id().to_be_bytes(), false),
             0x01 => {
-                flash.command_frame_read(Flash::IDCODE_PUB, 0, &mut buffer[0..4]);
+                flash.command_frame(Flash::IDCODE_PUB, 0, FlashBuffer::Read(&mut buffer[0..4]));
                 uart.tx_bytes_block(&buffer[0..4], false);
             }
             0x02 => {

@@ -760,7 +760,7 @@ impl Flash {
     // 通用命令
     pub const LSC_READ_STATUS: u8 = 0x3C;
     pub const LSC_CHECK_BUSY: u8 = 0xF0;
-    pub const ISC_NOOP: u8 = 0xFF;
+    pub const ISC_NOOP: u8 = 0xFF; // 唯一用处：在ISC_DISABLE命令后必须接此命令
     pub const ISC_ENABLE_X: u8 = 0x74;
     pub const ISC_ENABLE: u8 = 0xC6;
     pub const ISC_DISABLE: u8 = 0x26;
@@ -832,11 +832,6 @@ impl Flash {
         unsafe { self.reg().control.write(0x40.into()) }
     }
 
-    #[inline(always)]
-    pub fn nop(&mut self) {
-        self.command(|fl| flash_write!(fl, Self::ISC_NOOP));
-    }
-
     #[inline]
     pub fn command<F: FnOnce(&mut Self) -> ()>(&mut self, f: F) {
         unsafe {
@@ -849,7 +844,12 @@ impl Flash {
     /// `buffer`的长度决定了要读取/写入的数据量，如果无数据，请使用空切片
     /// # Notes
     /// 不适合一次性读取多页，因为要额外处理dummy
-    pub fn command_frame(&mut self, mut cmd_operands: u32, cmd_op_num: usize, buffer: FlashBuffer) {
+    pub fn command_frame_raw(
+        &mut self,
+        mut cmd_operands: u32,
+        cmd_op_num: usize,
+        buffer: FlashBuffer,
+    ) {
         use FlashBuffer::{Read, Write};
         self.command(|fl| {
             // 写入命令与操作数
@@ -874,23 +874,13 @@ impl Flash {
         });
     }
 
-    /// 对`command_frame`读取操作的包装
+    /// 对`command_frame_raw`的包装 自动组装命令操作数并计算命令操作数数量
     #[inline]
-    pub fn command_frame_read(&mut self, cmd: u8, operands: u32, buffer: &mut [u8]) {
-        self.command_frame(
+    pub fn command_frame(&mut self, cmd: u8, operands: u32, buffer: FlashBuffer) {
+        self.command_frame_raw(
             Self::asm_cmd_operands_be(cmd, operands),
             Self::cmd_operands_num(cmd),
-            FlashBuffer::Read(buffer),
-        );
-    }
-
-    /// 对`command_frame`写入操作的包装
-    #[inline]
-    pub fn command_frame_write(&mut self, cmd: u8, operands: u32, buffer: &[u8]) {
-        self.command_frame(
-            Self::asm_cmd_operands_be(cmd, operands),
-            Self::cmd_operands_num(cmd),
-            FlashBuffer::Write(buffer),
+            buffer,
         );
     }
 
@@ -920,7 +910,7 @@ impl Flash {
     /// 关闭UFM透明传输
     pub fn disable_transparent_ufm(&mut self) {
         self.command(|fl| flash_write!(fl, Self::ISC_DISABLE, 0, 0));
-        self.nop();
+        self.command(|fl| flash_write!(fl, Self::ISC_NOOP));
     }
 
     //<!!! 下面的函数都必须先启用UFM透明传输 !!!>//
@@ -935,13 +925,13 @@ impl Flash {
     pub fn set_ufm_addr(&mut self, addr: u16) {
         let addr = (addr & Self::PAGE_MASK).to_be_bytes();
         let buffer = [0x40u8, 0x00, addr[0], addr[1]];
-        self.command_frame_write(Self::LSC_WRITE_ADDRESS, 0, &buffer);
+        self.command_frame(Self::LSC_WRITE_ADDRESS, 0, FlashBuffer::Write(&buffer));
     }
 
     /// 读取一页数据，页地址自会增
     /// **必须先启用UFM透明传输!**
     pub fn read_one_ufm_page(&mut self, buffer: &mut [u8; 16]) {
-        self.command_frame_read(Self::LSC_READ_TAG, 0x10_00_01, buffer);
+        self.command_frame(Self::LSC_READ_TAG, 0x10_00_01, FlashBuffer::Read(buffer));
     }
 
     /// 擦除UFM所有内容 **阻塞约1050毫秒**\
@@ -954,8 +944,37 @@ impl Flash {
     /// 写入一页数据，页地址自会增
     /// **必须先启用UFM透明传输!**
     pub fn write_one_ufm_page(&mut self, buffer: &[u8; 16]) {
-        self.command_frame_write(Self::LSC_PROG_TAG, 0x00_00_01, buffer);
+        self.command_frame(Self::LSC_PROG_TAG, 0x00_00_01, FlashBuffer::Write(buffer));
         crate::rv_core::delay_us(210); // 至少等200us，保险一点等210us
+    }
+
+    /// `read_one_ufm_page`的裸指针版本
+    pub unsafe fn read_one_ufm_page_ptr(&mut self, mut ptr: *mut u8) -> *mut u8 {
+        self.command(|fl| {
+            flash_write!(fl, Self::LSC_READ_TAG, 0x10, 0x00, 0x01);
+            for _ in 0..Self::PAGE_BYTES {
+                unsafe {
+                    ptr.write_volatile(fl.reg().read_data.read());
+                    ptr = ptr.add(1);
+                }
+            }
+        });
+        ptr
+    }
+
+    /// `write_one_ufm_page`的裸指针版本
+    pub unsafe fn write_one_ufm_page_ptr(&mut self, mut ptr: *const u8) -> *const u8 {
+        self.command(|fl| {
+            flash_write!(fl, Self::LSC_PROG_TAG, 0x00, 0x00, 0x01);
+            for _ in 0..Self::PAGE_BYTES {
+                unsafe {
+                    fl.reg().write_data.write(ptr.read_volatile());
+                    ptr = ptr.add(1);
+                }
+            }
+        });
+        crate::rv_core::delay_us(210); // 至少等200us，保险一点等210us
+        ptr
     }
 }
 
