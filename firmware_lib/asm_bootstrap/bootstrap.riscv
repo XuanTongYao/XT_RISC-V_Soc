@@ -80,6 +80,8 @@
 .global _start
 _start:
 main:
+    csrw mtvec, x0
+    sw x0, 0(x0)        # 可控死循环停止
     lla x3, FLASH_BASE
     lla x4, HB32_BASE
     li x14, MAX_COPY_PAGE
@@ -90,8 +92,12 @@ enable_transparent_ufm:
     li a0, 0x00000874   # 发送0x74 08 00 00
     jal no_data_frame
     DELAY_US(8)
-check_download:
+check_ram_stop:
     READ_DEBUG(x7)
+    andi x6, x7, 0x02
+    bnez x6, boot_ram_mode
+check_download:
+    andi x7, x7, 0x01
     bnez x7, download
 boot:
     jal reset_ufm_addr

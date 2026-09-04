@@ -99,8 +99,13 @@ impl Bootstrap {
     }
 
     #[inline(always)]
-    pub fn is_download_mode(&self) -> bool {
-        self.reg().config.read() != 0
+    pub fn download_mode(&self) -> bool {
+        self.reg().config.read() & 0x01 != 0
+    }
+
+    #[inline(always)]
+    pub fn ram_mode_stop(&self) -> bool {
+        self.reg().config.read() & 0x02 != 0
     }
 
     /// 将指令区域映射到RAM

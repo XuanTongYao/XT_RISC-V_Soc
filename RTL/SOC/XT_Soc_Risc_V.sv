@@ -211,6 +211,7 @@ module XT_Soc_Risc_V
   HarvardBootstrap u_HarvardBootstrap (
       .*,
       .download_key(~key_raw[0]),
+      .ram_mode_stop_key(~key_raw[1]),
       .reset_req(bootstrapreset),
       .hb(hb32_if[IDX_BOOT_CTRL])
   );

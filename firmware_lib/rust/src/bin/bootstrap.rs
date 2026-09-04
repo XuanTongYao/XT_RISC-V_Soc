@@ -20,7 +20,13 @@ fn main() -> ! {
     let uart = Uart::SINGLETON;
     flash.reset();
     flash.enable_transparent_ufm();
-    if bootstrap.is_download_mode() {
+    if bootstrap.ram_mode_stop() {
+        unsafe {
+            core::arch::asm!("csrw mtvec, x0");
+            (0 as *mut u32).write_volatile(0);
+        }
+        boot_ram_mode(bootstrap);
+    } else if bootstrap.download_mode() {
         download(flash, uart, bootstrap);
     } else {
         boot(flash, uart, bootstrap);
@@ -43,6 +49,10 @@ fn boot(mut flash: Flash, mut uart: Uart, mut bootstrap: Bootstrap) -> ! {
         }
     }
 
+    boot_ram_mode(bootstrap)
+}
+
+fn boot_ram_mode(mut bootstrap: Bootstrap) -> ! {
     unsafe { bootstrap.into_ram_mode() }
     loop {}
 }

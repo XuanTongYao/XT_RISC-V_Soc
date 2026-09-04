@@ -1,6 +1,7 @@
 // 自举控制器
 // 向配置寄存器写入对应的值(INTO_RAM_MODE/INTO_ROM_MODE)可切换指令接口映射模式，并自动触发系统复位
-// 读取配置寄存器可检查下载按钮的状态
+// 读取配置寄存器可检查`下载按钮`和`强制RAM模式暂停按钮`的状态
+// `强制RAM模式暂停按钮`： 自举程序把mtvec和0x0设为0，并切换为RAM模式，可控的在RAM模式下死循环停止
 //
 // 寄存器布局
 // 0-配置寄存器
@@ -17,6 +18,7 @@ module HarvardBootstrap
     xt_hbus32_if.port hb,
 
     input download_key,
+    input ram_mode_stop_key,
 
     output logic reset_req
 );
@@ -80,7 +82,7 @@ module HarvardBootstrap
   always_ff @(posedge hb.clk) begin
     if (hb.ren) begin
       if (hb.raddr == 'd0) begin
-        hb.rdata <= 32'(download_key);
+        hb.rdata <= 32'({ram_mode_stop_key, download_key});
       end else begin
         hb.rdata <= 32'(rom_data);
       end

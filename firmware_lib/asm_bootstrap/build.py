@@ -5,7 +5,7 @@ os.chdir(Path(__file__).parent.resolve())
 
 gcc = "riscv-none-elf-gcc"
 objcopy = "riscv-none-elf-objcopy"
-编译参数 = "-march=rv32i -mabi=ilp32 -nostdlib -x assembler-with-cpp".split()
+编译参数 = "-march=rv32i_zicsr -mabi=ilp32 -nostdlib -x assembler-with-cpp".split()
 链接脚本 = ["../rust/link.x", "../rust/trap_handler.x"]
 链接脚本参数 = [x for ld in 链接脚本 for x in ("-T", ld)]
 
