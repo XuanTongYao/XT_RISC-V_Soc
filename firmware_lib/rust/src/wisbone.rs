@@ -728,10 +728,10 @@ impl Timer {
 
     crate::getset_field!(paused, control2, wbpause, bool);
     crate::getset_field!(
-        /// 重置计时器(必须等待至少两个周期后将该位手动恢复到0)
+        /// 重置定时器(必须等待至少两个周期后将该位手动恢复到0)
         reseted, control2, wbreset, bool);
     crate::getset_field!(
-        /// 非PWM模式强制输出，当计时器匹配或到达周期时
+        /// 非PWM模式强制输出，当定时器匹配或到达周期时
         output_in_non_pwm, control2, wbforce, bool);
 }
 
