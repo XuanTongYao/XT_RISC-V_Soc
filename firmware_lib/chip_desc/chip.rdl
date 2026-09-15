@@ -1,0 +1,791 @@
+/*
+   Copyright 2025 XuanTongYao
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+// Using SystemRDL 2.0
+
+addrmap Bootstrap {
+    desc = "自举控制器";
+    default regwidth = 8;
+    // addressBlock size = 0x20
+    reg {
+        desc = "
+        配置寄存器
+
+        读取得到启动引脚的值，0x01是下载模式，0x02是强制RAM模式暂停
+
+        写入0x00将指令区域映射到RAM
+        写入0x55将指令区域映射到ROM
+        写入任意有效值都会导致系统硬件复位
+        ";
+        default sw = rw;
+        default hw = rw;
+        field {} DATA[7:0];
+    } config @ 0x0;
+
+    reg {
+        desc = "预载字符串地址。写入无效地址会导致preload寄存器硬件失效。";
+        default sw = w;
+        default hw = rw;
+        field {} DATA[7:0];
+    } preload_str_addr @ 0x4;
+
+    reg {
+        desc = "预载字符串数据。读取会导致地址自增。";
+        default sw = r;
+        default hw = w;
+        default swacc = true;
+        field {} DATA[7:0];
+    } preload_str_auto_inc @ 0x8;
+};
+
+addrmap EintController {
+    desc = "外部中断控制器。对大于等于16的自定义中断进行硬件重定向。";
+    // addressBlock size = 0x20
+    reg Interrupt #(boolean PENDING = false) {
+        default sw = PENDING ? r : rw;
+        default hw = PENDING ? w : r;
+        field {} UART[0:0];
+        field {} I2C1[8:8];
+        field {} I2C2[9:9];
+        field {} SPI[10:10];
+        field {} TIMER[11:11];
+        field {} WBCUFM[12:12];
+    };
+
+    Interrupt #(.PENDING(false)) enable @ 0x0;
+    Interrupt #(.PENDING(true)) pending @ 0x4;
+};
+
+addrmap Mtime {
+    desc = "RISC-V M模式定时器寄存器。 频率为 1 MHz。 64位的 mtime 和 mtimecmp 被分成多个高低位32位寄存器。";
+    default sw = rw;
+    // addressBlock size = 0x20
+    reg {
+        desc = "mtime 低32位。 设置不当可能会立即引发定时器中断。";
+        default hw = rw;
+        field {} DATA[31:0];
+    } mtimel @ 0x0;
+
+    reg {
+        desc = "mtime 高32位。 设置不当可能会立即引发定时器中断。";
+        default hw = rw;
+        field {} DATA[31:0];
+    } mtimeh @ 0x4;
+
+    reg {
+        desc = "mtimecmp 低32位。 设置不当可能会立即引发定时器中断。";
+        default hw = r;
+        field {} DATA[31:0];
+    } mtimecmpl @ 0x8;
+
+    reg {
+        desc = "mtimecmp 高32位。 设置不当可能会立即引发定时器中断。";
+        default hw = r;
+        field {} DATA[31:0];
+    } mtimecmph @ 0xC;
+};
+
+addrmap Uart {
+    desc = "UART. 波特率19200.";
+    default regwidth = 8;
+    // addressBlock size = 0x20
+    reg {
+        desc = "UART 数据。 写入以发送，读取以接收。";
+        default sw = rw;
+        default hw = r;
+        field {} DATA[7:0];
+    } data @ 0x0;
+
+    reg {
+        desc = "UART 状态";
+        default sw = r;
+        default hw = w;
+        field {
+            desc = "发送缓冲区未满";
+        } TX_READY[0:0];
+        field {
+            desc = "接收缓冲区未空";
+        } RX_END[1:1];
+        field {
+            desc = "发送缓冲区已空";
+        } TX_EMPTY[2:2];
+        field {
+            desc = "接收缓冲区已满";
+        } RX_FULL[3:3];
+    } status @ 0x4;
+};
+
+addrmap Msip {
+    desc = "RISC-V M模式软件中断寄存器";
+    default sw = rw;
+    default hw = r;
+    // addressBlock size = 0x20
+    reg {
+        field {} PENDING[0:0];
+    } msip @ 0x0;
+};
+
+addrmap Gpio {
+    desc = "GPIO。 只有0-27共28个GPIO，超出的部分会被硬件自动忽略。";
+    default sw = rw;
+    default hw = r;
+    // addressBlock size = 0x20
+    reg {
+        desc = "GPIO 方向。 1 = 输出，0 = 输入";
+        field {} DIR[31:0];
+    } direction @ 0x0;
+
+    reg {
+        default hw = rw;
+        field {} DATA[31:0];
+    } data @ 0x4;
+
+    reg {
+        desc = "复用功能启用";
+        field {} AFEN[31:0];
+    } af_enable @ 0x8;
+
+    reg {
+        desc = "GPIO 0-15 的复用选择，每个引脚2 bits";
+        field {} AF0015[31:0];
+    } afl @ 0xC;
+
+    reg {
+        desc = "GPIO 16-27 的复用选择，每个引脚2 bits";
+        field {} AF1627[31:0];
+    } afh @ 0x10;
+};
+
+addrmap I2c {
+    default sw = rw;
+    default hw = r;
+    default regwidth = 8;
+    // addressBlock size = 0xA
+    reg {
+        desc = "写入会导致I2C复位.";
+        field {
+            desc = "SDA delay select";
+        } SDA_DEL_SEL[3:2];
+        field {
+            desc = "Wakeup enable";
+        } WKUPEN[5:5];
+        field {
+            desc = "General-call enable";
+        } GCEN[6:6];
+        field {
+            desc = "I2C enable. Toggling this bit resets the core.";
+        } I2CEN[7:7];
+    } control @ 0x0;
+
+    reg {
+        field {
+            desc = "关闭时钟拉伸。写入时这个位必须被设为1。";
+        } CKSDIS[2:2] = 1;
+        field {} ACK[3:3];
+        field {} WRITE[4:4];
+        field {} READ[5:5];
+        field {} STOP[6:6];
+        field {} START[7:7];
+    } command @ 0x1;
+
+    reg {
+        desc = "时钟预分频低8位。 预分频值共有10位 (PRESCALE_MASK = 0x3FF)。";
+        field {} DATA[7:0];
+    } br0 @ 0x2;
+
+    reg {
+        desc = "时钟预分频高2位。 写入会导致I2C复位。";
+        field {
+            desc = "Prescale [9:8]";
+        } PRESCALE_H[1:0];
+    } br1 @ 0x3;
+
+    reg {
+        desc = "Transmit data";
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } tx_data @ 0x4;
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {
+            desc = "Hardware general call";
+        } HGC[0:0];
+        field {
+            desc = "Transmit/receive overflow or NACK";
+        } TROE[1:1];
+        field {
+            desc = "Transmit/receive ready";
+        } TRRDY[2:2];
+        field {
+            desc = "Arbitration lost";
+        } ARBL[3:3];
+        field {
+            desc = "Slave read/write";
+        } SRW[4:4];
+        field {
+            desc = "Received ACK";
+        } RARC[5:5];
+        field {
+            desc = "Bus busy";
+        } BUSY[6:6];
+        field {
+            desc = "Transfer in progress";
+        } TIP[7:7];
+    } status @ 0x5;
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} DATA[7:0];
+    } general_call_data @ 0x6;
+
+    reg {
+        desc = "Receive data";
+        default sw = r;
+        default hw = w;
+        field {} DATA[7:0];
+    } rx_data @ 0x7;
+
+    reg I2cInterrupt #(boolean STATUS = false) {
+        default hw = STATUS ? rw : r;
+        default woclr = STATUS;
+        field {
+            desc = "收到通用广播";
+        } IRQHGC[0:0];
+        field {
+            desc = "发送/接收溢出或收到NACK";
+        } IRQTROE[1:1];
+        field {
+            desc = "发送/接收已准备好";
+        } IRQTRRDY[2:2];
+        field {
+            desc = "仲裁丢失";
+        } IRQARBL[3:3];
+    };
+
+    I2cInterrupt #(.STATUS(true)) int_status @ 0x8;
+    int_status->desc = "中断状态";
+
+    I2cInterrupt #(.STATUS(false)) int_en @ 0x9;
+    int_en->desc = "中断启用";
+};
+
+addrmap Spi {
+    desc = "WISHBONE SPI. 实际时钟频率为 `WISHBONE/(div+1)`, 预分频范围 [1,63]. 设置预分频或主机片选会使SPI复位.";
+    default sw = rw;
+    default hw = r;
+    default regwidth = 8;
+    // addressBlock size = 0xA
+    reg {
+        desc = "所有延迟周期的精度为0.5个SCK周期，最短0.5.";
+        field {
+            desc = "前导延迟周期";
+        } TLEAD_XCNT[2:0];
+        field {
+            desc = "尾随延迟周期";
+        } TTRAIL_XCNT[5:3];
+        field {
+            desc = "空闲延迟周期";
+        } TIDLE_XCNT[7:6];
+    } control0 @ 0x0;
+
+    reg {
+        field {
+            desc = "Transmit edge";
+        } TXEDGE[4:4];
+        field {
+            desc = "Wakeup enable (config)";
+        } WKUPEN_CFG[5:5];
+        field {
+            desc = "Wakeup enable (user)";
+        } WKUPEN_USER[6:6];
+        field {
+            desc = "SPI enable";
+        } SPE[7:7];
+    } control1 @ 0x1;
+
+    reg {
+        field {
+            desc = "LSB first";
+        } LSBF[0:0];
+        field {
+            desc = "Clock phase (second edge)";
+        } CPHA[1:1];
+        field {
+            desc = "Clock polarity (active low)";
+        } CPOL[2:2];
+        field {
+            desc = "Master holds chip select low even if there is no data to be transmitted";
+        } MCSH[6:6];
+        field {
+            desc = "Master mode";
+        } MSTR[7:7];
+    } control2 @ 0x2;
+
+    reg {
+        desc = "时钟预分频 [1,63]. 实际时钟频率为 `WISHBONE/(div+1)`. 写入会使SPI复位。";
+        field {} DATA[7:0];
+    } clock_prescale @ 0x3;
+
+    reg {
+        desc = "主机模式片选. 写入会使SPI复位.";
+        field {} DATA[7:0];
+    } cs @ 0x4;
+
+    reg {
+        desc = "Transmit data";
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } tx_data @ 0x5;
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {
+            desc = "Mode fault";
+        } MDF[0:0];
+        field {
+            desc = "Receive overflow";
+        } ROE[1:1];
+        field {
+            desc = "Receive ready";
+        } RRDY[3:3];
+        field {
+            desc = "Transmit ready";
+        } TRDY[4:4];
+        field {
+            desc = "Transfer in progress";
+        } TIP[7:7];
+    } status @ 0x6;
+
+    reg {
+        desc = "Receive data";
+        default sw = r;
+        default hw = w;
+        field {} DATA[7:0];
+    } rx_data @ 0x7;
+
+    reg SpiInterrupt #(boolean STATUS = false) {
+        default hw = STATUS ? rw : r;
+        default woclr = STATUS;
+        field {
+            desc = "模式错误，在主机模式时自身片选被拉低";
+        } IRQMDF[0:0];
+        field {
+            desc = "接收溢出";
+        } IRQROE[1:1];
+        field {
+            desc = "接收就绪";
+        } IRQRRDY[3:3];
+        field {
+            desc = "发送就绪";
+        } IRQTRDY[4:4];
+    };
+
+    SpiInterrupt #(.STATUS(true)) int_status @ 0x8;
+    int_status->desc = "中断状态";
+
+    SpiInterrupt #(.STATUS(false)) int_en @ 0x9;
+    int_en->desc = "中断启用";
+};
+
+addrmap Timer {
+    desc = "WISHBONE 16位定时器/计数器.";
+    default sw = r; // 默认设置状态位，状态寄存器比较多
+    default hw = w;
+    default regwidth = 8;
+    // addressBlock size = 0x12
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {
+            desc = "时钟源选择";
+            enum TimerClkSel_e {
+                ClockTree = 0;
+                OnChipOsc = 1;
+            };
+            encode = TimerClkSel_e;
+        } CLKSEL[1:1];
+        field {
+            desc = "用于设置时钟源的有效沿";
+        } CLKEDGE[2:2];
+        field {
+            desc = "时钟预分频";
+            enum TimerDivider_e {
+                DISABLED = 0 {
+                    desc = "关闭时钟";
+                };
+                Div1    = 1;
+                Div8    = 2;
+                Div64   = 3;
+                Div256  = 4;
+                Div1024 = 5;
+            };
+            encode = TimerDivider_e;
+        } PRESCALE[5:3];
+        field {
+            desc = "启用外部复位信号";
+        } RSTEN[7:7];
+    } control0 @ 0x0;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {
+            desc = "定时器/计数器模式";
+            enum TimerCounterMode_e {
+                Watchdog                    = 0;
+                ClearTimerOnCompareMatch    = 1;
+                FastPWM                     = 2;
+                PhaseAndFrequencyCorrectPWM = 3;
+            };
+            encode = TimerCounterMode_e;
+        } TCM[1:0];
+        field {
+            desc = "定时器输出模式";
+            enum TimerOutputMode_e {
+                StaticLow = 0;
+                Toggle    = 1;
+                SetClear  = 2;
+                ClearSet  = 3;
+            };
+            encode = TimerOutputMode_e;
+        } OCM[3:2];
+        field {
+            desc = "启用自动重装载";
+        } TSEL[4:4];
+        field {
+            desc = "启用输入捕获";
+        } ICEN[5:5];
+        field {
+            desc = "在总线访问下此字段无效";
+        } SOVFEN[6:6];
+    } control1 @ 0x1;
+
+    reg {
+        desc = "TOP set low byte";
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } top_setl @ 0x2;
+
+    reg {
+        desc = "TOP set high byte";
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } top_seth @ 0x3;
+
+    reg {
+        desc = "COMPARE set low byte";
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } compare_setl @ 0x4;
+
+    reg {
+        desc = "COMPARE set high byte";
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } compare_seth @ 0x5;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {
+            desc = "暂停定时器";
+        } WBPAUSE[0:0];
+        field {
+            desc = "重置定时器(必须等待至少两个周期后将该位手动恢复到0)";
+        } WBRESET[1:1];
+        field {
+            desc = "非PWM模式强制输出，当定时器匹配或到达周期时";
+        } WBFORCE[2:2];
+    } control2 @ 0x6;
+
+    reg {
+        desc = "Counter low byte";
+        field {} DATA[7:0];
+    } counterl @ 0x7;
+
+    reg {
+        desc = "Counter high byte";
+        field {} DATA[7:0];
+    } counterh @ 0x8;
+
+    reg {
+        desc = "TOP current value low byte";
+        field {} DATA[7:0];
+    } topl @ 0x9;
+
+    reg {
+        desc = "TOP current value high byte";
+        field {} DATA[7:0];
+    } toph @ 0xA;
+
+    reg {
+        desc = "COMPARE current value low byte";
+        field {} DATA[7:0];
+    } comparel @ 0xB;
+
+    reg {
+        desc = "COMPARE current value high byte";
+        field {} DATA[7:0];
+    } compareh @ 0xC;
+
+    reg {
+        desc = "Capture low byte";
+        field {} DATA[7:0];
+    } capturel @ 0xD;
+
+    reg {
+        desc = "Capture high byte";
+        field {} DATA[7:0];
+    } captureh @ 0xE;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        default onwrite = wclr;
+        field {
+            desc = "溢出标志";
+        } OVF[0:0];
+        field {
+            desc = "输出匹配标志";
+        } OCRF[1:1];
+        field {
+            desc = "输入事件标志";
+        } ICRF[2:2];
+        field {
+            desc = "置0标志";
+        } BTF[3:3];
+    } status @ 0xF;
+
+    reg TimerInterrupt #(boolean STATUS = false) {
+        default sw = rw;
+        default hw = STATUS ? rw : r;
+        default woclr = STATUS;
+        field {
+            desc = "溢出";
+        } IRQOVF[0:0];
+        field {
+            desc = "输出匹配";
+        } IRQOCRF[1:1];
+        field {
+            desc = "输入事件";
+        } IRQICRF[2:2];
+    };
+
+    TimerInterrupt #(.STATUS(true)) int_status @ 0x10;
+    int_status->desc = "中断状态";
+
+    TimerInterrupt #(.STATUS(false)) int_en @ 0x11;
+    int_en->desc = "中断启用";
+};
+
+addrmap Flash {
+    desc = "WISHBONE UFM / configuration flash interface. TOTAL_PAGE=767, PAGE_BYTES=16, PAGE_MASK=0x3FFF. Transparent UFM access temporarily disables power control, global set/reset, user SPI and user primary I2C.";
+    default sw = rw;
+    default hw = r;
+    default regwidth = 8;
+    // addressBlock size = 0x6
+    reg {
+        desc = "Flash control. Reset writes RSTE=1 (0x40). Command frame asserts WBCE then deasserts it.";
+        field {
+            desc = "Reset enable";
+        } RSTE[6:6];
+        field {
+            desc = "WISHBONE command enable";
+        } WBCE[7:7];
+    } control @ 0x0;
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} DATA[7:0];
+    } write_data @ 0x1;
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {
+            desc = "I2C激活";
+        } I2CACT[0:0];
+        field {
+            desc = "SPI激活";
+        } SSPIACT[1:1];
+        field {
+            desc = "接收FIFO已满";
+        } RXFF[2:2];
+        field {
+            desc = "接收FIFO已空";
+        } RXFE[3:3];
+        field {
+            desc = "发送FIFO已满";
+        } TXFF[4:4];
+        field {
+            desc = "发送FIFO已空";
+        } TXFE[5:5];
+        field {
+            desc = "WB总线到配置(FPGA配置)接口激活(慎用)";
+        } WBCACT[7:7];
+    } status @ 0x2;
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} DATA[7:0];
+    } read_data @ 0x3;
+
+    reg FlashInterrupt #(boolean STATUS = false) {
+        default hw = STATUS ? rw : r;
+        default woclr = STATUS;
+        field {
+            desc = "I2C激活";
+        } I2CACT[0:0];
+        field {
+            desc = "SPI激活";
+        } SSPIACT[1:1];
+        field {
+            desc = "接收FIFO已满";
+        } RXFF[2:2];
+        field {
+            desc = "接收FIFO已空";
+        } RXFE[3:3];
+        field {
+            desc = "发送FIFO已满";
+        } TXFF[4:4];
+        field {
+            desc = "发送FIFO已空";
+        } TXFE[5:5];
+    };
+
+    FlashInterrupt #(.STATUS(true)) int_status @ 0x4;
+    int_status->desc = "中断状态";
+
+    FlashInterrupt #(.STATUS(false)) int_en @ 0x5;
+    int_en->desc = "中断启用";
+};
+
+addrmap EfbIntSource {
+    desc = "指示 EFB 中断来源于什么";
+    default sw = rw;
+    default hw = r;
+    default regwidth = 8;
+    // addressBlock size = 0x1
+    reg {
+        desc = "EFB 中断源标志";
+        field {} I2C1[0:0];
+        field {} I2C2[1:1];
+        field {} SPI[2:2];
+        field {} TC[3:3];
+        field {} UFMCFG[4:4];
+    } source @ 0x0;
+};
+
+addrmap KeySwitch {
+    desc = "按钮与开关，按下时为高电平(已经在硬件做了翻转)。";
+    default sw = r;
+    default hw = w;
+    default regwidth = 8;
+    // addressBlock size = 0x40
+    reg {
+        field {} DATA[7:0];
+    } key @ 0x0;
+
+    reg {
+        field {} DATA[7:0];
+    } switch @ 0x1;
+};
+
+addrmap Led {
+    desc = "LED";
+    default sw = rw;
+    default hw = r;
+    default regwidth = 8;
+    // addressBlock size = 0x40
+    reg {
+        field {} DATA[7:0];
+    } data @ 0x0;
+};
+
+addrmap Ledsd {
+    desc = "七段LED数码管";
+    default sw = rw;
+    default hw = r;
+    default regwidth = 8;
+    // addressBlock size = 0x40
+    reg {
+        field {} DATA[7:0];
+    } data @ 0x0;
+
+    reg {
+        desc = "显示控制";
+        field {
+            desc = "小数点";
+        } DP[1:0];
+        field {
+            desc = "位选择，低电平有效";
+        } DIG[3:2];
+    } control @ 0x1;
+};
+
+addrmap XtRv32i {
+    name = "XtRv32i";
+    desc = "基于 RISC-V RV32I 架构的微控制器, CPU频率为12MHz";
+    addressing = compact;
+    default reset = 0;
+
+    // ---- HB32 ----
+    Bootstrap bootstrap @ 0x2000;
+
+    EintController eintcontroller @ 0x2020;
+
+    Mtime mtime @ 0x2040;
+
+    Uart uart @ 0x2060;
+
+    Msip msoftwareint @ 0x2080;
+
+    Gpio gpio @ 0x20A0;
+
+    // ---- WISHBONE ----
+    I2c i2c1 @ 0x3040;
+    i2c1->desc = "WISHBONE 主 I2C (I2C1). 实际频率为 `WISHBONE/(div*4)`. 预分频范围 [0,1023]. 写入 `CONTROL` 或 `BR1` 将导致I2C复位.";
+
+    I2c i2c2 @ 0x304A;
+    i2c2->desc = "WISHBONE 次 I2C (I2C2). 寄存器布局与 I2C1 相同. 预分频范围 [0,512]";
+
+    Spi spi @ 0x3054;
+
+    Timer timer @ 0x305E;
+
+    Flash flash @ 0x3070;
+
+    EfbIntSource efbintsource @ 0x3076;
+
+    // ---- LB ----
+    KeySwitch keyswitch @ 0x4000;
+
+    Led led @ 0x4080;
+
+    Ledsd ledsd @ 0x40C0;
+};

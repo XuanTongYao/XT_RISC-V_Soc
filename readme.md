@@ -5,8 +5,8 @@
 一个极其简易的`RV32I_Zicsr_Sdext`指令集**单核MCU**，所有用户级与特权级指令支持，仅运行在机器模式或外部调试模式。
 
 1. [RTL](RTL)包含了所有Verilog代码，顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
-2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和[Rust版本](firmware_lib/rust)，C语言固件库已**不再维护**
-3. `rust_release/debug`是rust程序默认的构建输出位置
+2. [firmware_lib](firmware_lib)包含了本MCU的固件库、CMSIS-Pack闪存算法、寄存器描述文件等
+3. `rust_release`, `rust_debug`是[Rust构建向导](rs_build.py)默认的构建输出位置
 4. [ACT4](ACT4)包含了[RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)相关的内容
 5. [synthesis_report](synthesis_report)包含了此项目某一次的[综合报告](synthesis_report/readme.md)，为资源消耗情况提供参考
 

@@ -59,17 +59,19 @@ pub mod regs {
     #[repr(C)]
     pub struct Uart {
         pub data: RW<u8>,
+        __: [u8; 3],
         pub status: RO<UartStatus>,
+        ___: [u8; 3],
     }
 
-    #[bitfield(u32)]
+    #[bitfield(u8)]
     pub struct UartStatus {
         pub tx_ready: bool,
         pub rx_end: bool,
         pub tx_empty: bool, // 发送缓冲区空
         pub rx_full: bool,  // 接收缓冲区已满
-        #[bits(28)]
-        __: u32,
+        #[bits(4)]
+        __: u8,
     }
 
     #[repr(C)]
