@@ -1,6 +1,7 @@
 # XT_RISC-V 微控制器 固件库
 
-- [Rust语言固件库](rust)
+- [外设访问包(Peripheral Access Crate, PAC)](rust-pac)
+- [外设标准库](xt-riscv-mcu)
 - CMSIS-Pack[闪存算法](flash-algorithm)(可以在probe-rs上正常使用)
 - [芯片/寄存器描述](chip_desc)
 - [C语言固件库**已停止维护**](c)

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 authors = ["XunTongYao"]
 license = "Apache-2.0"
-description = "适用于XT_RISC-V_MCU的标准库，针对一个自制的嵌入式/MCU系统"
+description = "[XT_RISC-V_MCU](https://github.com/XuanTongYao/XT_RISC-V_Soc)的外设标准库，针对一个自制的嵌入式/MCU系统"
 
 [features]
 default = []                     # 默认会完整初始化gp, sp, .bss, 初始化自陷并使用向量中断模式
