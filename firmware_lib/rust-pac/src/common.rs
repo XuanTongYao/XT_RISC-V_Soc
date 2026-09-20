@@ -1,5 +1,4 @@
 pub mod register {
-    #![deny(missing_docs)]
 
     use vcell::VolatileCell;
 
@@ -55,11 +54,58 @@ pub mod register {
         ($B:ty,$P:ty,$RESET:literal) => {
             impl $B {
                 pub const RESET: $P = $RESET;
-                pub const unsafe fn from_bits(bits: $P) -> Self {
+                #[inline(always)]
+                pub const fn from_bits(bits: $P) -> Self {
                     Self(bits)
                 }
-                pub const fn into_bits(&self) -> $P {
+                #[inline(always)]
+                pub const fn into_bits(self) -> $P {
                     self.0
+                }
+                #[inline(always)]
+                pub const fn new() -> Self {
+                    Self(Self::RESET)
+                }
+            }
+            impl Default for $B {
+                #[inline(always)]
+                fn default() -> Self {
+                    Self::new()
+                }
+            }
+
+            impl From<$P> for $B {
+                #[inline(always)]
+                fn from(value: $P) -> Self {
+                    Self::from_bits(value)
+                }
+            }
+            impl Into<$P> for $B {
+                #[inline(always)]
+                fn into(self) -> $P {
+                    self.into_bits()
+                }
+            }
+
+            impl core::ops::BitOr for $B {
+                type Output = Self;
+
+                fn bitor(self, rhs: Self) -> Self::Output {
+                    Self(self.0 | rhs.0)
+                }
+            }
+            impl core::ops::BitAnd for $B {
+                type Output = Self;
+
+                fn bitand(self, rhs: Self) -> Self::Output {
+                    Self(self.0 & rhs.0)
+                }
+            }
+            impl core::ops::BitXor for $B {
+                type Output = Self;
+
+                fn bitxor(self, rhs: Self) -> Self::Output {
+                    Self(self.0 ^ rhs.0)
                 }
             }
         };

@@ -9,9 +9,9 @@ pub struct EfbIntSource {
 pub mod source {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Source(u8);
-    bitfield_reg!(Source, u8, 0);
+    bitfield_reg!(Source, u8, 0x00);
 
     impl Source {
         /// Bits: `0`

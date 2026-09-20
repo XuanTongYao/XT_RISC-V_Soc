@@ -44,16 +44,16 @@ pub struct Timer {
 pub mod control0 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control0(u8);
-    bitfield_reg!(Control0, u8, 0);
+    bitfield_reg!(Control0, u8, 0x00);
 
     impl Control0 {
         /// 时钟源选择
         ///
         /// Bits: `1`
         pub const fn clksel(&self) -> TimerClkSel {
-            unsafe { TimerClkSel::from_bits(self.0 >> 1) }
+            TimerClkSel::from_bits(self.0 >> 1)
         }
         pub const fn clksel_bits(&self) -> u8 {
             (self.0 & 0x02) >> 1
@@ -78,7 +78,7 @@ pub mod control0 {
         ///
         /// Bits: `5..3`
         pub const fn prescale(&self) -> TimerDivider {
-            unsafe { TimerDivider::from_bits(self.0 >> 3) }
+            TimerDivider::from_bits(self.0 >> 3)
         }
         pub const fn prescale_bits(&self) -> u8 {
             (self.0 & 0x38) >> 3
@@ -110,7 +110,7 @@ pub mod control0 {
     impl TimerClkSel {
         pub const MASK: u8 = 0x1;
         pub const RESET: Self = Self::ClockTree;
-        pub const unsafe fn from_bits(bits: u8) -> Self {
+        pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::ClockTree,
                 _ => Self::OnChipOsc,
@@ -133,7 +133,7 @@ pub mod control0 {
     impl TimerDivider {
         pub const MASK: u8 = 0x7;
         pub const RESET: Self = Self::DISABLED;
-        pub const unsafe fn from_bits(bits: u8) -> Self {
+        pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::DISABLED,
                 1 => Self::Div1,
@@ -150,16 +150,16 @@ pub mod control0 {
 pub mod control1 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control1(u8);
-    bitfield_reg!(Control1, u8, 0);
+    bitfield_reg!(Control1, u8, 0x00);
 
     impl Control1 {
         /// 定时器/计数器模式
         ///
         /// Bits: `1..0`
         pub const fn tcm(&self) -> TimerCounterMode {
-            unsafe { TimerCounterMode::from_bits(self.0 >> 0) }
+            TimerCounterMode::from_bits(self.0 >> 0)
         }
         pub const fn tcm_bits(&self) -> u8 {
             (self.0 & 0x03) >> 0
@@ -173,7 +173,7 @@ pub mod control1 {
         ///
         /// Bits: `3..2`
         pub const fn ocm(&self) -> TimerOutputMode {
-            unsafe { TimerOutputMode::from_bits(self.0 >> 2) }
+            TimerOutputMode::from_bits(self.0 >> 2)
         }
         pub const fn ocm_bits(&self) -> u8 {
             (self.0 & 0x0C) >> 2
@@ -229,7 +229,7 @@ pub mod control1 {
     impl TimerCounterMode {
         pub const MASK: u8 = 0x3;
         pub const RESET: Self = Self::Watchdog;
-        pub const unsafe fn from_bits(bits: u8) -> Self {
+        pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::Watchdog,
                 1 => Self::ClearTimerOnCompareMatch,
@@ -250,7 +250,7 @@ pub mod control1 {
     impl TimerOutputMode {
         pub const MASK: u8 = 0x3;
         pub const RESET: Self = Self::StaticLow;
-        pub const unsafe fn from_bits(bits: u8) -> Self {
+        pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::StaticLow,
                 1 => Self::Toggle,
@@ -264,9 +264,9 @@ pub mod control1 {
 pub mod control2 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control2(u8);
-    bitfield_reg!(Control2, u8, 0);
+    bitfield_reg!(Control2, u8, 0x00);
 
     impl Control2 {
         /// 暂停定时器
@@ -307,9 +307,9 @@ pub mod control2 {
 pub mod status {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Status(u8);
-    bitfield_reg!(Status, u8, 0);
+    bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
         /// 溢出标志
@@ -361,9 +361,9 @@ pub mod status {
 pub mod timer_interrupt {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct TimerInterrupt(u8);
-    bitfield_reg!(TimerInterrupt, u8, 0);
+    bitfield_reg!(TimerInterrupt, u8, 0x00);
 
     impl TimerInterrupt {
         /// 溢出

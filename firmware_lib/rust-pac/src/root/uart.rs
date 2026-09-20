@@ -12,9 +12,9 @@ pub struct Uart {
 pub mod status {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Status(u8);
-    bitfield_reg!(Status, u8, 0);
+    bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
         /// 发送缓冲区未满

@@ -9,9 +9,9 @@ pub struct EintController {
 pub mod interrupt {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Interrupt(u32);
-    bitfield_reg!(Interrupt, u32, 0);
+    bitfield_reg!(Interrupt, u32, 0x00000000);
 
     impl Interrupt {
         /// Bits: `0`

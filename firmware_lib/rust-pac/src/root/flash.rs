@@ -19,9 +19,9 @@ pub struct Flash {
 pub mod control {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control(u8);
-    bitfield_reg!(Control, u8, 0);
+    bitfield_reg!(Control, u8, 0x00);
 
     impl Control {
         /// Reset enable
@@ -51,9 +51,9 @@ pub mod control {
 pub mod status {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Status(u8);
-    bitfield_reg!(Status, u8, 0);
+    bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
         /// I2C激活
@@ -138,9 +138,9 @@ pub mod status {
 pub mod flash_interrupt {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct FlashInterrupt(u8);
-    bitfield_reg!(FlashInterrupt, u8, 0);
+    bitfield_reg!(FlashInterrupt, u8, 0x00);
 
     impl FlashInterrupt {
         /// I2C激活

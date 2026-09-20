@@ -27,16 +27,16 @@ pub struct Spi {
 pub mod control0 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control0(u8);
-    bitfield_reg!(Control0, u8, 0);
+    bitfield_reg!(Control0, u8, 0x00);
 
     impl Control0 {
         /// 前导延迟周期
         ///
         /// Bits: `2..0`
         pub const fn tlead_xcnt(&self) -> u8 {
-            ((self.0 & 0x07) >> 0)
+            (self.0 & 0x07) >> 0
         }
         pub const fn with_tlead_xcnt(mut self, value: u8) -> Self {
             self.0 = (self.0 & !0x07) | ((value as u8) << 0);
@@ -47,7 +47,7 @@ pub mod control0 {
         ///
         /// Bits: `5..3`
         pub const fn ttrail_xcnt(&self) -> u8 {
-            ((self.0 & 0x38) >> 3)
+            (self.0 & 0x38) >> 3
         }
         pub const fn with_ttrail_xcnt(mut self, value: u8) -> Self {
             self.0 = (self.0 & !0x38) | ((value as u8) << 3);
@@ -58,7 +58,7 @@ pub mod control0 {
         ///
         /// Bits: `7..6`
         pub const fn tidle_xcnt(&self) -> u8 {
-            ((self.0 & 0xC0) >> 6)
+            (self.0 & 0xC0) >> 6
         }
         pub const fn with_tidle_xcnt(mut self, value: u8) -> Self {
             self.0 = (self.0 & !0xC0) | ((value as u8) << 6);
@@ -70,9 +70,9 @@ pub mod control0 {
 pub mod control1 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control1(u8);
-    bitfield_reg!(Control1, u8, 0);
+    bitfield_reg!(Control1, u8, 0x00);
 
     impl Control1 {
         /// Transmit edge
@@ -124,9 +124,9 @@ pub mod control1 {
 pub mod control2 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control2(u8);
-    bitfield_reg!(Control2, u8, 0);
+    bitfield_reg!(Control2, u8, 0x00);
 
     impl Control2 {
         /// LSB first
@@ -189,9 +189,9 @@ pub mod control2 {
 pub mod status {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Status(u8);
-    bitfield_reg!(Status, u8, 0);
+    bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
         /// Mode fault
@@ -254,9 +254,9 @@ pub mod status {
 pub mod spi_interrupt {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct SpiInterrupt(u8);
-    bitfield_reg!(SpiInterrupt, u8, 0);
+    bitfield_reg!(SpiInterrupt, u8, 0x00);
 
     impl SpiInterrupt {
         /// 模式错误，在主机模式时自身片选被拉低

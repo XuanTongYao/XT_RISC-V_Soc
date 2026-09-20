@@ -27,16 +27,16 @@ pub struct I2c {
 pub mod control {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Control(u8);
-    bitfield_reg!(Control, u8, 0);
+    bitfield_reg!(Control, u8, 0x00);
 
     impl Control {
         /// SDA delay select
         ///
         /// Bits: `3..2`
         pub const fn sda_del_sel(&self) -> u8 {
-            ((self.0 & 0x0C) >> 2)
+            (self.0 & 0x0C) >> 2
         }
         pub const fn with_sda_del_sel(mut self, value: u8) -> Self {
             self.0 = (self.0 & !0x0C) | ((value as u8) << 2);
@@ -81,9 +81,9 @@ pub mod control {
 pub mod command {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Command(u8);
-    bitfield_reg!(Command, u8, 0);
+    bitfield_reg!(Command, u8, 0x04);
 
     impl Command {
         /// 关闭时钟拉伸。写入时这个位必须被设为1。
@@ -147,16 +147,16 @@ pub mod command {
 pub mod br1 {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Br1(u8);
-    bitfield_reg!(Br1, u8, 0);
+    bitfield_reg!(Br1, u8, 0x00);
 
     impl Br1 {
         /// Prescale [9:8]
         ///
         /// Bits: `1..0`
         pub const fn prescale_h(&self) -> u8 {
-            ((self.0 & 0x03) >> 0)
+            (self.0 & 0x03) >> 0
         }
         pub const fn with_prescale_h(mut self, value: u8) -> Self {
             self.0 = (self.0 & !0x03) | ((value as u8) << 0);
@@ -168,9 +168,9 @@ pub mod br1 {
 pub mod status {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Status(u8);
-    bitfield_reg!(Status, u8, 0);
+    bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
         /// Hardware general call
@@ -266,9 +266,9 @@ pub mod status {
 pub mod i2c_interrupt {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct I2cInterrupt(u8);
-    bitfield_reg!(I2cInterrupt, u8, 0);
+    bitfield_reg!(I2cInterrupt, u8, 0x00);
 
     impl I2cInterrupt {
         /// 收到通用广播

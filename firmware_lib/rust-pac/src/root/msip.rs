@@ -8,9 +8,9 @@ pub struct Msip {
 pub mod msip {
     use crate::common::register::*;
 
-    #[derive(Clone, Copy)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct Msip(u32);
-    bitfield_reg!(Msip, u32, 0);
+    bitfield_reg!(Msip, u32, 0x00000000);
 
     impl Msip {
         /// Bits: `0`
