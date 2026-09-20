@@ -26,32 +26,23 @@ pub mod rv_core;
 pub mod wisbone;
 
 pub use rv_core::*;
+pub use xt_rv32i_pac;
 
 mod common {
 
-    pub struct Peripheral<T, const BASE: usize> {
-        ptr: *mut T,
+    use xt_rv32i_pac::common::register::RegisterBlock;
+    pub struct Peripheral<T> {
+        inst: RegisterBlock<T>,
     }
 
-    impl<T, const BASE: usize> Peripheral<T, BASE> {
-        pub(crate) const BASE: usize = BASE;
+    impl<T> Peripheral<T> {
         #[inline(always)]
-        pub const unsafe fn from_ptr(ptr: *mut ()) -> Self {
-            Self { ptr: ptr as _ }
+        pub const fn from_rb(rb: RegisterBlock<T>) -> Self {
+            Self { inst: rb }
         }
         #[inline(always)]
-        pub const fn as_ptr(&self) -> *mut () {
-            self.ptr as _
+        pub const fn reg(&self) -> &'static T {
+            self.inst.regs()
         }
-        #[inline(always)]
-        pub const fn reg(&self) -> &T {
-            unsafe { &*self.ptr }
-        }
-    }
-
-    const BUS_DOMAIN_BASE: usize = 0;
-    const DOMAIN_ID_START_BIT: usize = 12;
-    pub const fn domain_base(statr_id: usize) -> usize {
-        BUS_DOMAIN_BASE + (statr_id << DOMAIN_ID_START_BIT)
     }
 }

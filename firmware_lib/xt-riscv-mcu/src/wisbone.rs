@@ -1,18 +1,13 @@
 //! WISHBONE总线外设，主要是FPGA芯片的嵌入式硬核
 
+use xt_rv32i_pac::get_top;
+use xt_rv32i_pac::root::efb_int_source;
+use xt_rv32i_pac::root::flash;
+use xt_rv32i_pac::root::i2c;
+use xt_rv32i_pac::root::spi;
+use xt_rv32i_pac::root::timer;
+
 use crate::common::Peripheral;
-const DOMAIN_WISHBONE_BASE: usize = crate::common::domain_base(3);
-// const PLL0_OFFSET: usize = 0x00;
-// const PLL1_OFFSET: usize = 0x20;
-const I2C_PRIMARY_OFFSET: usize = 0x40;
-const I2C_SECONDARY_OFFSET: usize = 0x4A;
-const SPI_OFFSET: usize = 0x54;
-const TIMER_OFFSET: usize = 0x5E;
-const FLASH_OFFSET: usize = 0x70;
-const EFB_INT_SOURCE_OFFSET: usize = 0x76;
-const fn lb_base(offset: usize) -> usize {
-    DOMAIN_WISHBONE_BASE + offset
-}
 
 pub const FREQ_HZ: u32 = crate::rv_core::CORE_FREQ_HZ;
 
@@ -27,375 +22,23 @@ macro_rules! get_u16_from_2_u8 {
     };
 }
 
-pub mod regs {
-    use bitfield_struct::{bitenum, bitfield};
-    use volatile_register::{RO, RW, WO};
-
-    // #[repr(C)]
-    // pub struct PLL {
-    //     pub divfbk_fracl: RW<u8>,
-    //     pub divfbk_frach: RW<u8>,
-    //     pub loadreg_del_a: RW<PllReg2_9>,
-    //     pub pllpdn_del_b: RW<PllReg2_9>,
-    //     pub wbreset_del_c: RW<PllReg2_9>,
-    //     pub use_desi_del_d: RW<PllReg2_9>,
-    //     pub refin_reset_div_a: RW<PllReg2_9>,
-    //     pub pllrst_ena_div_b: RW<PllReg2_9>,
-    //     pub mrst_ena_div_c: RW<PllReg2_9>,
-    //     pub stdby_div_d: RW<PllReg2_9>,
-    // }
-
-    // #[bitfield(u8)]
-    // pub struct PllReg2_9 {
-    //     /// del或者div
-    //     #[bits(7)]
-    //     pub del_div: u8,
-    //     /// 该位由具体寄存器决定
-    //     pub f: bool,
-    // }
-
-    #[repr(C)]
-    pub struct I2C {
-        /// 写入会导致I2C复位
-        pub control: RW<I2cControl>,
-        pub command: RW<I2cCommand>,
-        pub br0: RW<u8>,
-        /// 写入会导致I2C复位
-        pub br1: RW<u8>,
-        pub tx_data: WO<u8>,
-        pub status: RO<I2cStatus>,
-        pub general_call: RO<u8>,
-        pub rx_data: RO<u8>,
-        /// 写1清零
-        pub int_status: RW<I2cInterrupt>,
-        pub int_en: RW<I2cInterrupt>,
-    }
-
-    #[bitfield(u8)]
-    pub struct I2cControl {
-        #[bits(2)]
-        __: u8,
-        #[bits(2)]
-        pub sda_del_sel: u8,
-        __: bool,
-        pub wkupen: bool,
-        pub gcen: bool,
-        pub i2cen: bool,
-    }
-
-    #[bitfield(u8)]
-    pub struct I2cCommand {
-        #[bits(2)]
-        __: u8,
-        pub cksdis: bool,
-        pub ack: bool,
-        pub wr: bool,
-        pub rd: bool,
-        pub sto: bool,
-        pub sta: bool,
-    }
-
-    #[bitfield(u8)]
-    pub struct I2cStatus {
-        pub hgc: bool,
-        pub troe: bool,
-        pub trrdy: bool,
-        pub arbl: bool,
-        pub srw: bool,
-        pub rarc: bool,
-        pub busy: bool,
-        pub tip: bool,
-    }
-
-    #[bitfield(u8)]
-    pub struct I2cInterrupt {
-        /// 收到通用广播
-        pub irqhgc: bool,
-        /// 发送/接收溢出或收到NACK
-        pub irqtroe: bool,
-        /// 发送/接收已准备好
-        pub irqtrrdy: bool,
-        /// 仲裁丢失
-        pub irqarbl: bool,
-        #[bits(4)]
-        __: u8,
-    }
-
-    #[repr(C)]
-    pub struct SPI {
-        pub control0: RW<SpiControl0>,
-        pub control1: RW<SpiControl1>,
-        pub control2: RW<SpiControl2>,
-        pub clock_prescale: RW<u8>,
-        /// # Warning
-        /// 设置片选会使SPI复位
-        pub cs: RW<u8>,
-        pub tx_data: WO<u8>,
-        pub status: RO<SpiStatus>,
-        pub rx_data: RO<u8>,
-        /// 写1清零
-        pub int_status: RW<SpiInterrupt>,
-        pub int_en: RW<SpiInterrupt>,
-    }
-
-    /// 所有延迟周期的精度为0.5个SCK周期，最短0.5
-    #[bitfield(u8)]
-    pub struct SpiControl0 {
-        /// 前导延迟周期
-        #[bits(3)]
-        pub tlead_xcnt: u8,
-        /// 尾随延迟周期
-        #[bits(3)]
-        pub ttrail_xcnt: u8,
-        /// 空闲延迟周期
-        #[bits(2)]
-        pub tidle_xcnt: u8,
-    }
-
-    #[bitfield(u8)]
-    pub struct SpiControl1 {
-        #[bits(4)]
-        __: u8,
-        pub txedge: bool,
-        pub wkupen_cfg: bool,
-        pub wkupen_user: bool,
-        pub spe: bool,
-    }
-
-    #[bitfield(u8)]
-    pub struct SpiControl2 {
-        pub lsbf: bool,
-        pub cpha: bool,
-        pub cpol: bool,
-        #[bits(2)]
-        __: u8,
-        /// 专用扩展(无用)
-        #[bits(access=None)]
-        sdbre: bool,
-        /// 主机永久拉低片选信号
-        pub mcsh: bool,
-        pub mstr: bool,
-    }
-
-    #[bitfield(u8)]
-    pub struct SpiStatus {
-        pub mdf: bool,
-        pub roe: bool,
-        __: bool,
-        pub rrdy: bool,
-        pub trdy: bool,
-        #[bits(2)]
-        __: u8,
-        pub tip: bool,
-    }
-
-    #[bitfield(u8)]
-    pub struct SpiInterrupt {
-        /// 模式错误，在主机模式时自身片选被拉低
-        pub irqmdf: bool,
-        /// 接收溢出
-        pub irqroe: bool,
-        __: bool,
-        /// 接收就绪
-        pub irqrrdy: bool,
-        /// 发送就绪
-        pub irqtrdy: bool,
-        #[bits(3)]
-        __: u8,
-    }
-
-    #[repr(C)]
-    pub struct Timer {
-        pub control0: RW<TimerControl0>,
-        pub control1: RW<TimerControl1>,
-        pub top_setl: WO<u8>,
-        pub top_seth: WO<u8>,
-        pub compare_setl: WO<u8>,
-        pub compare_seth: WO<u8>,
-        pub control2: RW<TimerControl2>,
-        pub counterl: RO<u8>,
-        pub counterh: RO<u8>,
-        pub topl: RO<u8>,
-        pub toph: RO<u8>,
-        pub comparel: RO<u8>,
-        pub compareh: RO<u8>,
-        pub capturel: RO<u8>,
-        pub captureh: RO<u8>,
-        /// 执行写入将清空全部位
-        pub status: RW<TimerStatus>,
-        /// 写1清零
-        pub int_status: RW<TimerInterrupt>,
-        pub int_en: RW<TimerInterrupt>,
-    }
-
-    #[bitfield(u8)]
-    pub struct TimerControl0 {
-        __: bool,
-        #[bits(1)]
-        pub clksel: TimerClkSel,
-        pub clkedge: bool,
-        #[bits(3)]
-        pub prescale: TimerDivider,
-        __: bool,
-        pub rsten: bool,
-    }
-    #[bitenum]
-    #[repr(u8)]
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum TimerClkSel {
-        #[fallback]
-        ClockTree,
-        OnChipOsc,
-    }
-    #[bitenum]
-    #[repr(u8)]
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum TimerDivider {
-        #[fallback]
-        DISABLED,
-        Div1,
-        Div8,
-        Div64,
-        Div256,
-        Div1024,
-    }
-
-    #[bitfield(u8)]
-    pub struct TimerControl1 {
-        #[bits(2)]
-        pub tcm: TimerCounterMode,
-        #[bits(2)]
-        pub ocm: TimerOutputMode,
-        pub tsel: bool,
-        pub icen: bool,
-        /// 在总线访问下无效
-        pub sovfen: bool,
-        __: bool,
-    }
-    #[bitenum]
-    #[repr(u8)]
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum TimerCounterMode {
-        #[fallback]
-        Watchdog,
-        ClearTimerOnCompareMatch,
-        FastPWM,
-        PhaseAndFrequencyCorrectPWM,
-    }
-    #[bitenum]
-    #[repr(u8)]
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum TimerOutputMode {
-        #[fallback]
-        StaticLow,
-        Toggle,
-        SetClear,
-        ClearSet,
-    }
-
-    #[bitfield(u8)]
-    pub struct TimerControl2 {
-        pub wbpause: bool,
-        pub wbreset: bool,
-        pub wbforce: bool,
-        #[bits(5)]
-        __: u8,
-    }
-    #[bitfield(u8)]
-    pub struct TimerStatus {
-        /// 溢出标志
-        pub ovf: bool,
-        /// 输出匹配标志
-        pub ocrf: bool,
-        /// 输入事件标志
-        pub icrf: bool,
-        /// 置0标志
-        pub btf: bool,
-        #[bits(4)]
-        __: u8,
-    }
-
-    #[bitfield(u8)]
-    pub struct TimerInterrupt {
-        /// 溢出
-        pub irqovf: bool,
-        /// 输出匹配
-        pub irqocrf: bool,
-        /// 输入事件
-        pub irqicrf: bool,
-        #[bits(5)]
-        __: u8,
-    }
-
-    #[repr(C)]
-    pub struct Flash {
-        pub control: RW<FlashControl>,
-        pub write_data: WO<u8>,
-        pub status: RO<FlashStatus>,
-        pub read_data: RO<u8>,
-        /// 写1清零
-        pub int_status: RW<FlashInterrupt>,
-        pub int_en: RW<FlashInterrupt>,
-    }
-
-    #[bitfield(u8)]
-    pub struct FlashControl {
-        #[bits(6)]
-        __: u8,
-        pub rste: bool,
-        pub wbce: bool,
-    }
-    #[bitfield(u8)]
-    pub struct FlashStatus {
-        #[bits(6)]
-        pub flags: FlashInterrupt,
-        __: bool,
-        /// WB总线到配置(FPGA配置)接口激活(慎用！！！)
-        pub wbcact: bool,
-    }
-    #[bitfield(u8)]
-    pub struct FlashInterrupt {
-        /// I2C激活
-        pub i2cact: bool,
-        /// SPI激活
-        pub sspiact: bool,
-        /// 接收FIFO已满
-        pub rxff: bool,
-        /// 接收FIFO已空
-        pub rxfe: bool,
-        /// 发送FIFO已满
-        pub txff: bool,
-        /// 发送FIFO已空
-        pub txfe: bool,
-        #[bits(2)]
-        __: u8,
-    }
-
-    #[bitfield(u8)]
-    pub struct EFBInterruptSource {
-        pub i2c1: bool,
-        pub i2c2: bool,
-        pub spi: bool,
-        pub tc: bool,
-        pub ufmcfg: bool,
-        #[bits(3)]
-        __: u8,
-    }
-}
-
-/// 不建议直接使用该类，来完成传输事务
-pub type I2cInner = Peripheral<regs::I2C, 0>;
+pub use xt_rv32i_pac::root::i2c::{i2c_interrupt::I2cInterrupt, status::Status as I2cStatus};
+/// 不建议直接使用该类来完成传输事务
+pub type I2cInner = Peripheral<i2c::I2c>;
 impl I2cInner {
-    pub const PRIMARY: Self = unsafe { Self::from_ptr(lb_base(I2C_PRIMARY_OFFSET) as _) };
-    pub const SECONDARY: Self = unsafe { Self::from_ptr(lb_base(I2C_SECONDARY_OFFSET) as _) };
+    pub const PRIMARY: Self = unsafe { Self::from_rb(get_top().i2c1()) };
+    pub const SECONDARY: Self = unsafe { Self::from_rb(get_top().i2c2()) };
     pub const PRESCALE_MASK: u16 = 0x3FF;
 
-    crate::get_value!(status, status, regs::I2cStatus);
-    crate::get_value!(general_call, general_call, u8);
-    crate::getset_value!(int_status, int_status, regs::I2cInterrupt);
-    crate::getset_value!(int_en, int_en, regs::I2cInterrupt);
+    crate::get_value!(status, status, I2cStatus);
+    crate::get_value!(general_call_data, general_call_data, u8);
+    crate::getset_value!(int_status, int_status, I2cInterrupt);
+    crate::getset_value!(int_en, int_en, I2cInterrupt);
 
-    get_u16_from_2_u8!(prescale, [br1, br0]);
+    pub fn prescale(&self) -> u16 {
+        let low = self.reg().br0.read() as u16;
+        ((self.reg().br1.read().into_bits() as u16) << 8) | low
+    }
 
     /// 设置预分频为 `div`，实际频率为`WISHBONE/(div*4)`
     /// - **主机**模式时，范围 `[0,1023]`
@@ -404,51 +47,41 @@ impl I2cInner {
     /// 重设预分频会使I2C复位
     #[inline(always)]
     pub fn set_prescale(&mut self, div: u16) {
-        unsafe {
-            self.reg().br0.write(div as u8);
-            self.reg().br1.write((div >> 8) as u8);
-        }
+        self.reg().br0.write(div as u8);
+        self.reg().br1.write(((div >> 8) as u8).into());
     }
 
     pub fn reset(&mut self) {
-        unsafe {
-            self.reg().control.modify(|con| con.with_i2cen(false));
-            // 原始C代码，出于未知原因在这里延迟了50us，如果出现问题请加回来
-            self.reg().control.modify(|con| con.with_i2cen(true));
-        }
+        self.reg().control.modify(|con| con.with_i2cen(false));
+        // NOTE 原始C代码，出于未知原因在这里延迟了50us，如果出现问题请加回来
+        self.reg().control.modify(|con| con.with_i2cen(true));
     }
 
     /// 启动传输并进入**写入模式**\
     /// `delay_cycles`延迟的时间必须为(0,6)个I2C时钟周期
     #[inline]
     pub fn master_start_transmission_block(&mut self, addr: u8, delay_cycles: u32) {
-        unsafe {
-            self.reg().tx_data.write(addr & 0xFE); // `& 0xFE`表示写操作，I2C协议决定的
-            self.reg().command.write(0x94.into());
-            crate::rv_core::delay(delay_cycles); // 等(0,6)个I2C时钟周期
-        }
+        self.reg().tx_data.write(addr & 0xFE); // `& 0xFE`表示写操作，I2C协议决定的
+        self.reg().command.write(0x94.into());
+        crate::rv_core::delay(delay_cycles); // 等(0,6)个I2C时钟周期
     }
 
     /// 从**写入模式**切换为**读取模式**\
     /// 必须处于**写入模式**中才能调用此函数
     pub fn master_into_read_block(&mut self, addr: u8) {
-        unsafe {
-            self.reg().tx_data.write(addr | 0x01); // `| 0x01`表示读操作，I2C协议决定的
-            self.reg().command.write(0x94.into());
-            while !self.reg().status.read().srw() {}
-            self.reg().command.write(0x24.into());
-        }
+        self.reg().tx_data.write(addr | 0x01); // `| 0x01`表示读操作，I2C协议决定的
+        self.reg().command.write(0x94.into());
+        while !self.reg().status.read().srw() {}
+        self.reg().command.write(0x24.into());
     }
 
     /// 必须处于**写入模式**中才能调用此函数\
     /// `delay_cycles`延迟的时间必须为(0,6)个I2C时钟周期
     #[inline]
     pub fn master_write_byte_block(&mut self, byte: u8, delay_cycles: u32) {
-        unsafe {
-            self.reg().tx_data.write(byte);
-            self.reg().command.write(0x14.into());
-            crate::rv_core::delay(delay_cycles); // 等(0,6)个I2C时钟周期
-        }
+        self.reg().tx_data.write(byte);
+        self.reg().command.write(0x14.into());
+        crate::rv_core::delay(delay_cycles); // 等(0,6)个I2C时钟周期
     }
 
     /// 必须处于**写入模式**中才能调用此函数\
@@ -481,20 +114,18 @@ impl I2cInner {
     /// 必须处于**写入模式**中才能调用此函数
     #[inline(always)]
     pub fn master_finish_write(&mut self) {
-        unsafe { self.reg().command.write(0x44.into()) }
+        self.reg().command.write(0x44.into())
     }
 
     /// 从**读取模式**结束传输\
     /// 会返回最后一个读取到的字节\
     /// `delay_cycles`延迟的时间必须为(2,7)个I2C时钟周期
     pub fn master_finish_read_block(&mut self, delay_cycles: u32) -> u8 {
-        unsafe {
-            crate::rv_core::delay(delay_cycles); // 等(2,7)个I2C时钟周期
-            self.reg().command.write(0x6C.into());
-            let last_byte = self.master_read_byte_block();
-            self.reg().command.write(0x04.into());
-            last_byte
-        }
+        crate::rv_core::delay(delay_cycles); // 等(2,7)个I2C时钟周期
+        self.reg().command.write(0x6C.into());
+        let last_byte = self.master_read_byte_block();
+        self.reg().command.write(0x04.into());
+        last_byte
     }
 }
 
@@ -607,9 +238,9 @@ impl I2C {
     }
 }
 
-pub type SPI = Peripheral<regs::SPI, { lb_base(SPI_OFFSET) }>;
+pub type SPI = Peripheral<spi::Spi>;
 impl SPI {
-    pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
+    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().spi()) };
 
     crate::getset_field!(master_mode, control2, mstr, bool);
     crate::getset_field!(polarity_active_low, control2, cpol, bool);
@@ -620,7 +251,10 @@ impl SPI {
 
     crate::get_value!(
         /// 获取预分频`div`，实际频率为`WISHBONE/(div+1)`
-        prescale, clock_prescale, u8);
+        prescale,
+        clock_prescale,
+        u8
+    );
 
     /// 设置预分频为 `div` 范围 `[1,63]`，实际频率为`WISHBONE/(div+1)`
     /// # Warning
@@ -628,22 +262,20 @@ impl SPI {
     #[inline(always)]
     pub fn set_prescale(&mut self, div: u8) {
         if div != 0 {
-            unsafe { self.reg().clock_prescale.write(div) }
+            self.reg().clock_prescale.write(div)
         }
     }
 
     pub fn master_start_rw_block(&mut self, byte: u8) -> u8 {
-        unsafe {
-            self.reg().control2.write(0xC0.into());
-            while !self.reg().status.read().trdy() {}
-            self.master_rw_byte_block(byte)
-        }
+        self.reg().control2.write(0xC0.into());
+        while !self.reg().status.read().trdy() {}
+        self.master_rw_byte_block(byte)
     }
 
     /// 调用`master_start_rw_block`后才能使用此函数执行读写操作
     #[inline]
     pub fn master_rw_byte_block(&mut self, byte: u8) -> u8 {
-        unsafe { self.reg().tx_data.write(byte) }
+        self.reg().tx_data.write(byte);
         while !self.reg().status.read().rrdy() {}
         self.reg().rx_data.read()
     }
@@ -651,42 +283,43 @@ impl SPI {
     /// 调用`master_start_rw_block`后才能使用此函数
     #[inline]
     pub fn master_finish_rw_block(&mut self) {
-        unsafe { self.reg().control2.write(0x80.into()) }
+        self.reg().control2.write(0x80.into());
         while self.reg().status.read().tip() {}
     }
 
     pub fn slave_restart_rw_block(&mut self, byte0: u8, byte1: u8) -> u8 {
         let reg = self.reg();
-        unsafe {
-            reg.control2.write(0x00.into());
-            while reg.status.read().tip() {}
-            reg.rx_data.read();
-            reg.rx_data.read(); // 丢弃2字节
-            reg.tx_data.write(byte0);
-            // IDLE
-            while !reg.status.read().tip() {}
-            reg.tx_data.write(byte1);
-            while !reg.status.read().rrdy() {}
-            reg.rx_data.read()
-        }
+        reg.control2.write(0x00.into());
+        while reg.status.read().tip() {}
+        reg.rx_data.read();
+        reg.rx_data.read(); // 丢弃2字节
+        reg.tx_data.write(byte0);
+        // IDLE
+        while !reg.status.read().tip() {}
+        reg.tx_data.write(byte1);
+        while !reg.status.read().rrdy() {}
+        reg.rx_data.read()
     }
 
     /// 调用`slave_restart_rw_block`后才能使用此函数执行读写操作
     pub fn slave_rw_byte_block(&mut self, next_byte: u8) -> u8 {
         let reg = self.reg();
-        unsafe {
-            while !reg.status.read().trdy() {}
-            reg.tx_data.write(next_byte);
-            while !reg.status.read().rrdy() {}
-            reg.rx_data.read()
-        }
+        while !reg.status.read().trdy() {}
+        reg.tx_data.write(next_byte);
+        while !reg.status.read().rrdy() {}
+        reg.rx_data.read()
     }
 }
 
-pub type Timer = Peripheral<regs::Timer, { lb_base(TIMER_OFFSET) }>;
-pub use regs::{TimerClkSel, TimerCounterMode, TimerDivider, TimerOutputMode};
+pub use xt_rv32i_pac::root::timer::control0::{
+    Control0 as TimerControl0, TimerClkSel, TimerDivider,
+};
+pub use xt_rv32i_pac::root::timer::control1::{
+    Control1 as TimerControl1, TimerCounterMode, TimerOutputMode,
+};
+pub type Timer = Peripheral<timer::Timer>;
 impl Timer {
-    pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
+    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().timer()) };
     get_u16_from_2_u8!(top, [toph, topl]);
     get_u16_from_2_u8!(compare, [compareh, comparel]);
     get_u16_from_2_u8!(counter, [counterh, counterl]);
@@ -694,26 +327,26 @@ impl Timer {
 
     #[inline(always)]
     pub fn set_top(&mut self, value: u16) {
-        unsafe {
-            self.reg().top_setl.write(value as u8);
-            self.reg().top_seth.write((value >> 8) as u8);
-        }
+        self.reg().top_setl.write(value as u8);
+        self.reg().top_seth.write((value >> 8) as u8);
     }
     #[inline(always)]
     pub fn set_compare(&mut self, value: u16) {
-        unsafe {
-            self.reg().compare_setl.write(value as u8);
-            self.reg().compare_seth.write((value >> 8) as u8);
-        }
+        self.reg().compare_setl.write(value as u8);
+        self.reg().compare_seth.write((value >> 8) as u8);
     }
 
-    crate::getset_value!(control0, control0, regs::TimerControl0);
-    crate::getset_value!(control1, control1, regs::TimerControl1);
+    crate::getset_value!(control0, control0, TimerControl0);
+    crate::getset_value!(control1, control1, TimerControl1);
 
     crate::getset_field!(clk_source, control0, clksel, TimerClkSel);
     crate::getset_field!(
         /// 用于设置时钟源的有效沿
-        active_negedge, control0, clkedge, bool);
+        active_negedge,
+        control0,
+        clkedge,
+        bool
+    );
     crate::getset_field!(prescale, control0, prescale, TimerDivider);
     crate::getset_field!(reset_signal_enabled, control0, rsten, bool);
 
@@ -721,21 +354,37 @@ impl Timer {
     crate::getset_field!(output_mode, control1, ocm, TimerOutputMode);
     crate::getset_field!(
         /// 启用自动重装载
-        autoload, control1, tsel, bool);
+        autoload,
+        control1,
+        tsel,
+        bool
+    );
     crate::getset_field!(
         /// 启用输入捕获
-        input, control1, icen, bool);
+        input,
+        control1,
+        icen,
+        bool
+    );
 
     crate::getset_field!(paused, control2, wbpause, bool);
     crate::getset_field!(
         /// 重置定时器(必须等待至少两个周期后将该位手动恢复到0)
-        reseted, control2, wbreset, bool);
+        reseted,
+        control2,
+        wbreset,
+        bool
+    );
     crate::getset_field!(
         /// 非PWM模式强制输出，当定时器匹配或到达周期时
-        output_in_non_pwm, control2, wbforce, bool);
+        output_in_non_pwm,
+        control2,
+        wbforce,
+        bool
+    );
 }
 
-pub type Flash = Peripheral<regs::Flash, { lb_base(FLASH_OFFSET) }>;
+pub type Flash = Peripheral<flash::Flash>;
 pub enum FlashBuffer<'a> {
     Read(&'a mut [u8]),
     Write(&'a [u8]),
@@ -743,13 +392,13 @@ pub enum FlashBuffer<'a> {
 
 macro_rules! flash_write {
     ($flash:ident, $($byte:expr),+) => {
-        unsafe {
+        {
             $( $flash.reg().write_data.write($byte); )*
         }
     };
 }
 impl Flash {
-    pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
+    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().flash()) };
 
     pub const TOTAL_PAGE: usize = 767;
     pub const MAX_PAGE_ADDR: usize = 766;
@@ -829,16 +478,14 @@ impl Flash {
 
     #[inline(always)]
     pub fn reset(&mut self) {
-        unsafe { self.reg().control.write(0x40.into()) }
+        self.reg().control.write(0x40.into());
     }
 
     #[inline]
     pub fn command<F: FnOnce(&mut Self) -> ()>(&mut self, f: F) {
-        unsafe {
-            self.reg().control.write(0x80.into());
-            f(self);
-            self.reg().control.write(0x00.into());
-        }
+        self.reg().control.write(0x80.into());
+        f(self);
+        self.reg().control.write(0x00.into());
     }
 
     /// `buffer`的长度决定了要读取/写入的数据量，如果无数据，请使用空切片
@@ -854,7 +501,7 @@ impl Flash {
         self.command(|fl| {
             // 写入命令与操作数
             for _ in 0..cmd_op_num {
-                unsafe { fl.reg().write_data.write(cmd_operands as u8) }
+                fl.reg().write_data.write(cmd_operands as u8);
                 cmd_operands >>= 8;
             }
 
@@ -867,7 +514,7 @@ impl Flash {
                 }
                 Write(buffer) => {
                     for byte in buffer {
-                        unsafe { fl.reg().write_data.write(*byte) }
+                        fl.reg().write_data.write(*byte);
                     }
                 }
             }
@@ -978,8 +625,8 @@ impl Flash {
     }
 }
 
-pub type EfbIntSource = Peripheral<regs::EFBInterruptSource, { lb_base(EFB_INT_SOURCE_OFFSET) }>;
+pub type EfbIntSource = Peripheral<efb_int_source::EfbIntSource>;
 impl EfbIntSource {
     /// 指示EFB中断来源于什么
-    pub const SINGLETON: Self = unsafe { Self::from_ptr(Self::BASE as _) };
+    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().efbintsource()) };
 }

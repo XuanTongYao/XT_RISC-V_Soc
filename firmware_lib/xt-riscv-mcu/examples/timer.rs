@@ -16,7 +16,7 @@ const RGB_MASK: u32 = 0b111_111 << 24;
 fn main() -> ! {
     let mut eint = EintController::SINGLETON;
     unsafe {
-        eint.set_enable(ExternalInterrupt::Timer.into_mask());
+        eint.set_enable(ExternalInterrupt::Timer.into_mask().into());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }
@@ -54,7 +54,7 @@ fn main() -> ! {
     }
 }
 
-use xt_riscv_mcu::wisbone::regs::{
+use xt_riscv_mcu::wisbone::{
     TimerControl0, TimerControl1, TimerCounterMode::*, TimerDivider, TimerDivider::*,
     TimerOutputMode::*,
 };
@@ -104,19 +104,15 @@ fn breathing_light(timer: &mut Timer, gpio: &mut Gpio) {
     timer.set_control0(control0);
     timer.set_control1(control1);
     timer.set_top(468);
-    unsafe {
-        COMPARE.store(0, Ordering::Relaxed);
-        timer.set_compare(0);
-        // 开启溢出中断
-        timer.reg().int_en.modify(|reg| reg.with_irqovf(true));
-    }
+    COMPARE.store(0, Ordering::Relaxed);
+    timer.set_compare(0);
+    // 开启溢出中断
+    timer.reg().int_en.modify(|reg| reg.with_irqovf(true));
 }
 
 fn exit_breathing_light(timer: &mut Timer) {
-    unsafe {
-        // 关闭溢出中断
-        timer.reg().int_en.modify(|reg| reg.with_irqovf(false));
-    }
+    // 关闭溢出中断
+    timer.reg().int_en.modify(|reg| reg.with_irqovf(false));
 }
 
 #[unsafe(no_mangle)]
@@ -127,7 +123,7 @@ unsafe extern "riscv-interrupt-m" fn Timer_IRQ_Handler() {
     if !int_status.irqovf() {
         return;
     }
-    unsafe { timer.reg().int_status.write(int_status) }
+    timer.reg().int_status.write(int_status);
 
     let mut compare = COMPARE.load(Ordering::Relaxed);
     unsafe {

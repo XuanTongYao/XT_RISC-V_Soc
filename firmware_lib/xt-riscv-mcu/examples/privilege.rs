@@ -13,7 +13,7 @@ fn main() -> ! {
     let mut ledsd = LEDSD::SINGLETON;
     let mut eint = EintController::SINGLETON;
     unsafe {
-        eint.set_enable(ExternalInterrupt::Uart.into_mask());
+        eint.set_enable(ExternalInterrupt::Uart.into_mask().into());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }

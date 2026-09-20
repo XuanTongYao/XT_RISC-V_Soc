@@ -14,9 +14,8 @@ no_trap = []                     # 不初始化自陷功能与中断向量
 zh_cn_prompt = []                # 自举程序 汉字提示 不启用则默认为emoji提示
 
 [dependencies]
-bitfield-struct = "0.13.0"
+xt-rv32i-pac = { path = "../rust-pac" }
 pastey = "0.2.3"
 riscv = { version = "0.16.1" }
 seq-macro = "0.3.6"
-volatile-register = "0.2.2"
 riscv-macros = { version = "0.4.1", features = ["riscv-rt"] }

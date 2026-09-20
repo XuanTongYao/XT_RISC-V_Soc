@@ -12,7 +12,7 @@ use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, set_interrupt};
 fn main() -> ! {
     let mut eint = EintController::SINGLETON;
     unsafe {
-        eint.set_enable(ExternalInterrupt::Uart.into_mask());
+        eint.set_enable(ExternalInterrupt::Uart.into_mask().into());
         set_interrupt::<{ (1 << MachineExternal as usize) | (1 << MachineTimer as usize) }>();
         let mut mtime = Mtime::SINGLETON;
         mtime.update_mtimecmp_forward(Mtime::sec_ticks(1));

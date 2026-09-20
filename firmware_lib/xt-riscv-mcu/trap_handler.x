@@ -20,5 +20,4 @@ PROVIDE_HIDDEN(Timer_IRQ_Handler       = delete_IRQ_handler);
 PROVIDE_HIDDEN(WBC_UFM_IRQ_Handler     = delete_IRQ_handler);
 
 /* 异常处理函数 */
-/* 极简的内核只有以下这些异常 */
 PROVIDE_HIDDEN(Exception_Handler       = UnhandledFault);

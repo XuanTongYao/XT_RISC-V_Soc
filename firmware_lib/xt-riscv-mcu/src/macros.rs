@@ -26,7 +26,7 @@ macro_rules! set_field {
             $(#[$doc])*
             #[inline(always)]
             pub $($unsafe)? fn [<set_ $name>](&mut self, value: $t) {
-                unsafe { self.reg(). $($reg.)? modify(|reg| reg.[<with_ $field>](value)) }
+                self.reg(). $($reg.)? modify(|reg| reg.[<with_ $field>](value))
             }
         }
     };
@@ -72,7 +72,7 @@ macro_rules! set_value {
             $(#[$doc])*
             #[inline(always)]
             pub $($unsafe)? fn [<set_ $name>](&mut self, value: $t) {
-                unsafe { self.reg(). $($reg.)? write(value) }
+                self.reg(). $($reg.)? write(value)
             }
         }
     };
@@ -93,7 +93,7 @@ macro_rules! modify_value {
             pub $($unsafe)? fn [<modify_ $name>]<F>(&mut self, f: F)
                 where F: FnOnce($t) -> $t
             {
-                unsafe { self.reg(). $($reg.)? modify(f) }
+                self.reg(). $($reg.)? modify(f)
             }
         }
     };
