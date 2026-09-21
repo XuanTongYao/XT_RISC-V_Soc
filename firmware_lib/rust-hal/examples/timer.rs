@@ -5,25 +5,25 @@
 use core::sync::atomic::{AtomicU16, Ordering};
 use riscv::interrupt::Interrupt;
 use riscv_macros::entry;
-use xt_riscv_mcu::hb32::{EintController, Gpio, Uart};
-use xt_riscv_mcu::lb::LEDSD;
-use xt_riscv_mcu::wisbone::Timer;
 use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
+use xt_rv32i_hal::hb32::{EintController, Gpio, Uart};
+use xt_rv32i_hal::lb::Ledsd;
+use xt_rv32i_hal::wisbone::Timer;
 
 const RGB_MASK: u32 = 0b111_111 << 24;
 
 #[entry]
 fn main() -> ! {
-    let mut eint = EintController::SINGLETON;
+    let mut eint = unsafe { EintController::singleton() };
     unsafe {
         eint.set_enable(ExternalInterrupt::Timer.into_mask().into());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }
-    let mut uart = Uart::SINGLETON;
-    let mut timer = Timer::SINGLETON;
-    let mut gpio = Gpio::SINGLETON;
-    let mut ledsd = LEDSD::SINGLETON;
+    let mut uart = unsafe { Uart::singleton() };
+    let mut timer = unsafe { Timer::singleton() };
+    let mut gpio = unsafe { Gpio::singleton() };
+    let mut ledsd = unsafe { Ledsd::singleton() };
     ledsd.set_digit(0b11); // 关闭LED数码管
     // 控制2xRGB灯珠6个引脚 与 GPIO0
     gpio.set_direction(RGB_MASK | 0b1); // 设为输出模式
@@ -54,7 +54,7 @@ fn main() -> ! {
     }
 }
 
-use xt_riscv_mcu::wisbone::{
+use xt_rv32i_hal::wisbone::{
     TimerControl0, TimerControl1, TimerCounterMode::*, TimerDivider, TimerDivider::*,
     TimerOutputMode::*,
 };
@@ -107,23 +107,23 @@ fn breathing_light(timer: &mut Timer, gpio: &mut Gpio) {
     COMPARE.store(0, Ordering::Relaxed);
     timer.set_compare(0);
     // 开启溢出中断
-    timer.reg().int_en.modify(|reg| reg.with_irqovf(true));
+    timer.modify_int_en(|reg| reg.with_irqovf(true));
 }
 
 fn exit_breathing_light(timer: &mut Timer) {
     // 关闭溢出中断
-    timer.reg().int_en.modify(|reg| reg.with_irqovf(false));
+    timer.modify_int_en(|reg| reg.with_irqovf(false));
 }
 
 #[unsafe(no_mangle)]
 unsafe extern "riscv-interrupt-m" fn Timer_IRQ_Handler() {
     static mut ADD: bool = false;
-    let mut timer = Timer::SINGLETON;
-    let int_status = timer.reg().int_status.read();
+    let mut timer = unsafe { Timer::singleton() };
+    let int_status = timer.int_status();
     if !int_status.irqovf() {
         return;
     }
-    timer.reg().int_status.write(int_status);
+    timer.set_int_status(int_status);
 
     let mut compare = COMPARE.load(Ordering::Relaxed);
     unsafe {

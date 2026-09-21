@@ -1,6 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["firmware_lib/rust-pac", "firmware_lib/xt-riscv-mcu"]
+members = [
+    "firmware_lib/rust-pac",
+    "firmware_lib/xt-riscv-mcu",
+    "firmware_lib/rust-hal",
+]
 
 # [profile.release.package."*"]
 # debug = false

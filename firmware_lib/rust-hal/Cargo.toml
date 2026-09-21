@@ -1,0 +1,21 @@
+[package]
+name = "xt-rv32i-hal"
+version = "0.1.0"
+edition = "2024"
+authors = ["XunTongYao"]
+license = "Apache-2.0"
+
+[features]
+default = ["panic_halt"]
+zh_cn_prompt = []                    # 自举程序 汉字提示 不启用则默认为emoji提示
+no_start = ["xt-riscv-mcu/no_start"] # 无_start汇编初始化 
+no_bss = ["xt-riscv-mcu/no_bss"]     # 不初始化.bss段
+no_trap = ["xt-riscv-mcu/no_trap"]   # 不初始化自陷功能与中断向量
+panic_halt = []
+
+[dependencies]
+xt-rv32i-pac = { path = "../rust-pac" }
+xt-riscv-mcu = { path = "../xt-riscv-mcu" }
+pastey = "0.2.3"
+riscv = { version = "0.16.1" }
+riscv-macros = { version = "0.4.1", features = ["riscv-rt"] }

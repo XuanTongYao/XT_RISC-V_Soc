@@ -2,6 +2,8 @@ pub const CORE_FREQ_MHZ: u32 = 12;
 pub const CORE_FREQ_KHZ: u32 = CORE_FREQ_MHZ * 1000;
 pub const CORE_FREQ_HZ: u32 = CORE_FREQ_KHZ * 1000;
 
+// TODO riscv-rust 0.16.2 更新之后替换掉旧的csr方法
+
 // 适配 riscv::asm::delay 递减计数粗略延时 内部循环次数 `real_cyc = 1 + cycles / 2`
 // 流水线实际循环: `addi->bnez->if_id->id_ex->addi` 循环N次消耗 `(N-1)*4+2` 个周期
 // cycles=8 -> real_cyc=5 -> 18周期

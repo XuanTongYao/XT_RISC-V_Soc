@@ -2,12 +2,12 @@
 #![no_main]
 
 use riscv_macros::entry;
-use xt_riscv_mcu::lb::{KeySwitch, LEDSD};
+use xt_rv32i_hal::lb::{KeySwitch, Ledsd};
 
 #[entry]
 fn main() -> ! {
-    let mut ledsd = LEDSD::SINGLETON;
-    let key_switch = KeySwitch::SINGLETON;
+    let mut ledsd = unsafe { Ledsd::singleton() };
+    let key_switch = unsafe { KeySwitch::singleton() };
     loop {
         let key = key_switch.key();
         let sw = key_switch.switch();

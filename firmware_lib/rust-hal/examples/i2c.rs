@@ -2,8 +2,8 @@
 #![no_main]
 
 use riscv_macros::entry;
-use xt_riscv_mcu::hb32::Uart;
-use xt_riscv_mcu::wisbone::I2C;
+use xt_rv32i_hal::hb32::Uart;
+use xt_rv32i_hal::wisbone::I2C;
 
 const SSD1306_ADDR: u8 = 0x78;
 
@@ -25,8 +25,8 @@ const DATA_1234: [u8; 21] = [
 
 #[entry]
 fn main() -> ! {
-    let mut uart = Uart::SINGLETON;
-    let mut i2c = I2C::new_primary();
+    let mut uart = unsafe { Uart::singleton() };
+    let mut i2c = unsafe { I2C::primary() };
     uart.discard_rx_fifo();
     loop {
         let cmd = uart.rx_block();
@@ -58,9 +58,9 @@ fn main() -> ! {
             0x0e => i2c.master_write_block(&DATA_1234), // 显示1234 发送后要结束传输，才能发送其他功能序列
             // 0x0f => i2c.master_write_block(&HORIZONTAL_SCROLL_OFF),
             // 查询状态
-            0x20 => uart.tx_block(i2c.inner.status().into_bits()),
-            0x21 => uart.tx_block(i2c.inner.int_status().into_bits()),
-            0x22 => uart.tx_block(i2c.inner.int_en().into_bits()),
+            0x20 => uart.tx_block(i2c.status().into_bits()),
+            0x21 => uart.tx_block(i2c.int_status().into_bits()),
+            0x22 => uart.tx_block(i2c.int_en().into_bits()),
             _ => (),
         }
     }

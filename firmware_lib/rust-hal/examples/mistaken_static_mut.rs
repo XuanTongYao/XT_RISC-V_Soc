@@ -7,8 +7,8 @@
 
 use riscv::interrupt::Interrupt::*;
 use riscv_macros::entry;
-use xt_riscv_mcu::lb::LEDSD;
 use xt_riscv_mcu::rv_core::{enable_global_interrupt, set_interrupt};
+use xt_rv32i_hal::lb::Ledsd;
 
 static mut COMPARE: u8 = 0;
 
@@ -18,7 +18,7 @@ static mut COMPARE: u8 = 0;
 /// 应该使用原子类型和临界区代替
 #[entry]
 fn main() -> ! {
-    let mut ledsd = LEDSD::SINGLETON;
+    let mut ledsd = unsafe { Ledsd::singleton() };
     unsafe {
         set_interrupt::<{ 1 << MachineTimer as usize }>();
         enable_global_interrupt();

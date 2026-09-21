@@ -1,39 +1,51 @@
 //! 高速32bit对齐总线
 
-use xt_rv32i_pac::get_top;
-use xt_rv32i_pac::root::bootstrap;
-use xt_rv32i_pac::root::eint_controller;
-use xt_rv32i_pac::root::gpio;
-use xt_rv32i_pac::root::msip;
-use xt_rv32i_pac::root::mtime;
-use xt_rv32i_pac::root::uart;
+use crate::pac::common::register::RegisterBlock;
+use crate::pac::get_top;
+use crate::pac::root::bootstrap;
+use crate::pac::root::eint_controller;
+use crate::pac::root::gpio;
+use crate::pac::root::msip;
+use crate::pac::root::mtime;
+use crate::pac::root::uart;
+use xt_riscv_mcu::rv_core;
 
-use crate::common::Peripheral;
+// TODO riscv-rust 0.16.2更新之后加入临界区
 
-pub type Bootstrap = Peripheral<bootstrap::Bootstrap>;
+type InstanceBootstrap = RegisterBlock<bootstrap::Bootstrap>;
+pub struct Bootstrap {
+    inst: InstanceBootstrap,
+}
+
 impl Bootstrap {
     const INTO_RAM_MODE: u8 = 0x00;
     const INTO_ROM_MODE: u8 = 0x55;
-    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().bootstrap()) };
 
-    crate::set_value!(
-        /// # Safety
+    pub unsafe fn singleton() -> Self {
+        Self::new(unsafe { get_top().bootstrap() })
+    }
+    pub fn new(inst: InstanceBootstrap) -> Self {
+        Self { inst }
+    }
+
+    crate::prop_value!(
+        /// # Note
         /// 写入无效地址会导致preload寄存器硬件失效
-        unsafe preload_str_addr,preload_str_addr,u8);
+        unsafe preload_str_addr, preload_str_addr, u8, set);
 
     #[inline(always)]
     pub fn get_preload_str_u8(&mut self) -> u8 {
-        self.reg().preload_str_auto_inc.read()
+        self.inst.regs().preload_str_auto_inc.read()
     }
 
     #[inline(always)]
     pub fn download_mode(&self) -> bool {
-        self.reg().config.read() & 0x01 != 0
+        self.inst.regs().config.read() & 0x01 != 0
     }
 
     #[inline(always)]
     pub fn ram_mode_stop(&self) -> bool {
-        self.reg().config.read() & 0x02 != 0
+        self.inst.regs().config.read() & 0x02 != 0
     }
 
     /// 将指令区域映射到RAM
@@ -41,7 +53,7 @@ impl Bootstrap {
     /// 使系统硬件复位
     #[inline(always)]
     pub unsafe fn into_ram_mode(&mut self) {
-        self.reg().config.write(Self::INTO_RAM_MODE)
+        self.inst.regs().config.write(Self::INTO_RAM_MODE)
     }
 
     /// 将指令区域映射到ROM
@@ -49,7 +61,7 @@ impl Bootstrap {
     /// 使系统硬件复位
     #[inline(always)]
     pub unsafe fn into_rom_mode(&mut self) {
-        self.reg().config.write(Self::INTO_ROM_MODE)
+        self.inst.regs().config.write(Self::INTO_ROM_MODE)
     }
 }
 pub struct BootstrapPreloadStr {
@@ -85,14 +97,25 @@ impl Bootstrap {
 }
 
 pub use eint_controller::interrupt::Interrupt as EintFlags;
-pub type EintController = Peripheral<eint_controller::EintController>;
-use crate::rv_core::ExternalInterrupt;
-impl EintController {
-    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().eintcontroller()) };
 
-    crate::set_value!(unsafe enable, enable, EintFlags);
-    crate::get_value!(enable, enable, EintFlags);
-    crate::get_value!(pending, pending, EintFlags);
+type InstanceEintController = RegisterBlock<eint_controller::EintController>;
+pub struct EintController {
+    inst: InstanceEintController,
+}
+
+use rv_core::ExternalInterrupt;
+impl EintController {
+    pub unsafe fn singleton() -> Self {
+        Self::new(unsafe { get_top().eintcontroller() })
+    }
+    pub fn new(inst: InstanceEintController) -> Self {
+        Self { inst }
+    }
+
+    crate::prop_value!(unsafe enable, enable, EintFlags, set);
+    crate::prop_value!(unsafe enable, enable, EintFlags, modify);
+    crate::prop_value!(enable, enable, EintFlags, get);
+    crate::prop_value!(pending, pending, EintFlags, get);
 
     #[inline(always)]
     pub unsafe fn enable_interrupt(&mut self, int: ExternalInterrupt) {
@@ -105,21 +128,31 @@ impl EintController {
 
     #[inline(always)]
     pub unsafe fn enable_interrupt_mask(&mut self, mask: u32) {
-        self.reg()
-            .enable
-            .modify(|enable| (enable.into_bits() | mask).into())
+        unsafe {
+            self.modify_enable(|enable| (enable.into_bits() | mask).into());
+        }
     }
     #[inline(always)]
     pub fn disable_interrupt_mask(&mut self, mask: u32) {
-        self.reg()
-            .enable
-            .modify(|enable| (enable.into_bits() & (!mask)).into())
+        unsafe {
+            self.modify_enable(|enable| (enable.into_bits() & (!mask)).into());
+        }
     }
 }
 
-pub type Mtime = Peripheral<mtime::Mtime>;
+type InstanceMtime = RegisterBlock<mtime::Mtime>;
+pub struct Mtime {
+    inst: InstanceMtime,
+}
+
 impl Mtime {
-    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().mtime()) };
+    pub unsafe fn singleton() -> Self {
+        Self::new(unsafe { get_top().mtime() })
+    }
+    pub fn new(inst: InstanceMtime) -> Self {
+        Self { inst }
+    }
+
     pub const FREQ_MHZ: u32 = 1;
     pub const FREQ_KHZ: u32 = Self::FREQ_MHZ * 1000;
     pub const FREQ_HZ: u32 = Self::FREQ_KHZ * 1000;
@@ -146,9 +179,9 @@ impl Mtime {
 impl Mtime {
     pub fn mtime(&self) -> u64 {
         loop {
-            let high = self.reg().mtimeh.read();
-            let low = self.reg().mtimel.read();
-            if high == self.reg().mtimeh.read() {
+            let high = self.inst.regs().mtimeh.read();
+            let low = self.inst.regs().mtimel.read();
+            if high == self.inst.regs().mtimeh.read() {
                 return ((high as u64) << 32) | (low as u64);
             }
         }
@@ -159,14 +192,14 @@ impl Mtime {
         let high = (value >> 32) as u32;
         let low = value as u32;
 
-        self.reg().mtimeh.write(u32::MAX);
-        self.reg().mtimel.write(low);
-        self.reg().mtimeh.write(high);
+        self.inst.regs().mtimeh.write(u32::MAX);
+        self.inst.regs().mtimel.write(low);
+        self.inst.regs().mtimeh.write(high);
     }
 
     pub fn mtimecmp(&self) -> u64 {
-        let high = self.reg().mtimecmph.read();
-        let low = self.reg().mtimecmpl.read();
+        let high = self.inst.regs().mtimecmph.read();
+        let low = self.inst.regs().mtimecmpl.read();
         ((high as u64) << 32) | (low as u64)
     }
     /// # Safety
@@ -174,47 +207,59 @@ impl Mtime {
     pub unsafe fn set_mtimecmp(&mut self, value: u64) {
         let high = (value >> 32) as u32;
         let low = value as u32;
-        self.reg().mtimecmpl.write(u32::MAX);
-        self.reg().mtimecmph.write(high);
-        self.reg().mtimecmpl.write(low);
+        self.inst.regs().mtimecmpl.write(u32::MAX);
+        self.inst.regs().mtimecmph.write(high);
+        self.inst.regs().mtimecmpl.write(low);
     }
 }
 
 #[cfg(target_arch = "riscv64")]
 impl Mtime {
-    crate::getset_value!(mtime, mtime, u64);
-    crate::getset_value!(mtimecmp, mtimecmp, u64);
+    crate::prop_value!(mtime, mtime, u64, get, set);
+    crate::prop_value!(mtimecmp, mtimecmp, u64, get, set);
 }
 
-pub type Uart = Peripheral<uart::Uart>;
+use uart::status::Status as UartStatus;
+type InstanceUart = RegisterBlock<uart::Uart>;
+pub struct Uart {
+    inst: InstanceUart,
+}
+
 impl Uart {
     pub const UART_FREQ: u32 = 19200;
-    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().uart()) };
 
-    #[inline]
+    pub unsafe fn singleton() -> Self {
+        Self::new(unsafe { get_top().uart() })
+    }
+    pub fn new(inst: InstanceUart) -> Self {
+        Self { inst }
+    }
+
+    crate::prop_value!(status, status, UartStatus, get);
+
     pub fn has_data(&self) -> bool {
-        self.reg().status.read().rx_end()
+        self.status().rx_end()
     }
 
     /// 丢弃接收FIFO中的数据
     #[inline]
     pub fn discard_rx_fifo(&mut self) {
-        while self.reg().status.read().rx_end() {
-            unsafe { self.rx_forced() };
+        while self.has_data() {
+            self.rx_forced();
         }
     }
 
-    /// # Safety
+    /// # Note
     /// 强制读取，可能会读取到**无效数据**
     #[inline]
-    pub unsafe fn rx_forced(&mut self) -> u8 {
-        self.reg().data.read()
+    pub fn rx_forced(&mut self) -> u8 {
+        self.inst.regs().data.read()
     }
 
     #[inline]
     pub fn rx_block(&mut self) -> u8 {
-        while !self.reg().status.read().rx_end() {}
-        self.reg().data.read()
+        while !self.inst.regs().status.read().rx_end() {}
+        self.rx_forced()
     }
 
     #[inline]
@@ -226,8 +271,8 @@ impl Uart {
 
     #[inline]
     pub fn tx_block(&mut self, byte: u8) {
-        while !self.reg().status.read().tx_ready() {}
-        self.reg().data.write(byte)
+        while !self.inst.regs().status.read().tx_ready() {}
+        self.inst.regs().data.write(byte)
     }
 
     pub fn tx_bytes_block(&mut self, data: &[u8], big_endian: bool) {
@@ -243,42 +288,61 @@ impl Uart {
     }
 }
 
-pub type Msip = Peripheral<msip::Msip>;
+type InstanceMsip = RegisterBlock<msip::Msip>;
+pub struct Msip {
+    inst: InstanceMsip,
+}
+
 impl Msip {
-    pub const SINGLETON: Self = unsafe { Self::from_rb(get_top().msoftwareint()) };
+    pub unsafe fn singleton() -> Self {
+        Self::new(unsafe { get_top().msoftwareint() })
+    }
+    pub fn new(inst: InstanceMsip) -> Self {
+        Self { inst }
+    }
+
     #[inline(always)]
-    pub fn is_enabled() -> bool {
-        Self::SINGLETON.reg().msip.read().pending()
+    pub fn is_enabled(&self) -> bool {
+        self.inst.regs().msip.read().pending()
     }
 
     /// # Safety
     /// 会立即引发软件中断
     #[inline(always)]
-    pub unsafe fn enable() {
-        Self::SINGLETON
-            .reg()
+    pub unsafe fn enable(&mut self) {
+        self.inst
+            .regs()
             .msip
             .write(msip::msip::Msip::new().with_pending(true));
     }
     #[inline(always)]
-    pub fn disable() {
-        Self::SINGLETON
-            .reg()
+    pub fn disable(&mut self) {
+        self.inst
+            .regs()
             .msip
             .write(msip::msip::Msip::new().with_pending(false));
     }
 }
 
-pub type Gpio = Peripheral<gpio::Gpio>;
+type InstanceGpio = RegisterBlock<gpio::Gpio>;
+pub struct Gpio {
+    inst: InstanceGpio,
+}
+
 impl Gpio {
-    pub const SINGLETON: Gpio = unsafe { Self::from_rb(get_top().gpio()) };
+    pub unsafe fn singleton() -> Self {
+        Self::new(unsafe { get_top().gpio() })
+    }
+    pub fn new(inst: InstanceGpio) -> Self {
+        Self { inst }
+    }
 
     /// 有效GPIO数量
     pub const VALID_COUNT: u32 = 28;
 
-    crate::getsetm_value!(direction, direction, u32);
-    crate::getsetm_value!(data, data, u32);
-    crate::getsetm_value!(af_enable, af_enable, u32);
+    crate::prop_value!(direction, direction, u32, get, set, modify);
+    crate::prop_value!(data, data, u32, get, set, modify);
+    crate::prop_value!(af_enable, af_enable, u32, get, set, modify);
 
     pub fn set_af(&mut self, gpio: u32, af: u32) {
         if gpio >= Self::VALID_COUNT {
@@ -287,12 +351,14 @@ impl Gpio {
 
         if gpio >= 16 {
             let offset = (gpio - 16) << 1;
-            self.reg()
+            self.inst
+                .regs()
                 .afh
                 .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | (af << offset));
         } else {
             let offset = (gpio) << 1;
-            self.reg()
+            self.inst
+                .regs()
                 .afl
                 .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | (af << offset));
         };
@@ -302,10 +368,10 @@ impl Gpio {
     pub fn af(&mut self, gpio: u32) -> u32 {
         if gpio as u32 >= 16 {
             let offset = (gpio - 16) << 1;
-            (self.reg().afh.read() >> offset) & 0b11
+            (self.inst.regs().afh.read() >> offset) & 0b11
         } else {
             let offset = gpio << 1;
-            (self.reg().afl.read() >> offset) & 0b11
+            (self.inst.regs().afl.read() >> offset) & 0b11
         }
     }
 }

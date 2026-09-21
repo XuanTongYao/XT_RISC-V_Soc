@@ -4,18 +4,13 @@ version = "0.1.0"
 edition = "2024"
 authors = ["XunTongYao"]
 license = "Apache-2.0"
-description = "[XT_RISC-V_MCU](https://github.com/XuanTongYao/XT_RISC-V_Soc)的外设标准库，针对一个自制的嵌入式/MCU系统"
+description = "[XT_RISC-V_MCU](https://github.com/XuanTongYao/XT_RISC-V_Soc)的微架构支持库，针对一个自制的嵌入式/MCU系统"
 
 [features]
 default = []                     # 默认会完整初始化gp, sp, .bss, 初始化自陷并使用向量中断模式
 no_start = ["no_bss", "no_trap"] # 无_start汇编初始化 
 no_bss = []                      # 不初始化.bss段
 no_trap = []                     # 不初始化自陷功能与中断向量
-zh_cn_prompt = []                # 自举程序 汉字提示 不启用则默认为emoji提示
 
 [dependencies]
-xt-rv32i-pac = { path = "../rust-pac" }
-pastey = "0.2.3"
 riscv = { version = "0.16.1" }
-seq-macro = "0.3.6"
-riscv-macros = { version = "0.4.1", features = ["riscv-rt"] }

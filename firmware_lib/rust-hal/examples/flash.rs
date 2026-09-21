@@ -2,8 +2,8 @@
 #![no_main]
 
 use riscv_macros::entry;
-use xt_riscv_mcu::hb32::Uart;
-use xt_riscv_mcu::wisbone::{Flash, FlashBuffer};
+use xt_rv32i_hal::hb32::Uart;
+use xt_rv32i_hal::wisbone::{Flash, FlashBuffer};
 
 const TEST_DATA: [u8; 16] = arr_range::<16>();
 const DELIMITER: [u8; 2] = [0xF0, 0x0F];
@@ -11,8 +11,8 @@ const DELIMITER: [u8; 2] = [0xF0, 0x0F];
 #[entry]
 fn main() -> ! {
     let mut buffer = [0u8; 16];
-    let mut uart = Uart::SINGLETON;
-    let mut flash = Flash::SINGLETON;
+    let mut uart = unsafe { Uart::singleton() };
+    let mut flash = unsafe { Flash::singleton() };
     flash.reset();
     flash.enable_transparent_ufm();
     uart.discard_rx_fifo();

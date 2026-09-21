@@ -2,18 +2,18 @@
 #![no_main]
 
 use riscv_macros::entry;
-use xt_riscv_mcu::hb32::Uart;
-use xt_riscv_mcu::wisbone::SPI;
+use xt_rv32i_hal::hb32::Uart;
+use xt_rv32i_hal::wisbone::Spi;
 
 #[entry]
 fn main() -> ! {
-    let mut uart = Uart::SINGLETON;
-    let mut spi = SPI::SINGLETON;
+    let mut uart = unsafe { Uart::singleton() };
+    let mut spi = unsafe { Spi::singleton() };
     uart.discard_rx_fifo();
     loop {
         let cmd = uart.rx_block();
         if cmd == 0x00 {
-            uart.tx_block(spi.reg().control2.read().into());
+            uart.tx_block(spi.control2().into_bits());
         } else if cmd == 0x01 {
             uart.tx_block(spi.prescale());
         } else if cmd == 0x02 {

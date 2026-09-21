@@ -2,9 +2,9 @@
 #![no_main]
 
 use riscv_macros::entry;
-use xt_riscv_mcu::hb32::BootstrapPreloadStr;
-use xt_riscv_mcu::hb32::{Bootstrap, Uart};
-use xt_riscv_mcu::wisbone::Flash;
+use xt_rv32i_hal::hb32::BootstrapPreloadStr;
+use xt_rv32i_hal::hb32::{Bootstrap, Uart};
+use xt_rv32i_hal::wisbone::Flash;
 
 const MAX_TEXT_DATA_LEN: usize = 4096 + 4096 - 512; // 512是栈大小
 const MAX_PAGES: usize = if (MAX_TEXT_DATA_LEN >> 4) < Flash::TOTAL_PAGE {
@@ -15,9 +15,9 @@ const MAX_PAGES: usize = if (MAX_TEXT_DATA_LEN >> 4) < Flash::TOTAL_PAGE {
 
 #[entry]
 fn main() -> ! {
-    let mut flash = Flash::SINGLETON;
-    let bootstrap = Bootstrap::SINGLETON;
-    let uart = Uart::SINGLETON;
+    let mut flash = unsafe { Flash::singleton() };
+    let bootstrap = unsafe { Bootstrap::singleton() };
+    let uart = unsafe { Uart::singleton() };
     flash.reset();
     flash.enable_transparent_ufm();
     if bootstrap.ram_mode_stop() {
@@ -64,7 +64,7 @@ fn download(mut flash: Flash, mut uart: Uart, mut bootstrap: Bootstrap) -> ! {
             block_print_auto_increment(&mut uart, &mut bootstrap, Bootstrap::CMD);
             continue;
         }
-        let uart_cmd = unsafe { uart.rx_forced() };
+        let uart_cmd = uart.rx_forced();
         if uart_cmd != 0x56 {
             continue;
         }
