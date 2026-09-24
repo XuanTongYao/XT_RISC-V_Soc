@@ -11,3 +11,5 @@ pub struct Mtime {
     /// mtimecmp 高32位。 设置不当可能会立即引发定时器中断。
     pub mtimecmph: RW<u32>,
 }
+
+pub type InstanceMtime = RegisterBlock<Mtime>;

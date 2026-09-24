@@ -12,3 +12,5 @@ pub struct Gpio {
     /// GPIO 16-27 的复用选择，每个引脚2 bits
     pub afh: RW<u32>,
 }
+
+pub type InstanceGpio = RegisterBlock<Gpio>;

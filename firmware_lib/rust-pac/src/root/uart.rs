@@ -9,6 +9,8 @@ pub struct Uart {
     pub status: RO<status::Status>,
 }
 
+pub type InstanceUart = RegisterBlock<Uart>;
+
 pub mod status {
     use crate::common::register::*;
 
@@ -17,48 +19,32 @@ pub mod status {
     bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
-        /// 发送缓冲区未满
-        ///
-        /// Bits: `0`
-        pub const fn tx_ready(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_tx_ready(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, tx_ready, with_tx_ready, 0x01, 0
+            /// 发送缓冲区未满
+            ///
+            /// Bits: `0`
+        );
 
-        /// 接收缓冲区未空
-        ///
-        /// Bits: `1`
-        pub const fn rx_end(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_rx_end(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rx_end, with_rx_end, 0x02, 1
+            /// 接收缓冲区未空
+            ///
+            /// Bits: `1`
+        );
 
-        /// 发送缓冲区已空
-        ///
-        /// Bits: `2`
-        pub const fn tx_empty(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_tx_empty(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, tx_empty, with_tx_empty, 0x04, 2
+            /// 发送缓冲区已空
+            ///
+            /// Bits: `2`
+        );
 
-        /// 接收缓冲区已满
-        ///
-        /// Bits: `3`
-        pub const fn rx_full(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_rx_full(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rx_full, with_rx_full, 0x08, 3
+            /// 接收缓冲区已满
+            ///
+            /// Bits: `3`
+        );
     }
 }

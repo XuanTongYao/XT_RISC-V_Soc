@@ -4,3 +4,5 @@ use crate::common::register::*;
 pub struct Led {
     pub data: RW<u8>,
 }
+
+pub type InstanceLed = RegisterBlock<Led>;

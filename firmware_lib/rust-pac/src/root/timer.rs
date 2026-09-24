@@ -41,6 +41,8 @@ pub struct Timer {
     pub int_en: RW<timer_interrupt::TimerInterrupt>,
 }
 
+pub type InstanceTimer = RegisterBlock<Timer>;
+
 pub mod control0 {
     use crate::common::register::*;
 
@@ -49,55 +51,33 @@ pub mod control0 {
     bitfield_reg!(Control0, u8, 0x00);
 
     impl Control0 {
-        /// 时钟源选择
-        ///
-        /// Bits: `1`
-        pub const fn clksel(&self) -> TimerClkSel {
-            TimerClkSel::from_bits(self.0 >> 1)
-        }
-        pub const fn clksel_bits(&self) -> u8 {
-            (self.0 & 0x02) >> 1
-        }
-        pub const fn with_clksel(mut self, value: TimerClkSel) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, enum TimerClkSel, clksel, clksel_bits, with_clksel, 0x02, 1
+            /// 时钟源选择
+            ///
+            /// Bits: `1`
+        );
 
-        /// 时钟源的有效沿 `true`为下降沿
-        ///
-        /// Bits: `2`
-        pub const fn clkedge(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_clkedge(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, clkedge, with_clkedge, 0x04, 2
+            /// 时钟源的有效沿 `true`为下降沿
+            ///
+            /// Bits: `2`
+        );
 
-        /// 时钟预分频
-        ///
-        /// Bits: `5..3`
-        pub const fn prescale(&self) -> TimerDivider {
-            TimerDivider::from_bits(self.0 >> 3)
-        }
-        pub const fn prescale_bits(&self) -> u8 {
-            (self.0 & 0x38) >> 3
-        }
-        pub const fn with_prescale(mut self, value: TimerDivider) -> Self {
-            self.0 = (self.0 & !0x38) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, enum TimerDivider, prescale, prescale_bits, with_prescale, 0x38, 3
+            /// 时钟预分频
+            ///
+            /// Bits: `5..3`
+        );
 
-        /// 启用外部复位信号
-        ///
-        /// Bits: `7`
-        pub const fn rsten(&self) -> bool {
-            ((self.0 & 0x80) >> 7) != 0
-        }
-        pub const fn with_rsten(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x80) | ((value as u8) << 7);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rsten, with_rsten, 0x80, 7
+            /// 启用外部复位信号
+            ///
+            /// Bits: `7`
+        );
     }
 
     #[repr(u8)]
@@ -155,66 +135,40 @@ pub mod control1 {
     bitfield_reg!(Control1, u8, 0x00);
 
     impl Control1 {
-        /// 定时器/计数器模式
-        ///
-        /// Bits: `1..0`
-        pub const fn tcm(&self) -> TimerCounterMode {
-            TimerCounterMode::from_bits(self.0 >> 0)
-        }
-        pub const fn tcm_bits(&self) -> u8 {
-            (self.0 & 0x03) >> 0
-        }
-        pub const fn with_tcm(mut self, value: TimerCounterMode) -> Self {
-            self.0 = (self.0 & !0x03) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, enum TimerCounterMode, tcm, tcm_bits, with_tcm, 0x03, 0
+            /// 定时器/计数器模式
+            ///
+            /// Bits: `1..0`
+        );
 
-        /// 输出信号模式
-        ///
-        /// Bits: `3..2`
-        pub const fn ocm(&self) -> TimerOutputMode {
-            TimerOutputMode::from_bits(self.0 >> 2)
-        }
-        pub const fn ocm_bits(&self) -> u8 {
-            (self.0 & 0x0C) >> 2
-        }
-        pub const fn with_ocm(mut self, value: TimerOutputMode) -> Self {
-            self.0 = (self.0 & !0x0C) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, enum TimerOutputMode, ocm, ocm_bits, with_ocm, 0x0C, 2
+            /// 输出信号模式
+            ///
+            /// Bits: `3..2`
+        );
 
-        /// 启用Top寄存器自动装载
-        ///
-        /// Bits: `4`
-        pub const fn tsel(&self) -> bool {
-            ((self.0 & 0x10) >> 4) != 0
-        }
-        pub const fn with_tsel(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x10) | ((value as u8) << 4);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, tsel, with_tsel, 0x10, 4
+            /// 启用Top寄存器自动装载
+            ///
+            /// Bits: `4`
+        );
 
-        /// 启用输入捕获
-        ///
-        /// Bits: `5`
-        pub const fn icen(&self) -> bool {
-            ((self.0 & 0x20) >> 5) != 0
-        }
-        pub const fn with_icen(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x20) | ((value as u8) << 5);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, icen, with_icen, 0x20, 5
+            /// 启用输入捕获
+            ///
+            /// Bits: `5`
+        );
 
-        /// 在总线访问下此字段无效
-        ///
-        /// Bits: `6`
-        pub const fn sovfen(&self) -> bool {
-            ((self.0 & 0x40) >> 6) != 0
-        }
-        pub const fn with_sovfen(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x40) | ((value as u8) << 6);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, sovfen, with_sovfen, 0x40, 6
+            /// 在总线访问下此字段无效
+            ///
+            /// Bits: `6`
+        );
     }
 
     #[repr(u8)]
@@ -280,38 +234,26 @@ pub mod control2 {
     bitfield_reg!(Control2, u8, 0x00);
 
     impl Control2 {
-        /// 暂停计数器
-        ///
-        /// Bits: `0`
-        pub const fn wbpause(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_wbpause(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, wbpause, with_wbpause, 0x01, 0
+            /// 暂停计数器
+            ///
+            /// Bits: `0`
+        );
 
-        /// 重置计数器为`0`，写入`1`生效一次
-        ///
-        /// Bits: `1`
-        pub const fn wbreset(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_wbreset(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, wbreset, with_wbreset, 0x02, 1
+            /// 重置计数器为`0`，写入`1`生效一次
+            ///
+            /// Bits: `1`
+        );
 
-        /// 强制触发比较匹配或上溢出(仅在非PWM模式有效)，写入`1`生效一次
-        ///
-        /// Bits: `2`
-        pub const fn wbforce(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_wbforce(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, wbforce, with_wbforce, 0x04, 2
+            /// 强制触发比较匹配或上溢出(仅在非PWM模式有效)，写入`1`生效一次
+            ///
+            /// Bits: `2`
+        );
     }
 }
 
@@ -323,49 +265,33 @@ pub mod status {
     bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
-        /// 上溢出标志
-        ///
-        /// Bits: `0`
-        pub const fn ovf(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_ovf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, ovf, with_ovf, 0x01, 0
+            /// 上溢出标志
+            ///
+            /// Bits: `0`
+        );
 
-        /// 比较匹配标志
-        ///
-        /// Bits: `1`
-        pub const fn ocrf(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_ocrf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, ocrf, with_ocrf, 0x02, 1
+            /// 比较匹配标志
+            ///
+            /// Bits: `1`
+        );
 
-        /// 输入事件标志
-        ///
-        /// Bits: `2`
-        pub const fn icrf(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_icrf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, icrf, with_icrf, 0x04, 2
+            /// 输入事件标志
+            ///
+            /// Bits: `2`
+        );
 
-        /// (0)下溢出标志
-        ///
-        /// Bits: `3`
-        pub const fn btf(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_btf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, btf, with_btf, 0x08, 3
+            /// (0)下溢出标志
+            ///
+            /// Bits: `3`
+        );
     }
 }
 
@@ -377,37 +303,25 @@ pub mod timer_interrupt {
     bitfield_reg!(TimerInterrupt, u8, 0x00);
 
     impl TimerInterrupt {
-        /// 上溢出
-        ///
-        /// Bits: `0`
-        pub const fn irqovf(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_irqovf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqovf, with_irqovf, 0x01, 0
+            /// 上溢出
+            ///
+            /// Bits: `0`
+        );
 
-        /// 比较匹配
-        ///
-        /// Bits: `1`
-        pub const fn irqocrf(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_irqocrf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqocrf, with_irqocrf, 0x02, 1
+            /// 比较匹配
+            ///
+            /// Bits: `1`
+        );
 
-        /// 输入事件
-        ///
-        /// Bits: `2`
-        pub const fn irqicrf(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_irqicrf(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqicrf, with_irqicrf, 0x04, 2
+            /// 输入事件
+            ///
+            /// Bits: `2`
+        );
     }
 }

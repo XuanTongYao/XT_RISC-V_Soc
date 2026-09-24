@@ -24,6 +24,8 @@ pub struct I2c {
     pub int_en: RW<i2c_interrupt::I2cInterrupt>,
 }
 
+pub type InstanceI2c = RegisterBlock<I2c>;
+
 pub mod control {
     use crate::common::register::*;
 
@@ -32,49 +34,33 @@ pub mod control {
     bitfield_reg!(Control, u8, 0x00);
 
     impl Control {
-        /// SDA delay select
-        ///
-        /// Bits: `3..2`
-        pub const fn sda_del_sel(&self) -> u8 {
-            (self.0 & 0x0C) >> 2
-        }
-        pub const fn with_sda_del_sel(mut self, value: u8) -> Self {
-            self.0 = (self.0 & !0x0C) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, u8, sda_del_sel, with_sda_del_sel, 0x0C, 2
+            /// SDA delay select
+            ///
+            /// Bits: `3..2`
+        );
 
-        /// Wakeup enable
-        ///
-        /// Bits: `5`
-        pub const fn wkupen(&self) -> bool {
-            ((self.0 & 0x20) >> 5) != 0
-        }
-        pub const fn with_wkupen(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x20) | ((value as u8) << 5);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, wkupen, with_wkupen, 0x20, 5
+            /// Wakeup enable
+            ///
+            /// Bits: `5`
+        );
 
-        /// General-call enable
-        ///
-        /// Bits: `6`
-        pub const fn gcen(&self) -> bool {
-            ((self.0 & 0x40) >> 6) != 0
-        }
-        pub const fn with_gcen(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x40) | ((value as u8) << 6);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, gcen, with_gcen, 0x40, 6
+            /// General-call enable
+            ///
+            /// Bits: `6`
+        );
 
-        /// I2C enable. Toggling this bit resets the core.
-        ///
-        /// Bits: `7`
-        pub const fn i2cen(&self) -> bool {
-            ((self.0 & 0x80) >> 7) != 0
-        }
-        pub const fn with_i2cen(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x80) | ((value as u8) << 7);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, i2cen, with_i2cen, 0x80, 7
+            /// I2C enable. Toggling this bit resets the core.
+            ///
+            /// Bits: `7`
+        );
     }
 }
 
@@ -86,61 +72,37 @@ pub mod command {
     bitfield_reg!(Command, u8, 0x04);
 
     impl Command {
-        /// 关闭时钟拉伸。写入时这个位必须被设为1。
-        ///
-        /// Bits: `2`
-        pub const fn cksdis(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_cksdis(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, cksdis, with_cksdis, 0x04, 2
+            /// 关闭时钟拉伸。写入时这个位必须被设为1。
+            ///
+            /// Bits: `2`
+        );
 
-        /// Bits: `3`
-        pub const fn ack(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_ack(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, ack, with_ack, 0x08, 3
+            /// Bits: `3`
+        );
 
-        /// Bits: `4`
-        pub const fn write(&self) -> bool {
-            ((self.0 & 0x10) >> 4) != 0
-        }
-        pub const fn with_write(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x10) | ((value as u8) << 4);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, write, with_write, 0x10, 4
+            /// Bits: `4`
+        );
 
-        /// Bits: `5`
-        pub const fn read(&self) -> bool {
-            ((self.0 & 0x20) >> 5) != 0
-        }
-        pub const fn with_read(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x20) | ((value as u8) << 5);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, read, with_read, 0x20, 5
+            /// Bits: `5`
+        );
 
-        /// Bits: `6`
-        pub const fn stop(&self) -> bool {
-            ((self.0 & 0x40) >> 6) != 0
-        }
-        pub const fn with_stop(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x40) | ((value as u8) << 6);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, stop, with_stop, 0x40, 6
+            /// Bits: `6`
+        );
 
-        /// Bits: `7`
-        pub const fn start(&self) -> bool {
-            ((self.0 & 0x80) >> 7) != 0
-        }
-        pub const fn with_start(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x80) | ((value as u8) << 7);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, start, with_start, 0x80, 7
+            /// Bits: `7`
+        );
     }
 }
 
@@ -152,16 +114,12 @@ pub mod br1 {
     bitfield_reg!(Br1, u8, 0x00);
 
     impl Br1 {
-        /// Prescale [9:8]
-        ///
-        /// Bits: `1..0`
-        pub const fn prescale_h(&self) -> u8 {
-            (self.0 & 0x03) >> 0
-        }
-        pub const fn with_prescale_h(mut self, value: u8) -> Self {
-            self.0 = (self.0 & !0x03) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, u8, prescale_h, with_prescale_h, 0x03, 0
+            /// Prescale [9:8]
+            ///
+            /// Bits: `1..0`
+        );
     }
 }
 
@@ -173,93 +131,61 @@ pub mod status {
     bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
-        /// Hardware general call
-        ///
-        /// Bits: `0`
-        pub const fn hgc(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_hgc(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, hgc, with_hgc, 0x01, 0
+            /// Hardware general call
+            ///
+            /// Bits: `0`
+        );
 
-        /// Transmit/receive overflow or NACK
-        ///
-        /// Bits: `1`
-        pub const fn troe(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_troe(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, troe, with_troe, 0x02, 1
+            /// Transmit/receive overflow or NACK
+            ///
+            /// Bits: `1`
+        );
 
-        /// Transmit/receive ready
-        ///
-        /// Bits: `2`
-        pub const fn trrdy(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_trrdy(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, trrdy, with_trrdy, 0x04, 2
+            /// Transmit/receive ready
+            ///
+            /// Bits: `2`
+        );
 
-        /// Arbitration lost
-        ///
-        /// Bits: `3`
-        pub const fn arbl(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_arbl(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, arbl, with_arbl, 0x08, 3
+            /// Arbitration lost
+            ///
+            /// Bits: `3`
+        );
 
-        /// Slave read/write
-        ///
-        /// Bits: `4`
-        pub const fn srw(&self) -> bool {
-            ((self.0 & 0x10) >> 4) != 0
-        }
-        pub const fn with_srw(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x10) | ((value as u8) << 4);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, srw, with_srw, 0x10, 4
+            /// Slave read/write
+            ///
+            /// Bits: `4`
+        );
 
-        /// Received ACK
-        ///
-        /// Bits: `5`
-        pub const fn rarc(&self) -> bool {
-            ((self.0 & 0x20) >> 5) != 0
-        }
-        pub const fn with_rarc(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x20) | ((value as u8) << 5);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rarc, with_rarc, 0x20, 5
+            /// Received ACK
+            ///
+            /// Bits: `5`
+        );
 
-        /// Bus busy
-        ///
-        /// Bits: `6`
-        pub const fn busy(&self) -> bool {
-            ((self.0 & 0x40) >> 6) != 0
-        }
-        pub const fn with_busy(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x40) | ((value as u8) << 6);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, busy, with_busy, 0x40, 6
+            /// Bus busy
+            ///
+            /// Bits: `6`
+        );
 
-        /// Transfer in progress
-        ///
-        /// Bits: `7`
-        pub const fn tip(&self) -> bool {
-            ((self.0 & 0x80) >> 7) != 0
-        }
-        pub const fn with_tip(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x80) | ((value as u8) << 7);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, tip, with_tip, 0x80, 7
+            /// Transfer in progress
+            ///
+            /// Bits: `7`
+        );
     }
 }
 
@@ -271,48 +197,32 @@ pub mod i2c_interrupt {
     bitfield_reg!(I2cInterrupt, u8, 0x00);
 
     impl I2cInterrupt {
-        /// 收到通用广播
-        ///
-        /// Bits: `0`
-        pub const fn irqhgc(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_irqhgc(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqhgc, with_irqhgc, 0x01, 0
+            /// 收到通用广播
+            ///
+            /// Bits: `0`
+        );
 
-        /// 发送/接收溢出或收到NACK
-        ///
-        /// Bits: `1`
-        pub const fn irqtroe(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_irqtroe(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqtroe, with_irqtroe, 0x02, 1
+            /// 发送/接收溢出或收到NACK
+            ///
+            /// Bits: `1`
+        );
 
-        /// 发送/接收已准备好
-        ///
-        /// Bits: `2`
-        pub const fn irqtrrdy(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_irqtrrdy(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqtrrdy, with_irqtrrdy, 0x04, 2
+            /// 发送/接收已准备好
+            ///
+            /// Bits: `2`
+        );
 
-        /// 仲裁丢失
-        ///
-        /// Bits: `3`
-        pub const fn irqarbl(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_irqarbl(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, irqarbl, with_irqarbl, 0x08, 3
+            /// 仲裁丢失
+            ///
+            /// Bits: `3`
+        );
     }
 }

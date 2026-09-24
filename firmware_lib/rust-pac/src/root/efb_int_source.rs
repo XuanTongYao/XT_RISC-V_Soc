@@ -6,6 +6,8 @@ pub struct EfbIntSource {
     pub source: RO<source::Source>,
 }
 
+pub type InstanceEfbIntSource = RegisterBlock<EfbIntSource>;
+
 pub mod source {
     use crate::common::register::*;
 
@@ -14,49 +16,29 @@ pub mod source {
     bitfield_reg!(Source, u8, 0x00);
 
     impl Source {
-        /// Bits: `0`
-        pub const fn i2c1(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_i2c1(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, i2c1, with_i2c1, 0x01, 0
+            /// Bits: `0`
+        );
 
-        /// Bits: `1`
-        pub const fn i2c2(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_i2c2(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, i2c2, with_i2c2, 0x02, 1
+            /// Bits: `1`
+        );
 
-        /// Bits: `2`
-        pub const fn spi(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_spi(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, spi, with_spi, 0x04, 2
+            /// Bits: `2`
+        );
 
-        /// Bits: `3`
-        pub const fn tc(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_tc(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, tc, with_tc, 0x08, 3
+            /// Bits: `3`
+        );
 
-        /// Bits: `4`
-        pub const fn ufmcfg(&self) -> bool {
-            ((self.0 & 0x10) >> 4) != 0
-        }
-        pub const fn with_ufmcfg(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x10) | ((value as u8) << 4);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, ufmcfg, with_ufmcfg, 0x10, 4
+            /// Bits: `4`
+        );
     }
 }

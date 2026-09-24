@@ -16,6 +16,8 @@ use crate::common::register::*;
 
 pub struct XtRv32i;
 
+pub type InstanceXtRv32i = RegisterBlock<XtRv32i>;
+
 impl RegisterBlock<XtRv32i> {
     /// 自举控制器
     #[inline(always)]

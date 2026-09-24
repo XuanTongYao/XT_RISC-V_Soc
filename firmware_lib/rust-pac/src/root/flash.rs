@@ -16,6 +16,8 @@ pub struct Flash {
     pub int_en: RW<flash_interrupt::FlashInterrupt>,
 }
 
+pub type InstanceFlash = RegisterBlock<Flash>;
+
 pub mod control {
     use crate::common::register::*;
 
@@ -24,27 +26,19 @@ pub mod control {
     bitfield_reg!(Control, u8, 0x00);
 
     impl Control {
-        /// Reset enable
-        ///
-        /// Bits: `6`
-        pub const fn rste(&self) -> bool {
-            ((self.0 & 0x40) >> 6) != 0
-        }
-        pub const fn with_rste(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x40) | ((value as u8) << 6);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rste, with_rste, 0x40, 6
+            /// Reset enable
+            ///
+            /// Bits: `6`
+        );
 
-        /// WISHBONE command enable
-        ///
-        /// Bits: `7`
-        pub const fn wbce(&self) -> bool {
-            ((self.0 & 0x80) >> 7) != 0
-        }
-        pub const fn with_wbce(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x80) | ((value as u8) << 7);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, wbce, with_wbce, 0x80, 7
+            /// WISHBONE command enable
+            ///
+            /// Bits: `7`
+        );
     }
 }
 
@@ -56,82 +50,54 @@ pub mod status {
     bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
-        /// I2C激活
-        ///
-        /// Bits: `0`
-        pub const fn i2cact(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_i2cact(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, i2cact, with_i2cact, 0x01, 0
+            /// I2C激活
+            ///
+            /// Bits: `0`
+        );
 
-        /// SPI激活
-        ///
-        /// Bits: `1`
-        pub const fn sspiact(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_sspiact(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, sspiact, with_sspiact, 0x02, 1
+            /// SPI激活
+            ///
+            /// Bits: `1`
+        );
 
-        /// 接收FIFO已满
-        ///
-        /// Bits: `2`
-        pub const fn rxff(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_rxff(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rxff, with_rxff, 0x04, 2
+            /// 接收FIFO已满
+            ///
+            /// Bits: `2`
+        );
 
-        /// 接收FIFO已空
-        ///
-        /// Bits: `3`
-        pub const fn rxfe(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_rxfe(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rxfe, with_rxfe, 0x08, 3
+            /// 接收FIFO已空
+            ///
+            /// Bits: `3`
+        );
 
-        /// 发送FIFO已满
-        ///
-        /// Bits: `4`
-        pub const fn txff(&self) -> bool {
-            ((self.0 & 0x10) >> 4) != 0
-        }
-        pub const fn with_txff(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x10) | ((value as u8) << 4);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, txff, with_txff, 0x10, 4
+            /// 发送FIFO已满
+            ///
+            /// Bits: `4`
+        );
 
-        /// 发送FIFO已空
-        ///
-        /// Bits: `5`
-        pub const fn txfe(&self) -> bool {
-            ((self.0 & 0x20) >> 5) != 0
-        }
-        pub const fn with_txfe(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x20) | ((value as u8) << 5);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, txfe, with_txfe, 0x20, 5
+            /// 发送FIFO已空
+            ///
+            /// Bits: `5`
+        );
 
-        /// WB总线到配置(FPGA配置)接口激活(慎用)
-        ///
-        /// Bits: `7`
-        pub const fn wbcact(&self) -> bool {
-            ((self.0 & 0x80) >> 7) != 0
-        }
-        pub const fn with_wbcact(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x80) | ((value as u8) << 7);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, wbcact, with_wbcact, 0x80, 7
+            /// WB总线到配置(FPGA配置)接口激活(慎用)
+            ///
+            /// Bits: `7`
+        );
     }
 }
 
@@ -143,70 +109,46 @@ pub mod flash_interrupt {
     bitfield_reg!(FlashInterrupt, u8, 0x00);
 
     impl FlashInterrupt {
-        /// I2C激活
-        ///
-        /// Bits: `0`
-        pub const fn i2cact(&self) -> bool {
-            ((self.0 & 0x01) >> 0) != 0
-        }
-        pub const fn with_i2cact(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x01) | ((value as u8) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, i2cact, with_i2cact, 0x01, 0
+            /// I2C激活
+            ///
+            /// Bits: `0`
+        );
 
-        /// SPI激活
-        ///
-        /// Bits: `1`
-        pub const fn sspiact(&self) -> bool {
-            ((self.0 & 0x02) >> 1) != 0
-        }
-        pub const fn with_sspiact(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x02) | ((value as u8) << 1);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, sspiact, with_sspiact, 0x02, 1
+            /// SPI激活
+            ///
+            /// Bits: `1`
+        );
 
-        /// 接收FIFO已满
-        ///
-        /// Bits: `2`
-        pub const fn rxff(&self) -> bool {
-            ((self.0 & 0x04) >> 2) != 0
-        }
-        pub const fn with_rxff(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x04) | ((value as u8) << 2);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rxff, with_rxff, 0x04, 2
+            /// 接收FIFO已满
+            ///
+            /// Bits: `2`
+        );
 
-        /// 接收FIFO已空
-        ///
-        /// Bits: `3`
-        pub const fn rxfe(&self) -> bool {
-            ((self.0 & 0x08) >> 3) != 0
-        }
-        pub const fn with_rxfe(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x08) | ((value as u8) << 3);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, rxfe, with_rxfe, 0x08, 3
+            /// 接收FIFO已空
+            ///
+            /// Bits: `3`
+        );
 
-        /// 发送FIFO已满
-        ///
-        /// Bits: `4`
-        pub const fn txff(&self) -> bool {
-            ((self.0 & 0x10) >> 4) != 0
-        }
-        pub const fn with_txff(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x10) | ((value as u8) << 4);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, txff, with_txff, 0x10, 4
+            /// 发送FIFO已满
+            ///
+            /// Bits: `4`
+        );
 
-        /// 发送FIFO已空
-        ///
-        /// Bits: `5`
-        pub const fn txfe(&self) -> bool {
-            ((self.0 & 0x20) >> 5) != 0
-        }
-        pub const fn with_txfe(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x20) | ((value as u8) << 5);
-            self
-        }
+        bitfield_accessor!(
+            u8, bool, txfe, with_txfe, 0x20, 5
+            /// 发送FIFO已空
+            ///
+            /// Bits: `5`
+        );
     }
 }

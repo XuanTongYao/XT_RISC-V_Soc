@@ -6,6 +6,8 @@ pub struct EintController {
     pub pending: RO<interrupt::Interrupt>,
 }
 
+pub type InstanceEintController = RegisterBlock<EintController>;
+
 pub mod interrupt {
     use crate::common::register::*;
 
@@ -14,58 +16,34 @@ pub mod interrupt {
     bitfield_reg!(Interrupt, u32, 0x00000000);
 
     impl Interrupt {
-        /// Bits: `0`
-        pub const fn uart(&self) -> bool {
-            ((self.0 & 0x00000001) >> 0) != 0
-        }
-        pub const fn with_uart(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x00000001) | ((value as u32) << 0);
-            self
-        }
+        bitfield_accessor!(
+            u32, bool, uart, with_uart, 0x00000001, 0
+            /// Bits: `0`
+        );
 
-        /// Bits: `8`
-        pub const fn i2c1(&self) -> bool {
-            ((self.0 & 0x00000100) >> 8) != 0
-        }
-        pub const fn with_i2c1(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x00000100) | ((value as u32) << 8);
-            self
-        }
+        bitfield_accessor!(
+            u32, bool, i2c1, with_i2c1, 0x00000100, 8
+            /// Bits: `8`
+        );
 
-        /// Bits: `9`
-        pub const fn i2c2(&self) -> bool {
-            ((self.0 & 0x00000200) >> 9) != 0
-        }
-        pub const fn with_i2c2(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x00000200) | ((value as u32) << 9);
-            self
-        }
+        bitfield_accessor!(
+            u32, bool, i2c2, with_i2c2, 0x00000200, 9
+            /// Bits: `9`
+        );
 
-        /// Bits: `10`
-        pub const fn spi(&self) -> bool {
-            ((self.0 & 0x00000400) >> 10) != 0
-        }
-        pub const fn with_spi(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x00000400) | ((value as u32) << 10);
-            self
-        }
+        bitfield_accessor!(
+            u32, bool, spi, with_spi, 0x00000400, 10
+            /// Bits: `10`
+        );
 
-        /// Bits: `11`
-        pub const fn timer(&self) -> bool {
-            ((self.0 & 0x00000800) >> 11) != 0
-        }
-        pub const fn with_timer(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x00000800) | ((value as u32) << 11);
-            self
-        }
+        bitfield_accessor!(
+            u32, bool, timer, with_timer, 0x00000800, 11
+            /// Bits: `11`
+        );
 
-        /// Bits: `12`
-        pub const fn wbcufm(&self) -> bool {
-            ((self.0 & 0x00001000) >> 12) != 0
-        }
-        pub const fn with_wbcufm(mut self, value: bool) -> Self {
-            self.0 = (self.0 & !0x00001000) | ((value as u32) << 12);
-            self
-        }
+        bitfield_accessor!(
+            u32, bool, wbcufm, with_wbcufm, 0x00001000, 12
+            /// Bits: `12`
+        );
     }
 }

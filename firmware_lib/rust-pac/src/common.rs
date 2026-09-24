@@ -111,6 +111,59 @@ pub mod register {
         };
     }
 
+    macro_rules! bitfield_accessor {
+        // bool
+        ($P:ty, bool, $name:ident, $with_name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            bitfield_accessor!($P, bool, $name, $mask, $offset $(#[$doc])*);
+            bitfield_accessor!(@with $P, bool, $with_name, $mask, $offset $(#[$doc])*);
+        };
+        // bool getter
+        ($P:ty, bool, $name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            $(#[$doc])*
+            pub const fn $name(&self) -> bool {
+                ((self.0 & $mask) >> $offset) != 0
+            }
+        };
+
+        // u8/u16/u32/u64
+        ($P:ty, $type:ty, $name:ident, $with_name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            bitfield_accessor!($P, $type, $name, $mask, $offset $(#[$doc])*);
+            bitfield_accessor!(@with $P, $type, $with_name, $mask, $offset $(#[$doc])*);
+        };
+        // bits/u8/u16/u32/u64 getter
+        ($P:ty, $type:ty, $name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            $(#[$doc])*
+            pub const fn $name(&self) -> $P {
+                (self.0 & $mask) >> $offset
+            }
+        };
+
+        // enum
+        ($P:ty, enum $type:ty, $name:ident, $bits_name:ident, $with_name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            bitfield_accessor!($P, enum $type, $name, $bits_name, $mask, $offset $(#[$doc])*);
+            bitfield_accessor!(@with $P, $type, $with_name, $mask, $offset $(#[$doc])*);
+        };
+        // enum getter
+        ($P:ty, enum $type:ty, $name:ident, $bits_name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            $(#[$doc])*
+            pub const fn $name(&self) -> $type {
+                <$type>::from_bits(self.0 >> $offset)
+            }
+            // bits getter
+            bitfield_accessor!($P, $type, $bits_name, $mask, $offset $(#[$doc])*);
+        };
+
+        // setter
+        (@with $P:ty, $type:ty, $name:ident, $mask:literal, $offset:literal $(#[$doc:meta])*) => {
+            $(#[$doc])*
+            pub const fn $name(mut self, value: $type) -> Self {
+                self.0 = (self.0 & !$mask) | ((value as $P) << $offset);
+                self
+            }
+        };
+    }
+
+    pub(crate) use bitfield_accessor;
     pub(crate) use bitfield_reg;
 
     pub struct RegisterBlock<T>(*mut T);

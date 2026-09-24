@@ -17,3 +17,5 @@ pub struct Bootstrap {
     /// 预载字符串数据。读取会导致地址自增。
     pub preload_str_auto_inc: RO<u8>,
 }
+
+pub type InstanceBootstrap = RegisterBlock<Bootstrap>;
