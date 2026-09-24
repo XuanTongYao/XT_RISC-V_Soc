@@ -63,7 +63,7 @@ pub mod control0 {
             self
         }
 
-        /// 用于设置时钟源的有效沿
+        /// 时钟源的有效沿 `true`为下降沿
         ///
         /// Bits: `2`
         pub const fn clkedge(&self) -> bool {
@@ -169,7 +169,7 @@ pub mod control1 {
             self
         }
 
-        /// 定时器输出模式
+        /// 输出信号模式
         ///
         /// Bits: `3..2`
         pub const fn ocm(&self) -> TimerOutputMode {
@@ -183,7 +183,7 @@ pub mod control1 {
             self
         }
 
-        /// 启用自动重装载
+        /// 启用Top寄存器自动装载
         ///
         /// Bits: `4`
         pub const fn tsel(&self) -> bool {
@@ -221,7 +221,7 @@ pub mod control1 {
     #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub enum TimerCounterMode {
         Watchdog = 0,
-        ClearTimerOnCompareMatch = 1,
+        ClearTimerOnTop = 1,
         FastPWM = 2,
         PhaseAndFrequencyCorrectPWM = 3,
     }
@@ -232,7 +232,7 @@ pub mod control1 {
         pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::Watchdog,
-                1 => Self::ClearTimerOnCompareMatch,
+                1 => Self::ClearTimerOnTop,
                 2 => Self::FastPWM,
                 _ => Self::PhaseAndFrequencyCorrectPWM,
             }
@@ -242,8 +242,19 @@ pub mod control1 {
     #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub enum TimerOutputMode {
         StaticLow = 0,
-        Toggle = 1,
+        /// 上溢出时翻转输出电平(仅在非PWM模式下有效)
+        ToggleOnTop = 1,
+        /// 快速PWM模式: 比较匹配输出`1`，上溢出输出`0`。
+        ///
+        /// 相位修正PWM模式: 只检测比较匹配，计数器递增时输出`0`，计数器递减时输出`1`。
+        /// # Note
+        /// 在非PWM模式下无效
         SetClear = 2,
+        /// 快速PWM模式: 比较匹配输出`0`，上溢出输出`1`。
+        ///
+        /// 相位修正PWM模式: 只检测比较匹配，计数器递增时输出`1`，计数器递减时输出`0`。
+        /// # Note
+        /// 在非PWM模式下无效
         ClearSet = 3,
     }
 
@@ -253,7 +264,7 @@ pub mod control1 {
         pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::StaticLow,
-                1 => Self::Toggle,
+                1 => Self::ToggleOnTop,
                 2 => Self::SetClear,
                 _ => Self::ClearSet,
             }
@@ -269,7 +280,7 @@ pub mod control2 {
     bitfield_reg!(Control2, u8, 0x00);
 
     impl Control2 {
-        /// 暂停定时器
+        /// 暂停计数器
         ///
         /// Bits: `0`
         pub const fn wbpause(&self) -> bool {
@@ -280,7 +291,7 @@ pub mod control2 {
             self
         }
 
-        /// 重置定时器(必须等待至少两个周期后将该位手动恢复到0)
+        /// 重置计数器为`0`，写入`1`生效一次
         ///
         /// Bits: `1`
         pub const fn wbreset(&self) -> bool {
@@ -291,7 +302,7 @@ pub mod control2 {
             self
         }
 
-        /// 非PWM模式强制输出，当定时器匹配或到达周期时
+        /// 强制触发比较匹配或上溢出(仅在非PWM模式有效)，写入`1`生效一次
         ///
         /// Bits: `2`
         pub const fn wbforce(&self) -> bool {
@@ -312,7 +323,7 @@ pub mod status {
     bitfield_reg!(Status, u8, 0x00);
 
     impl Status {
-        /// 溢出标志
+        /// 上溢出标志
         ///
         /// Bits: `0`
         pub const fn ovf(&self) -> bool {
@@ -323,7 +334,7 @@ pub mod status {
             self
         }
 
-        /// 输出匹配标志
+        /// 比较匹配标志
         ///
         /// Bits: `1`
         pub const fn ocrf(&self) -> bool {
@@ -345,7 +356,7 @@ pub mod status {
             self
         }
 
-        /// 置0标志
+        /// (0)下溢出标志
         ///
         /// Bits: `3`
         pub const fn btf(&self) -> bool {
@@ -366,7 +377,7 @@ pub mod timer_interrupt {
     bitfield_reg!(TimerInterrupt, u8, 0x00);
 
     impl TimerInterrupt {
-        /// 溢出
+        /// 上溢出
         ///
         /// Bits: `0`
         pub const fn irqovf(&self) -> bool {
@@ -377,7 +388,7 @@ pub mod timer_interrupt {
             self
         }
 
-        /// 输出匹配
+        /// 比较匹配
         ///
         /// Bits: `1`
         pub const fn irqocrf(&self) -> bool {

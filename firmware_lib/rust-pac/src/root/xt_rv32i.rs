@@ -77,7 +77,7 @@ impl RegisterBlock<XtRv32i> {
     /// 指示 EFB 中断来源于什么
     #[inline(always)]
     pub const unsafe fn efbintsource(&self) -> RegisterBlock<EfbIntSource> {
-        unsafe { RegisterBlock::<EfbIntSource>::from_ptr(self.as_ptr().wrapping_byte_add(0x3076)) }
+        unsafe { RegisterBlock::<EfbIntSource>::from_ptr(self.as_ptr().wrapping_byte_add(0x3077)) }
     }
     /// 按钮与开关，按下时为高电平(已经在硬件做了翻转)。
     #[inline(always)]

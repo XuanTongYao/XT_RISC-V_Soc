@@ -3,7 +3,7 @@ use crate::common::register::*;
 #[repr(C)]
 pub struct EfbIntSource {
     /// EFB 中断源标志
-    pub source: RW<source::Source>,
+    pub source: RO<source::Source>,
 }
 
 pub mod source {
