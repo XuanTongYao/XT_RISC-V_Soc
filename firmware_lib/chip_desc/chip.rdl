@@ -177,22 +177,27 @@ addrmap I2c {
     reg {
         desc = "写入会导致I2C复位.";
         field {
-            desc = "SDA delay select";
+            desc = "SDA 输出延迟
+            - 00: 300 ns (min) 300 ns + 2000/[wb_clk_i frequency in MHz] (max)
+            - 01: 150 ns (min) 150 ns + 2000/[wb_clk_i frequency in MHz] (max)
+            - 10: 75 ns (min) 75 ns + 2000/[wb_clk_i frequency in MHz] (max)
+            - 11: 0 ns (min) 0 ns + 2000/[wb_clk_i frequency in MHz] (max)
+            ";
         } SDA_DEL_SEL[3:2];
         field {
             desc = "Wakeup enable";
         } WKUPEN[5:5];
         field {
-            desc = "General-call enable";
+            desc = "启用通用广播(General Call)，仅在从机时有效";
         } GCEN[6:6];
         field {
-            desc = "I2C enable. Toggling this bit resets the core.";
+            desc = "I2C启用";
         } I2CEN[7:7];
     } control @ 0x0;
 
     reg {
         field {
-            desc = "关闭时钟拉伸。写入时这个位必须被设为1。";
+            desc = "关闭时钟拉伸。写入时这个位必须被设为`1`。";
         } CKSDIS[2:2] = 1;
         field {} ACK[3:3];
         field {} WRITE[4:4];
@@ -202,19 +207,20 @@ addrmap I2c {
     } command @ 0x1;
 
     reg {
-        desc = "时钟预分频低8位。 预分频值共有10位 (PRESCALE_MASK = 0x3FF)。";
+        desc = "时钟预分频低8位。 预分频值共有10位。
+
+        - **主机**模式时，范围 `[0,1023]`
+        - **从机**模式时，范围 `[0,512]`
+        ";
         field {} DATA[7:0];
     } br0 @ 0x2;
 
     reg {
         desc = "时钟预分频高2位。 写入会导致I2C复位。";
-        field {
-            desc = "Prescale [9:8]";
-        } PRESCALE_H[1:0];
+        field {} PRESCALE_H[1:0];
     } br1 @ 0x3;
 
     reg {
-        desc = "Transmit data";
         default sw = w;
         default hw = r;
         field {} DATA[7:0];
@@ -224,28 +230,35 @@ addrmap I2c {
         default sw = r;
         default hw = w;
         field {
-            desc = "Hardware general call";
+            desc = "收到通用广播";
         } HGC[0:0];
         field {
-            desc = "Transmit/receive overflow or NACK";
+            desc = "发送/接收溢出或在主机模式收到NACK";
         } TROE[1:1];
         field {
-            desc = "Transmit/receive ready";
+            desc = "发送/接收就绪";
         } TRRDY[2:2];
         field {
-            desc = "Arbitration lost";
+            desc = "仲裁丢失";
         } ARBL[3:3];
         field {
-            desc = "Slave read/write";
+            desc = "
+            - 1: 主机接收，从机发送
+            - 0: 从机接收，主机发送
+            ";
         } SRW[4:4];
         field {
-            desc = "Received ACK";
+            desc = "收到的 ACK 位. 
+            
+            - `true`: NACK
+            - `false`: ACK
+            ";
         } RARC[5:5];
         field {
-            desc = "Bus busy";
+            desc = "总线忙";
         } BUSY[6:6];
         field {
-            desc = "Transfer in progress";
+            desc = "传输进行中";
         } TIP[7:7];
     } status @ 0x5;
 
@@ -256,7 +269,6 @@ addrmap I2c {
     } general_call_data @ 0x6;
 
     reg {
-        desc = "Receive data";
         default sw = r;
         default hw = w;
         field {} DATA[7:0];
@@ -787,10 +799,10 @@ addrmap XtRv32i {
 
     // ---- WISHBONE ----
     I2c i2c1 @ 0x3040;
-    i2c1->desc = "WISHBONE 主 I2C (I2C1). 实际频率为 `WISHBONE/(div*4)`. 预分频范围 [0,1023]. 写入 `CONTROL` 或 `BR1` 将导致I2C复位.";
+    i2c1->desc = "WISHBONE 主 I2C (I2C1).";
 
     I2c i2c2 @ 0x304A;
-    i2c2->desc = "WISHBONE 次 I2C (I2C2). 寄存器布局与 I2C1 相同. 预分频范围 [0,512]";
+    i2c2->desc = "WISHBONE 次 I2C (I2C2).";
 
     Spi spi @ 0x3054;
 

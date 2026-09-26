@@ -51,12 +51,12 @@ impl RegisterBlock<XtRv32i> {
     pub const unsafe fn gpio(&self) -> RegisterBlock<Gpio> {
         unsafe { RegisterBlock::<Gpio>::from_ptr(self.as_ptr().wrapping_byte_add(0x20A0)) }
     }
-    /// WISHBONE 主 I2C (I2C1). 实际频率为 `WISHBONE/(div*4)`. 预分频范围 [0,1023]. 写入 `CONTROL` 或 `BR1` 将导致I2C复位.
+    /// WISHBONE 主 I2C (I2C1).
     #[inline(always)]
     pub const unsafe fn i2c1(&self) -> RegisterBlock<I2c> {
         unsafe { RegisterBlock::<I2c>::from_ptr(self.as_ptr().wrapping_byte_add(0x3040)) }
     }
-    /// WISHBONE 次 I2C (I2C2). 寄存器布局与 I2C1 相同. 预分频范围 [0,512]
+    /// WISHBONE 次 I2C (I2C2).
     #[inline(always)]
     pub const unsafe fn i2c2(&self) -> RegisterBlock<I2c> {
         unsafe { RegisterBlock::<I2c>::from_ptr(self.as_ptr().wrapping_byte_add(0x304A)) }
