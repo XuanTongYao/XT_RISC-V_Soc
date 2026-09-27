@@ -19,3 +19,6 @@ xt-riscv-mcu = { path = "../xt-riscv-mcu" }
 pastey = "0.2.3"
 riscv = { version = "0.16.1" }
 riscv-macros = { version = "0.4.1", features = ["riscv-rt"] }
+
+embedded-hal = "1.0.0"
+embedded-io = "0.7.1"

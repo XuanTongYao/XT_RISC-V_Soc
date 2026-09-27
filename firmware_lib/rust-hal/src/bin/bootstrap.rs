@@ -5,6 +5,7 @@ use riscv_macros::entry;
 use xt_rv32i_hal::hb32::BootstrapPreloadStr;
 use xt_rv32i_hal::hb32::{Bootstrap, Uart};
 use xt_rv32i_hal::wisbone::Flash;
+use xt_rv32i_pac::get_top;
 
 const MAX_TEXT_DATA_LEN: usize = 4096 + 4096 - 512; // 512是栈大小
 const MAX_PAGES: usize = if (MAX_TEXT_DATA_LEN >> 4) < Flash::TOTAL_PAGE {
@@ -15,9 +16,9 @@ const MAX_PAGES: usize = if (MAX_TEXT_DATA_LEN >> 4) < Flash::TOTAL_PAGE {
 
 #[entry]
 fn main() -> ! {
-    let mut flash = unsafe { Flash::singleton() };
-    let bootstrap = unsafe { Bootstrap::singleton() };
-    let uart = unsafe { Uart::singleton() };
+    let mut flash = unsafe { Flash::new(get_top().flash()) };
+    let bootstrap = unsafe { Bootstrap::new(get_top().bootstrap()) };
+    let uart = unsafe { Uart::new(get_top().uart()) };
     flash.reset();
     flash.enable_transparent_ufm();
     if bootstrap.ram_mode_stop() {
@@ -60,11 +61,11 @@ fn boot_ram_mode(mut bootstrap: Bootstrap) -> ! {
 fn download(mut flash: Flash, mut uart: Uart, mut bootstrap: Bootstrap) -> ! {
     let mut page_num;
     loop {
-        if !uart.has_data() {
+        if !uart.status().rx_end() {
             block_print_auto_increment(&mut uart, &mut bootstrap, Bootstrap::CMD);
             continue;
         }
-        let uart_cmd = uart.rx_forced();
+        let uart_cmd = uart.rx();
         if uart_cmd != 0x56 {
             continue;
         }
@@ -97,7 +98,7 @@ fn from_uart_download(flash: &mut Flash, uart: &mut Uart, pages: usize) {
     for _ in 0..(pages * Flash::PAGE_BYTES) {
         unsafe {
             ptr.write_volatile(uart.rx_block());
-            ptr = ptr.add(1);
+            ptr = ptr.wrapping_add(1);
         }
     }
 

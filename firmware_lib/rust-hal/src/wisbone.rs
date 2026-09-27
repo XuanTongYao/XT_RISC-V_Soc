@@ -1,15 +1,29 @@
 //! WISHBONE总线外设，主要是FPGA芯片的嵌入式硬核
 
-use crate::pac::common::register::RegisterBlock;
-use crate::pac::get_top;
-use crate::pac::root::efb_int_source;
-use crate::pac::root::flash;
-use crate::pac::root::i2c;
-use crate::pac::root::spi;
-use crate::pac::root::timer;
+use core::cmp::max;
+use core::marker::PhantomData;
+use core::num::NonZeroU16;
+
+use crate::pac::efb_int_source::{self, InstanceEfbIntSource};
+use crate::pac::flash::InstanceFlash;
+use crate::pac::i2c::{self, InstanceI2c};
+use crate::pac::spi::{self, InstanceSpi};
+use crate::pac::timer::{self, InstanceTimer};
+use embedded_hal::i2c::Operation::{Read, Write};
+use embedded_hal::spi::Phase;
+use embedded_hal::spi::Polarity;
 use xt_riscv_mcu::rv_core;
 
 pub const FREQ_HZ: u32 = rv_core::CORE_FREQ_HZ;
+
+pub struct Master;
+pub struct Slave;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct InvalidParameters;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct IncorrectSequence;
 
 macro_rules! get_u16_from_2_u8 {
     ($(#[$doc:meta])* $name:ident, [$reg_h:ident, $reg_l:ident]) => {
@@ -22,9 +36,12 @@ macro_rules! get_u16_from_2_u8 {
     };
 }
 
-pub use xt_rv32i_pac::root::i2c::{i2c_interrupt::I2cInterrupt, status::Status as I2cStatus};
-type InstanceI2c = RegisterBlock<i2c::I2c>;
-pub struct I2C {
+pub use i2c::{
+    control::Control as I2cControl, i2c_interrupt::I2cInterrupt, status::Status as I2cStatus,
+};
+
+/// 实际时钟频率为 `WISHBONE/(div*4)`
+pub struct I2c<MS> {
     inst: InstanceI2c,
     /// 延迟的时间必须为(0,6)个I2C时钟周期
     /// 此处保存的是处理器时钟周期
@@ -32,292 +49,664 @@ pub struct I2C {
     /// 延迟的时间必须为(2,7)个I2C时钟周期
     /// 此处保存的是处理器时钟周期
     read_delay_cycles: u16,
+    _marker: PhantomData<MS>,
 }
 
-impl I2C {
-    pub const PRESCALE_MASK: u16 = 0x3FF;
-
-    pub unsafe fn primary() -> Self {
-        Self::init(unsafe { get_top().i2c1() }, None)
-    }
-    pub unsafe fn secondary() -> Self {
-        Self::init(unsafe { get_top().i2c2() }, None)
-    }
-    pub fn init(inst: InstanceI2c, prescale: Option<u16>) -> Self {
-        let prescale = if let Some(prescale) = prescale {
-            prescale & Self::PRESCALE_MASK
-        } else {
-            let low = inst.regs().br0.read() as u16;
-            ((inst.regs().br1.read().into_bits() as u16) << 8) | low
-        };
-        Self {
-            inst,
-            write_delay_cycles: prescale,
-            read_delay_cycles: prescale * 3,
-        }
-    }
-
+impl<MS> I2c<MS> {
+    crate::prop_value!(
+        /// # Warning
+        /// 设置会使I2C复位
+        control,
+        control,
+        I2cControl,
+        get,
+        set
+    );
     crate::prop_value!(status, status, I2cStatus, get);
     crate::prop_value!(general_call_data, general_call_data, u8, get);
     crate::prop_value!(int_status, int_status, I2cInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, I2cInterrupt, get, set);
+    crate::prop_value!(int_en, int_en, I2cInterrupt, get, set, modify);
+
+    #[inline]
+    pub fn reset(&mut self) {
+        let control = self.control();
+        self.set_control(control.with_i2cen(false));
+        // NOTE 原始C代码出于未知原因在这里延迟了50us，如果出现问题请加回来
+        self.set_control(control.with_i2cen(true));
+    }
 
     pub fn prescale(&self) -> u16 {
         let low = self.inst.regs().br0.read() as u16;
         ((self.inst.regs().br1.read().into_bits() as u16) << 8) | low
     }
 
-    /// 设置预分频为 `div`，实际频率为`WISHBONE/(div*4)`
-    /// - **主机**模式时，范围 `[0,1023]`
-    /// - **从机**模式时，范围 `[0,512]`
-    /// # Warning
-    /// 重设预分频会使I2C复位
-    pub fn set_prescale(&mut self, div: u16) {
-        let div = div & Self::PRESCALE_MASK;
-        self.inst.regs().br0.write(div as u8);
-        self.inst.regs().br1.write(((div >> 8) as u8).into());
-        self.write_delay_cycles = div;
-        self.read_delay_cycles = div * 3;
-    }
-
-    #[inline(always)]
-    pub fn reset(&mut self) {
-        self.inst.regs().control.modify(|con| con.with_i2cen(false));
-        // NOTE 原始C代码，出于未知原因在这里延迟了50us，如果出现问题请加回来
-        self.inst.regs().control.modify(|con| con.with_i2cen(true));
-    }
-
-    /// 启动传输并进入**写入模式**
-    pub fn master_start_transmission_block(&mut self, addr: u8) {
-        self.inst.regs().tx_data.write(addr & 0xFE); // `& 0xFE`表示写操作，I2C协议决定的
-        self.inst.regs().command.write(0x94.into());
-        rv_core::delay(self.write_delay_cycles as u32); // 等(0,6)个I2C时钟周期
-    }
-
-    /// 从**写入模式**切换为**读取模式**\
-    /// 必须处于**写入模式**中才能调用此函数
-    pub fn master_into_read_block(&mut self, addr: u8) {
-        self.inst.regs().tx_data.write(addr | 0x01); // `| 0x01`表示读操作，I2C协议决定的
-        self.inst.regs().command.write(0x94.into());
-        while !self.inst.regs().status.read().srw() {}
-        self.inst.regs().command.write(0x24.into());
-    }
-
-    /// 必须处于**写入模式**中才能调用此函数
-    pub fn master_write_byte_block(&mut self, byte: u8) {
+    #[inline]
+    fn tx(&mut self, byte: u8) {
         self.inst.regs().tx_data.write(byte);
-        self.inst.regs().command.write(0x14.into());
-        rv_core::delay(self.write_delay_cycles as u32); // 等(0,6)个I2C时钟周期
     }
-
-    /// 必须处于**写入模式**中才能调用此函数
-    pub fn master_write_block(&mut self, data: &[u8]) {
-        for byte in data {
-            self.master_write_byte_block(*byte);
-        }
-    }
-
-    /// 必须处于**读取模式**中才能调用此函数
-    /// # Warning
-    /// **不能**读取到最后一个字节！最后一个字节只能使用`master_finish_read_block`来获取
-    pub fn master_read_byte_block(&mut self) -> u8 {
-        while !self.inst.regs().status.read().trrdy() {}
+    #[inline]
+    fn rx(&mut self) -> u8 {
         self.inst.regs().rx_data.read()
     }
+}
 
-    /// 必须处于**读取模式**中才能调用此函数
+impl I2c<Slave> {
+    /// 设置预分频为 `div` 范围 `[1,512]`，实际频率为`WISHBONE/(div*4)`
     /// # Warning
-    /// **不能**读取到最后一个字节！最后一个字节只能使用`master_finish_read_block`来获取
-    pub fn master_read_into_block(&mut self, buffer: &mut [u8]) {
-        for byte in buffer {
-            *byte = self.master_read_byte_block();
+    /// 设置预分频会使I2C复位
+    pub fn set_prescale(&mut self, div: NonZeroU16) -> Result<(), InvalidParameters> {
+        let div = div.get();
+        if div > 512 {
+            return Err(InvalidParameters);
         }
+        self.inst.regs().br0.write(div as u8);
+        self.inst.regs().br1.write(((div >> 8) as u8).into());
+        self.write_delay_cycles = div * 4;
+        self.read_delay_cycles = div * 4 * 4;
+        Ok(())
+    }
+}
+
+impl I2c<Master> {
+    pub fn init(inst: InstanceI2c, prescale: NonZeroU16) -> Result<Self, InvalidParameters> {
+        let mut i2c = Self {
+            inst,
+            write_delay_cycles: 0,
+            read_delay_cycles: 0,
+            _marker: PhantomData,
+        };
+        i2c.set_control(I2cControl::new());
+        i2c.set_prescale(prescale).and(Ok(i2c))
+    }
+    pub unsafe fn init_unchecked(inst: InstanceI2c, prescale: u16) -> Self {
+        let mut i2c = Self {
+            inst,
+            write_delay_cycles: 0,
+            read_delay_cycles: 0,
+            _marker: PhantomData,
+        };
+        i2c.set_control(I2cControl::new());
+        unsafe { i2c.set_prescale_unchecked(prescale) }
+        i2c
     }
 
-    /// 从**写入模式**结束传输\
-    /// 必须处于**写入模式**中才能调用此函数
+    /// 设置预分频为 `div` 范围 `[1,1023]`，实际频率为`WISHBONE/(div*4)`
+    /// # Warning
+    /// 设置预分频会使I2C复位
+    #[inline]
+    pub fn set_prescale(&mut self, div: NonZeroU16) -> Result<(), InvalidParameters> {
+        let div = div.get();
+        if div >= 1024 {
+            return Err(InvalidParameters);
+        }
+        unsafe { self.set_prescale_unchecked(div) }
+        Ok(())
+    }
+    unsafe fn set_prescale_unchecked(&mut self, div: u16) {
+        self.inst.regs().br0.write(div as u8);
+        self.inst.regs().br1.write(((div >> 8) as u8).into());
+        self.write_delay_cycles = div * 4;
+        self.read_delay_cycles = div * 4 * 4;
+    }
+
+    /// (重)启动传输并进入**写入模式**，`addr`为左对齐的7bit地址(最低位为0)
+    fn start_write(&mut self, addr: u8) {
+        self.tx(addr); // 最低位为0表示写操作
+        self.inst.regs().command.write(0x94.into());
+        while !self.status().trrdy() {}
+        rv_core::delay(self.write_delay_cycles as u32); // 等(0,6)个I2C时钟周期
+    }
+
+    /// 必须处于**写入模式**中才能调用此函数，必须在此数据帧开始之前设置
+    ///
+    /// 返回**上一帧**ACK的bit值，1为NACK
+    fn write_block(&mut self, byte: u8) -> bool {
+        self.tx(byte);
+        self.inst.regs().command.write(0x14.into());
+        while !self.status().trrdy() {}
+        rv_core::delay(self.write_delay_cycles as u32); // 等(0,6)个I2C时钟周期
+        self.status().rarc()
+    }
+
+    /// 结束**写入模式**传输
     #[inline(always)]
-    pub fn master_finish_write(&mut self) {
+    fn finish_write(&mut self) {
         self.inst.regs().command.write(0x44.into())
     }
 
-    /// 从**读取模式**结束传输\
-    /// 会返回最后一个读取到的字节
-    pub fn master_finish_read_block(&mut self) -> u8 {
+    /// (重)启动传输并进入**读取模式**，`addr`为左对齐的7bit地址(最低位为0)
+    ///
+    /// 返回ACK的bit值，1为NACK
+    fn start_read(&mut self, addr: u8) -> bool {
+        self.tx(addr | 0x01); // 最低位为1表示读操作
+        self.inst.regs().command.write(0x94.into());
+        while !self.status().srw() {}
+        self.inst.regs().command.write(0x24.into());
+        self.status().rarc()
+    }
+
+    /// 必须处于**读取模式**中才能调用此函数
+    /// # Warning
+    /// **不能**读取到最后一个字节！最后一个字节只能使用`finish_read_block`来获取
+    fn read_block(&mut self) -> u8 {
+        while !self.status().trrdy() {}
+        self.rx()
+    }
+
+    /// 结束**读取模式**传输\
+    /// 返回最后一个读取到的字节
+    fn finish_read_block(&mut self, stop: bool) -> u8 {
+        use i2c::command::Command;
         rv_core::delay(self.read_delay_cycles as u32); // 等(2,7)个I2C时钟周期
-        self.inst.regs().command.write(0x6C.into());
-        let last_byte = self.master_read_byte_block();
-        self.inst.regs().command.write(0x04.into());
+        let cmd = Command::new()
+            .with_ack(true)
+            .with_read(true)
+            .with_stop(stop);
+        self.inst.regs().command.write(cmd);
+        let last_byte = self.read_block();
+        if stop {
+            self.inst.regs().command.write(Command::new());
+        }
         last_byte
     }
 }
 
-pub use spi::control2::Control2 as SpiControl2;
-type InstanceSpi = RegisterBlock<spi::Spi>;
-pub struct Spi {
-    inst: InstanceSpi,
+#[derive(Debug)]
+pub struct I2cError(embedded_hal::i2c::ErrorKind);
+
+impl embedded_hal::i2c::Error for I2cError {
+    fn kind(&self) -> embedded_hal::i2c::ErrorKind {
+        self.0
+    }
 }
-impl Spi {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().spi() })
-    }
-    pub fn new(inst: InstanceSpi) -> Self {
-        Self { inst }
-    }
 
-    crate::prop_value!(control2, control2, SpiControl2, get, set, modify);
-    crate::getset_field!(master_mode, control2, mstr, bool);
-    crate::getset_field!(polarity_active_low, control2, cpol, bool);
-    crate::getset_field!(phase_second_edge, control2, cpha, bool);
-    crate::getset_field!(lsb_first, control2, lsbf, bool);
+impl embedded_hal::i2c::ErrorType for I2c<Master> {
+    type Error = I2cError;
+}
 
-    crate::prop_value!(cs, cs, u8, get, set);
+impl embedded_hal::i2c::I2c for I2c<Master> {
+    /// 传入的地址必须是右对齐的7bit地址，遵循HAL的约定
+    fn transaction(
+        &mut self,
+        address: u8,
+        operations: &mut [embedded_hal::i2c::Operation<'_>],
+    ) -> Result<(), Self::Error> {
+        use embedded_hal::i2c::{ErrorKind::*, NoAcknowledgeSource};
+
+        let addr = address << 1;
+
+        #[derive(PartialEq, Eq)]
+        enum OpType {
+            Null,
+            Read,
+            Write,
+        }
+        let mut last_op = OpType::Null;
+
+        // 等待空闲
+        self.set_control(I2cControl::new().with_i2cen(true));
+        while self.status().busy() {}
+
+        let mut op_iter = operations.iter_mut().peekable();
+
+        let mut err = Ok(());
+        while let Some(op) = op_iter.next() {
+            if let Read(buf) = op {
+                if last_op != OpType::Read {
+                    last_op = OpType::Read;
+                    if self.start_read(addr) {
+                        err = Err(I2cError(NoAcknowledge(NoAcknowledgeSource::Address)));
+                        break;
+                    }
+                }
+
+                let mut iter = buf.iter_mut().peekable();
+
+                let mut last_byte = None;
+                while let Some(byte) = iter.next() {
+                    if let None = iter.peek() {
+                        last_byte = Some(byte);
+                        break;
+                    }
+                    *byte = self.read_block();
+                }
+
+                let rdata = match op_iter.peek() {
+                    None => self.finish_read_block(true),
+                    Some(Read(_)) => self.read_block(),
+                    _ => self.finish_read_block(false),
+                };
+                if let Some(last_byte) = last_byte {
+                    *last_byte = rdata;
+                }
+            } else if let Write(buf) = op {
+                let mut iter = buf.iter();
+                if last_op != OpType::Write {
+                    last_op = OpType::Write;
+                    self.start_write(addr);
+                    if let Some(first_byte) = iter.next() {
+                        if self.write_block(*first_byte) {
+                            err = Err(I2cError(NoAcknowledge(NoAcknowledgeSource::Address)));
+                            break;
+                        }
+                    }
+                }
+
+                for byte in iter {
+                    if self.write_block(*byte) {
+                        err = Err(I2cError(NoAcknowledge(NoAcknowledgeSource::Data)));
+                        break;
+                    }
+                }
+
+                if let None = op_iter.peek() {
+                    self.finish_write();
+                }
+            }
+        }
+        self.set_control(I2cControl::new().with_i2cen(false));
+        err
+    }
+}
+
+pub use spi::control0::Control0 as SpiControl0;
+pub use spi::control1::Control1 as SpiControl1;
+pub use spi::control2::Control2 as SpiControl2;
+pub use spi::spi_interrupt::SpiInterrupt;
+pub use spi::status::Status as SpiStatus;
+
+pub struct Spi<MS> {
+    inst: InstanceSpi,
+    pub dummy_byte: u8,
+    in_progress: bool,
+    _marker: PhantomData<MS>,
+}
+
+pub use embedded_hal::spi::Mode as SpiMode;
+impl<MS> Spi<MS> {
+    crate::prop_value!(
+        /// # Warning
+        /// 写入会使SPI复位
+        control0,
+        control0,
+        SpiControl0,
+        get,
+        set
+    );
+    crate::prop_value!(control1, control1, SpiControl1, get);
+    crate::prop_value!(control2, control2, SpiControl2, get);
 
     crate::prop_value!(
-        /// 获取预分频`div`，实际频率为`WISHBONE/(div+1)`
-        prescale,
-        clock_prescale,
+        /// # Warning
+        /// 写入会使SPI复位
+        cs,
+        cs,
         u8,
-        get
+        get,
+        set
     );
 
-    /// 设置预分频为 `div` 范围 `[1,63]`，实际频率为`WISHBONE/(div+1)`
+    crate::prop_value!(status, status, SpiStatus, get);
+    crate::prop_value!(int_status, int_status, SpiInterrupt, get, set);
+    crate::prop_value!(int_en, int_en, SpiInterrupt, get, set, modify);
+
+    /// 获取预分频`div`，实际频率为`WISHBONE/(div+1)`
+    pub fn prescale(&self) -> u8 {
+        self.inst.regs().clock_prescale.read()
+    }
+
+    /// 设置预分频为 `div` 范围 `[4,63]`，实际频率为`WISHBONE/(div+1)`
     /// # Warning
     /// 重设预分频会使SPI复位
-    #[inline(always)]
-    pub fn set_prescale(&mut self, div: u8) {
-        if div != 0 {
-            self.inst.regs().clock_prescale.write(div)
+    pub fn set_prescale(&mut self, div: u8) -> Result<(), InvalidParameters> {
+        // 实际允许[1,63]的分频，但是要使用mcsh，div必须>=4
+        if div < 4 || div >= 64 {
+            return Err(InvalidParameters);
         }
+        self.inst.regs().clock_prescale.write(div);
+        Ok(())
     }
 
-    pub fn master_start_rw_block(&mut self, byte: u8) -> u8 {
-        self.inst.regs().control2.write(0xC0.into());
-        while !self.inst.regs().status.read().trdy() {}
-        self.master_rw_byte_block(byte)
+    /// # Warning
+    /// 更改模式会使SPI复位
+    pub fn set_mode(&mut self, mode: SpiMode, lsb_first: bool) {
+        self.inst.regs().control2.modify(|con| {
+            con.with_cpol(mode.polarity == Polarity::IdleHigh)
+                .with_cpha(mode.phase == Phase::CaptureOnSecondTransition)
+                .with_lsbf(lsb_first)
+        });
     }
 
-    /// 调用`master_start_rw_block`后才能使用此函数执行读写操作
     #[inline]
-    pub fn master_rw_byte_block(&mut self, byte: u8) -> u8 {
+    fn tx(&mut self, byte: u8) {
         self.inst.regs().tx_data.write(byte);
-        while !self.inst.regs().status.read().rrdy() {}
+    }
+    #[inline]
+    fn rx(&mut self) -> u8 {
         self.inst.regs().rx_data.read()
     }
+}
 
-    /// 调用`master_start_rw_block`后才能使用此函数
-    #[inline]
-    pub fn master_finish_rw_block(&mut self) {
-        self.inst.regs().control2.write(0x80.into());
-        while self.inst.regs().status.read().tip() {}
+impl Spi<Slave> {
+    pub fn init(inst: InstanceSpi, dummy_byte: u8, mode: SpiMode, lsb_first: bool) -> Self {
+        let spi: Self = Spi {
+            inst,
+            dummy_byte,
+            in_progress: false,
+            _marker: PhantomData,
+        };
+
+        let con1 = SpiControl1::new().with_spe(true);
+        let con2 = SpiControl2::new()
+            .with_cpol(mode.polarity == Polarity::IdleHigh)
+            .with_cpha(mode.phase == Phase::CaptureOnSecondTransition)
+            .with_lsbf(lsb_first);
+
+        spi.inst.regs().control0.write(0.into());
+        spi.inst.regs().control1.write(con1);
+        spi.inst.regs().control2.write(con2);
+        spi
     }
 
-    pub fn slave_restart_rw_block(&mut self, byte0: u8, byte1: u8) -> u8 {
-        let reg = self.inst.regs();
-        reg.control2.write(0x00.into());
-        while reg.status.read().tip() {}
-        reg.rx_data.read();
-        reg.rx_data.read(); // 丢弃2字节
-        reg.tx_data.write(byte0);
+    pub fn into_master(self) -> Spi<Master> {
+        let spi: Spi<Master> = Spi {
+            inst: self.inst,
+            dummy_byte: self.dummy_byte,
+            in_progress: false,
+            _marker: PhantomData,
+        };
+
+        spi.inst
+            .regs()
+            .control2
+            .modify(|con| con.with_mstr(true).with_mcsh(false));
+        spi
+    }
+
+    pub fn restart_rw_block(&mut self, byte0: u8, byte1: u8) -> u8 {
+        while self.status().tip() {}
+        self.rx();
+        self.rx(); // 丢弃2字节
+        self.tx(byte0);
         // IDLE
-        while !reg.status.read().tip() {}
-        reg.tx_data.write(byte1);
-        while !reg.status.read().rrdy() {}
-        reg.rx_data.read()
+        while !self.status().tip() {}
+        self.tx(byte1);
+        while !self.status().rrdy() {}
+        self.rx()
     }
 
     /// 调用`slave_restart_rw_block`后才能使用此函数执行读写操作
-    pub fn slave_rw_byte_block(&mut self, next_byte: u8) -> u8 {
-        let reg = self.inst.regs();
-        while !reg.status.read().trdy() {}
-        reg.tx_data.write(next_byte);
-        while !reg.status.read().rrdy() {}
-        reg.rx_data.read()
+    pub fn rw_byte_block(&mut self, next_byte: u8) -> u8 {
+        while !self.status().trdy() {}
+        self.tx(next_byte);
+        while !self.status().rrdy() {}
+        self.rx()
+    }
+}
+
+impl Spi<Master> {
+    pub fn init(inst: InstanceSpi, dummy_byte: u8, mode: SpiMode, lsb_first: bool) -> Self {
+        let spi: Self = Spi {
+            inst,
+            dummy_byte,
+            in_progress: false,
+            _marker: PhantomData,
+        };
+
+        let con1 = SpiControl1::new().with_spe(true);
+        let con2 = SpiControl2::new()
+            .with_mstr(true)
+            .with_cpol(mode.polarity == Polarity::IdleHigh)
+            .with_cpha(mode.phase == Phase::CaptureOnSecondTransition)
+            .with_lsbf(lsb_first);
+
+        spi.inst.regs().control0.write(0.into());
+        spi.inst.regs().control1.write(con1);
+        spi.inst.regs().control2.write(con2);
+        spi
+    }
+
+    pub fn into_slave(self) -> Spi<Slave> {
+        let spi: Spi<Slave> = Spi {
+            inst: self.inst,
+            dummy_byte: self.dummy_byte,
+            in_progress: false,
+            _marker: PhantomData,
+        };
+
+        spi.inst
+            .regs()
+            .control2
+            .modify(|con| con.with_mstr(false).with_mcsh(false));
+        spi
+    }
+
+    /// 未启动传输/使用`start_rw_block()`结束传输后此函数才会成功
+    #[inline]
+    pub fn try_start_rw_block(&mut self, byte: u8) -> Result<u8, IncorrectSequence> {
+        if !self.in_progress {
+            self.inst.regs().control2.modify(|con| con.with_mcsh(true));
+            while !self.status().trdy() {}
+            self.in_progress = true;
+            Ok(self.rw_byte_block(byte))
+        } else {
+            Err(IncorrectSequence)
+        }
+    }
+
+    /// 使用`start_rw_block()`启动传输后此函数才会成功
+    #[inline]
+    pub fn try_rw_byte_block(&mut self, byte: u8) -> Result<u8, IncorrectSequence> {
+        if self.in_progress {
+            Ok(self.rw_byte_block(byte))
+        } else {
+            Err(IncorrectSequence)
+        }
+    }
+
+    /// 使用`start_rw_block()`启动传输后此函数才会成功
+    #[inline]
+    pub fn try_finish_rw_block(&mut self) -> Result<(), IncorrectSequence> {
+        if self.in_progress {
+            self.finish_rw_block();
+            Ok(())
+        } else {
+            Err(IncorrectSequence)
+        }
+    }
+
+    fn start_rw_block(&mut self, byte: u8) -> u8 {
+        self.inst.regs().control2.modify(|con| con.with_mcsh(true));
+        while !self.status().trdy() {}
+        self.in_progress = true;
+        self.rw_byte_block(byte)
+    }
+
+    /// 调用`start_rw_block`后才能使用此函数执行读写操作
+    fn rw_byte_block(&mut self, byte: u8) -> u8 {
+        self.tx(byte);
+        while !self.status().rrdy() {}
+        self.rx()
+    }
+
+    /// 调用`start_rw_block`后才能使用此函数
+    fn finish_rw_block(&mut self) {
+        self.inst.regs().control2.modify(|con| con.with_mcsh(false));
+        while self.status().tip() {}
+        self.in_progress = false;
+    }
+}
+
+impl embedded_hal::spi::ErrorType for Spi<Master> {
+    type Error = !;
+}
+
+impl embedded_hal::spi::SpiBus for Spi<Master> {
+    fn read(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
+        if words.is_empty() {
+            return Ok(());
+        }
+
+        words[0] = self.start_rw_block(self.dummy_byte);
+        for i in 1..words.len() {
+            words[i] = self.rw_byte_block(self.dummy_byte);
+        }
+        self.finish_rw_block();
+        Ok(())
+    }
+
+    fn write(&mut self, words: &[u8]) -> Result<(), Self::Error> {
+        if words.is_empty() {
+            return Ok(());
+        }
+
+        self.start_rw_block(words[0]);
+        for i in 1..words.len() {
+            self.rw_byte_block(words[i]);
+        }
+        self.finish_rw_block();
+        Ok(())
+    }
+
+    fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<(), Self::Error> {
+        let count = max(read.len(), write.len());
+        if count == 0 {
+            return Ok(());
+        }
+
+        let first_write = write.first().copied().unwrap_or(self.dummy_byte);
+        let first_read = self.start_rw_block(first_write);
+        if !read.is_empty() {
+            read[0] = first_read;
+        }
+
+        for i in 1..count {
+            let wbyte = write.get(i).copied().unwrap_or(self.dummy_byte);
+            let rbyte = self.rw_byte_block(wbyte);
+            if i < read.len() {
+                read[i] = rbyte;
+            }
+        }
+        self.finish_rw_block();
+        Ok(())
+    }
+
+    fn transfer_in_place(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
+        if words.is_empty() {
+            return Ok(());
+        }
+
+        let rbyte = self.start_rw_block(words[0]);
+        words[0] = rbyte;
+        for i in 1..words.len() {
+            let rbyte = self.rw_byte_block(words[i]);
+            words[i] = rbyte;
+        }
+        self.finish_rw_block();
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        while self.status().tip() {}
+        Ok(())
     }
 }
 
 pub use timer::control0::{Control0 as TimerControl0, TimerClkSel, TimerDivider};
 pub use timer::control1::{Control1 as TimerControl1, TimerCounterMode, TimerOutputMode};
+pub use timer::control2::Control2 as TimerControl2;
+pub use timer::status::Status as TimerStatus;
 pub use timer::timer_interrupt::TimerInterrupt;
-type InstanceTimer = RegisterBlock<timer::Timer>;
 pub struct Timer {
     inst: InstanceTimer,
 }
+
+pub enum TimerMode {
+    StaticLow(TimerCounterMode),
+    ToggleOnTopWatchDog,
+    ToggleOnTopClearTimerOnTop,
+    SetClearFastPWM,
+    ClearSetFastPWM,
+    SetClearPhaseAndFrequencyCorrectPWM,
+    ClearSetPhaseAndFrequencyCorrectPWM,
+}
+
 impl Timer {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().timer() })
+    pub fn init(inst: InstanceTimer, control0: TimerControl0) -> Self {
+        let mut timer = Self { inst };
+        timer.set_control0(control0);
+
+        timer
     }
     pub fn new(inst: InstanceTimer) -> Self {
         Self { inst }
     }
-    get_u16_from_2_u8!(top, [toph, topl]);
-    get_u16_from_2_u8!(compare, [compareh, comparel]);
-    get_u16_from_2_u8!(counter, [counterh, counterl]);
-    get_u16_from_2_u8!(capture, [captureh, capturel]);
 
-    #[inline(always)]
+    crate::prop_value!(control0, control0, TimerControl0, get, set, modify);
+    crate::prop_value!(control2, control2, TimerControl2, get, set);
+
+    pub fn set_mode(&mut self, mode: TimerMode) {
+        use TimerCounterMode::*;
+        use TimerMode::*;
+        use TimerOutputMode::*;
+        let (output, counter) = match mode {
+            TimerMode::StaticLow(counter) => (TimerOutputMode::StaticLow, counter),
+            ToggleOnTopWatchDog => (ToggleOnTop, Watchdog),
+            ToggleOnTopClearTimerOnTop => (ToggleOnTop, ClearTimerOnTop),
+            SetClearFastPWM => (SetClear, FastPWM),
+            ClearSetFastPWM => (ClearSet, FastPWM),
+            SetClearPhaseAndFrequencyCorrectPWM => (SetClear, PhaseAndFrequencyCorrectPWM),
+            ClearSetPhaseAndFrequencyCorrectPWM => (ClearSet, PhaseAndFrequencyCorrectPWM),
+        };
+
+        self.inst
+            .regs()
+            .control1
+            .modify(|con| con.with_tcm(counter).with_ocm(output));
+    }
+    crate::getset_field!(enable_overflow_flag, control1, sovfen, bool);
+    crate::getset_field!(top_autoload, control1, tsel, bool);
+    crate::getset_field!(enable_input_capture, control1, icen, bool);
+
+    #[inline]
     pub fn set_top(&mut self, value: u16) {
         self.inst.regs().top_setl.write(value as u8);
         self.inst.regs().top_seth.write((value >> 8) as u8);
     }
-    #[inline(always)]
+    #[inline]
     pub fn set_compare(&mut self, value: u16) {
         self.inst.regs().compare_setl.write(value as u8);
         self.inst.regs().compare_seth.write((value >> 8) as u8);
     }
 
-    crate::prop_value!(control0, control0, TimerControl0, get, set);
-    crate::prop_value!(control1, control1, TimerControl1, get, set);
+    get_u16_from_2_u8!(counter, [counterh, counterl]);
+    get_u16_from_2_u8!(top, [toph, topl]);
+    get_u16_from_2_u8!(compare, [compareh, comparel]);
+    get_u16_from_2_u8!(capture, [captureh, capturel]);
 
-    crate::getset_field!(clk_source, control0, clksel, TimerClkSel);
-    crate::getset_field!(
-        /// 用于设置时钟源的有效沿
-        active_negedge,
-        control0,
-        clkedge,
-        bool
-    );
-    crate::getset_field!(prescale, control0, prescale, TimerDivider);
-    crate::getset_field!(reset_signal_enabled, control0, rsten, bool);
-
-    crate::getset_field!(counter_mode, control1, tcm, TimerCounterMode);
-    crate::getset_field!(output_mode, control1, ocm, TimerOutputMode);
-    crate::getset_field!(
-        /// 启用自动重装载
-        autoload,
-        control1,
-        tsel,
-        bool
-    );
-    crate::getset_field!(
-        /// 启用输入捕获
-        input,
-        control1,
-        icen,
-        bool
-    );
-
-    crate::getset_field!(paused, control2, wbpause, bool);
-    crate::getset_field!(
-        /// 重置定时器(必须等待至少两个周期后将该位手动恢复到0)
-        reseted,
-        control2,
-        wbreset,
-        bool
-    );
-    crate::getset_field!(
-        /// 非PWM模式强制输出，当定时器匹配或到达周期时
-        output_in_non_pwm,
-        control2,
-        wbforce,
-        bool
-    );
-
+    crate::prop_value!(status, status, TimerStatus, get);
     crate::prop_value!(int_status, int_status, TimerInterrupt, get, set);
     crate::prop_value!(int_en, int_en, TimerInterrupt, get, set, modify);
 }
 
-type InstanceFlash = RegisterBlock<flash::Flash>;
+impl embedded_hal::pwm::ErrorType for Timer {
+    type Error = !;
+}
+
+impl embedded_hal::pwm::SetDutyCycle for Timer {
+    fn max_duty_cycle(&self) -> u16 {
+        return u16::MAX;
+    }
+
+    fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
+        self.set_top_autoload(false);
+        self.set_mode(TimerMode::ClearSetFastPWM);
+        self.set_control0(TimerControl0::new().with_prescale(TimerDivider::Div1));
+        self.set_compare(duty);
+        Ok(())
+    }
+}
+
 pub struct Flash {
     inst: InstanceFlash,
 }
@@ -334,9 +723,6 @@ macro_rules! flash_write {
     };
 }
 impl Flash {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().flash() })
-    }
     pub fn new(inst: InstanceFlash) -> Self {
         Self { inst }
     }
@@ -567,15 +953,11 @@ impl Flash {
 }
 
 use efb_int_source::source::Source as EfbIntFlags;
-type InstanceEfbIntSource = RegisterBlock<efb_int_source::EfbIntSource>;
 /// 指示EFB中断来源于什么
 pub struct EfbIntSource {
     inst: InstanceEfbIntSource,
 }
 impl EfbIntSource {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().efbintsource() })
-    }
     pub fn new(inst: InstanceEfbIntSource) -> Self {
         Self { inst }
     }

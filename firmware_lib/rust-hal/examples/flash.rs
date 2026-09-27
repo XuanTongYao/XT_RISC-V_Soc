@@ -4,15 +4,19 @@
 use riscv_macros::entry;
 use xt_rv32i_hal::hb32::Uart;
 use xt_rv32i_hal::wisbone::{Flash, FlashBuffer};
+use xt_rv32i_hal::{PacPeripherals, take_pac};
 
 const TEST_DATA: [u8; 16] = arr_range::<16>();
 const DELIMITER: [u8; 2] = [0xF0, 0x0F];
 
 #[entry]
 fn main() -> ! {
+    let Some(PacPeripherals { uart, flash, .. }) = take_pac() else {
+        loop {}
+    };
     let mut buffer = [0u8; 16];
-    let mut uart = unsafe { Uart::singleton() };
-    let mut flash = unsafe { Flash::singleton() };
+    let mut uart = Uart::new(uart);
+    let mut flash = Flash::new(flash);
     flash.reset();
     flash.enable_transparent_ufm();
     uart.discard_rx_fifo();

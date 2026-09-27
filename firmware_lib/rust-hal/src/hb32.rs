@@ -1,18 +1,15 @@
 //! 高速32bit对齐总线
 
-use crate::pac::common::register::RegisterBlock;
-use crate::pac::get_top;
-use crate::pac::root::bootstrap;
-use crate::pac::root::eint_controller;
-use crate::pac::root::gpio;
-use crate::pac::root::msip;
-use crate::pac::root::mtime;
-use crate::pac::root::uart;
+use crate::pac::bootstrap::InstanceBootstrap;
+use crate::pac::eint_controller::{self, InstanceEintController};
+use crate::pac::gpio::InstanceGpio;
+use crate::pac::msip::{self, InstanceMsip};
+use crate::pac::mtime::InstanceMtime;
+use crate::pac::uart::{self, InstanceUart};
 use xt_riscv_mcu::rv_core;
 
 // TODO riscv-rust 0.16.2更新之后加入临界区
 
-type InstanceBootstrap = RegisterBlock<bootstrap::Bootstrap>;
 pub struct Bootstrap {
     inst: InstanceBootstrap,
 }
@@ -21,9 +18,6 @@ impl Bootstrap {
     const INTO_RAM_MODE: u8 = 0x00;
     const INTO_ROM_MODE: u8 = 0x55;
 
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().bootstrap() })
-    }
     pub fn new(inst: InstanceBootstrap) -> Self {
         Self { inst }
     }
@@ -31,7 +25,11 @@ impl Bootstrap {
     crate::prop_value!(
         /// # Note
         /// 写入无效地址会导致preload寄存器硬件失效
-        unsafe preload_str_addr, preload_str_addr, u8, set);
+        preload_str_addr,
+        preload_str_addr,
+        u8,
+        set
+    );
 
     #[inline(always)]
     pub fn get_preload_str_u8(&mut self) -> u8 {
@@ -98,22 +96,17 @@ impl Bootstrap {
 
 pub use eint_controller::interrupt::Interrupt as EintFlags;
 
-type InstanceEintController = RegisterBlock<eint_controller::EintController>;
 pub struct EintController {
     inst: InstanceEintController,
 }
 
 use rv_core::ExternalInterrupt;
 impl EintController {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().eintcontroller() })
-    }
     pub fn new(inst: InstanceEintController) -> Self {
         Self { inst }
     }
 
-    crate::prop_value!(unsafe enable, enable, EintFlags, set);
-    crate::prop_value!(unsafe enable, enable, EintFlags, modify);
+    crate::prop_value!(unsafe enable, enable, EintFlags, set, modify);
     crate::prop_value!(enable, enable, EintFlags, get);
     crate::prop_value!(pending, pending, EintFlags, get);
 
@@ -140,15 +133,11 @@ impl EintController {
     }
 }
 
-type InstanceMtime = RegisterBlock<mtime::Mtime>;
 pub struct Mtime {
     inst: InstanceMtime,
 }
 
 impl Mtime {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().mtime() })
-    }
     pub fn new(inst: InstanceMtime) -> Self {
         Self { inst }
     }
@@ -220,7 +209,6 @@ impl Mtime {
 }
 
 use uart::status::Status as UartStatus;
-type InstanceUart = RegisterBlock<uart::Uart>;
 pub struct Uart {
     inst: InstanceUart,
 }
@@ -228,51 +216,43 @@ pub struct Uart {
 impl Uart {
     pub const UART_FREQ: u32 = 19200;
 
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().uart() })
-    }
     pub fn new(inst: InstanceUart) -> Self {
         Self { inst }
     }
 
     crate::prop_value!(status, status, UartStatus, get);
 
-    pub fn has_data(&self) -> bool {
-        self.status().rx_end()
-    }
-
     /// 丢弃接收FIFO中的数据
-    #[inline]
     pub fn discard_rx_fifo(&mut self) {
-        while self.has_data() {
-            self.rx_forced();
+        while self.status().rx_end() {
+            self.rx();
         }
     }
 
     /// # Note
-    /// 强制读取，可能会读取到**无效数据**
+    /// 读取到最后一次的数据或最新数据
     #[inline]
-    pub fn rx_forced(&mut self) -> u8 {
+    pub fn rx(&mut self) -> u8 {
         self.inst.regs().data.read()
     }
 
     #[inline]
     pub fn rx_block(&mut self) -> u8 {
-        while !self.inst.regs().status.read().rx_end() {}
-        self.rx_forced()
+        while !self.status().rx_end() {}
+        self.rx()
     }
 
+    /// # Note
+    /// 如果缓冲区已满，则写入将被硬件丢弃
     #[inline]
-    pub fn rx_bytes_into_block(&mut self, buffer: &mut [u8]) {
-        for byte in buffer {
-            *byte = self.rx_block();
-        }
+    pub fn tx(&mut self, byte: u8) {
+        self.inst.regs().data.write(byte)
     }
 
     #[inline]
     pub fn tx_block(&mut self, byte: u8) {
-        while !self.inst.regs().status.read().tx_ready() {}
-        self.inst.regs().data.write(byte)
+        while !self.status().tx_ready() {}
+        self.tx(byte);
     }
 
     pub fn tx_bytes_block(&mut self, data: &[u8], big_endian: bool) {
@@ -288,15 +268,70 @@ impl Uart {
     }
 }
 
-type InstanceMsip = RegisterBlock<msip::Msip>;
+impl embedded_io::ErrorType for Uart {
+    type Error = !;
+}
+
+impl embedded_io::Read for Uart {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+        if buf.len() == 0 {
+            return Ok(0);
+        }
+
+        while !self.status().rx_end() {}
+        let mut count: usize = 0;
+        for byte in buf {
+            *byte = self.rx();
+            count += 1;
+            if !self.status().rx_end() {
+                break;
+            }
+        }
+        Ok(count)
+    }
+}
+
+impl embedded_io::ReadReady for Uart {
+    fn read_ready(&mut self) -> Result<bool, Self::Error> {
+        Ok(self.status().rx_end())
+    }
+}
+
+impl embedded_io::Write for Uart {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+        if buf.len() == 0 {
+            return Ok(0);
+        }
+
+        while !self.status().tx_ready() {}
+        let mut count: usize = 0;
+        for byte in buf {
+            self.tx(*byte);
+            count += 1;
+            if !self.status().tx_ready() {
+                break;
+            }
+        }
+        Ok(count)
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        while !self.status().tx_empty() {}
+        Ok(())
+    }
+}
+
+impl embedded_io::WriteReady for Uart {
+    fn write_ready(&mut self) -> Result<bool, Self::Error> {
+        Ok(self.status().tx_ready())
+    }
+}
+
 pub struct Msip {
     inst: InstanceMsip,
 }
 
 impl Msip {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().msoftwareint() })
-    }
     pub fn new(inst: InstanceMsip) -> Self {
         Self { inst }
     }
@@ -310,29 +345,21 @@ impl Msip {
     /// 会立即引发软件中断
     #[inline(always)]
     pub unsafe fn enable(&mut self) {
-        self.inst
-            .regs()
-            .msip
-            .write(msip::msip::Msip::new().with_pending(true));
+        use msip::msip::Msip;
+        self.inst.regs().msip.write(Msip::new().with_pending(true));
     }
     #[inline(always)]
     pub fn disable(&mut self) {
-        self.inst
-            .regs()
-            .msip
-            .write(msip::msip::Msip::new().with_pending(false));
+        use msip::msip::Msip;
+        self.inst.regs().msip.write(Msip::new().with_pending(false));
     }
 }
 
-type InstanceGpio = RegisterBlock<gpio::Gpio>;
 pub struct Gpio {
     inst: InstanceGpio,
 }
 
 impl Gpio {
-    pub unsafe fn singleton() -> Self {
-        Self::new(unsafe { get_top().gpio() })
-    }
     pub fn new(inst: InstanceGpio) -> Self {
         Self { inst }
     }
@@ -354,13 +381,13 @@ impl Gpio {
             self.inst
                 .regs()
                 .afh
-                .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | (af << offset));
+                .modify(|reg| (reg & (0xFFFF_FFFC << offset)) | (af << offset));
         } else {
             let offset = (gpio) << 1;
             self.inst
                 .regs()
                 .afl
-                .modify(|af_reg| (af_reg & (0xFFFF_FFFC << offset)) | (af << offset));
+                .modify(|reg| (reg & (0xFFFF_FFFC << offset)) | (af << offset));
         };
     }
 

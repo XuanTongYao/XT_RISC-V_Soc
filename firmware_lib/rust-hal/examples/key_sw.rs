@@ -2,12 +2,22 @@
 #![no_main]
 
 use riscv_macros::entry;
-use xt_rv32i_hal::lb::{KeySwitch, Ledsd};
+use xt_rv32i_hal::{
+    PacPeripherals,
+    lb::{KeySwitch, Ledsd},
+    take_pac,
+};
 
 #[entry]
 fn main() -> ! {
-    let mut ledsd = unsafe { Ledsd::singleton() };
-    let key_switch = unsafe { KeySwitch::singleton() };
+    let Some(PacPeripherals {
+        ledsd, keyswitch, ..
+    }) = take_pac()
+    else {
+        loop {}
+    };
+    let mut ledsd = Ledsd::new(ledsd);
+    let key_switch = KeySwitch::new(keyswitch);
     loop {
         let key = key_switch.key();
         let sw = key_switch.switch();

@@ -4,7 +4,7 @@
 use core::mem::MaybeUninit;
 
 use riscv_macros::entry;
-use xt_rv32i_hal::hb32::Uart;
+use xt_rv32i_hal::{PacPeripherals, hb32::Uart, take_pac};
 
 // 这里也会出现C程序的问题，'!'字符打印不出来，怀疑是其他部分
 // 已经解决了，是链接脚本没对齐4字节导致的
@@ -12,7 +12,10 @@ const TEST_STR: &str = "Hello, world!";
 
 #[entry]
 fn main() -> ! {
-    let mut uart = unsafe { Uart::singleton() };
+    let Some(PacPeripherals { uart, .. }) = take_pac() else {
+        loop {}
+    };
+    let mut uart = Uart::new(uart);
     loop {
         let cmd = uart.rx_block();
         if cmd == 0x01 {

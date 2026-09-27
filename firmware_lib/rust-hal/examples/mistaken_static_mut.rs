@@ -8,7 +8,7 @@
 use riscv::interrupt::Interrupt::*;
 use riscv_macros::entry;
 use xt_riscv_mcu::rv_core::{enable_global_interrupt, set_interrupt};
-use xt_rv32i_hal::lb::Ledsd;
+use xt_rv32i_hal::{PacPeripherals, lb::Ledsd, take_pac};
 
 static mut COMPARE: u8 = 0;
 
@@ -18,17 +18,20 @@ static mut COMPARE: u8 = 0;
 /// 应该使用原子类型和临界区代替
 #[entry]
 fn main() -> ! {
-    let mut ledsd = unsafe { Ledsd::singleton() };
+    let Some(PacPeripherals { ledsd, .. }) = take_pac() else {
+        loop {}
+    };
+    let mut ledsd = Ledsd::new(ledsd);
     unsafe {
         set_interrupt::<{ 1 << MachineTimer as usize }>();
         enable_global_interrupt();
-    }
-    loop {
-        unsafe { ledsd.set_data(COMPARE) }
+        loop {
+            ledsd.set_data(COMPARE)
+        }
     }
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "riscv-interrupt-m" fn mtimer_IRQ_Handler() {
+extern "riscv-interrupt-m" fn mtimer_IRQ_Handler() {
     unsafe { COMPARE += 1 }
 }
