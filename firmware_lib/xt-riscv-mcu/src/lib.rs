@@ -12,5 +12,17 @@ unsafe extern "C" {
     pub unsafe fn UnhandledFault() -> !;
 }
 
+#[cfg(not(feature = "no_trap"))]
+#[inline(always)]
+pub unsafe fn goto_unhandled_fault() -> ! {
+    unsafe {
+        core::arch::asm!(
+            "jal zero, {dst}",
+            dst = sym UnhandledFault,
+            options(noreturn)
+        );
+    }
+}
+
 pub mod rv_core;
 pub use rv_core::*;

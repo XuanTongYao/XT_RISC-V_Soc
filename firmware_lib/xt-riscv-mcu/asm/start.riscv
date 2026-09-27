@@ -12,3 +12,4 @@ _start:
 
 .section .init.call_main,"ax",@progbits
     call main  # jump to main
+    
