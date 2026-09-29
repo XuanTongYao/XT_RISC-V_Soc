@@ -42,7 +42,7 @@ impl Bootstrap {
     }
 
     #[inline(always)]
-    pub fn ram_mode_stop(&self) -> bool {
+    pub fn ram_mode(&self) -> bool {
         self.inst.regs().config.read() & 0x02 != 0
     }
 

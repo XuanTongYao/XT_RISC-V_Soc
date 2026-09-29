@@ -4,7 +4,7 @@ use crate::common::register::*;
 pub struct Bootstrap {
     /// 配置寄存器
     ///
-    /// 读取得到启动引脚的值，0x01是下载模式，0x02是强制RAM模式暂停
+    /// 读取得到启动引脚的值，0x01是下载模式，0x02是RAM模式
     ///
     /// 写入0x00将指令区域映射到RAM
     /// 写入0x55将指令区域映射到ROM

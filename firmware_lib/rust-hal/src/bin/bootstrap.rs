@@ -19,15 +19,10 @@ fn main() -> ! {
     let mut flash = unsafe { Flash::new(get_top().flash()) };
     let bootstrap = unsafe { Bootstrap::new(get_top().bootstrap()) };
     let uart = unsafe { Uart::new(get_top().uart()) };
+    unsafe { core::arch::asm!("csrw mtvec, x0") }
     flash.reset();
     flash.enable_transparent_ufm();
-    if bootstrap.ram_mode_stop() {
-        unsafe {
-            core::arch::asm!("csrw mtvec, x0");
-            (0 as *mut u32).write_volatile(0);
-        }
-        boot_ram_mode(bootstrap);
-    } else if bootstrap.download_mode() {
+    if bootstrap.download_mode() {
         download(flash, uart, bootstrap);
     } else {
         boot(flash, uart, bootstrap);
@@ -43,7 +38,7 @@ fn boot(mut flash: Flash, mut uart: Uart, mut bootstrap: Bootstrap) -> ! {
 
     // 首个指令全为0，则为无效代码
     unsafe {
-        if (0 as *mut u32).read_volatile() == 0 {
+        if !bootstrap.ram_mode() && (0 as *mut u32).read_volatile() == 0 {
             loop {
                 block_print_auto_increment(&mut uart, &mut bootstrap, Bootstrap::ERR)
             }
@@ -114,7 +109,7 @@ fn block_print_auto_increment(
     bootstrap: &mut Bootstrap,
     preload_str: BootstrapPreloadStr,
 ) {
-    unsafe { bootstrap.set_preload_str_addr(preload_str.addr) }
+    bootstrap.set_preload_str_addr(preload_str.addr);
     for _ in 0..preload_str.len {
         uart.tx_block(bootstrap.get_preload_str_u8());
     }

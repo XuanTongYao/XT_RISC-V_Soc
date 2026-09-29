@@ -12,7 +12,7 @@
 # x10/a0是函数参数/返回值
 # x11/a1是函数参数/返回值
 # x12/a2始终是Flash缓冲区地址(直接把整个内存当缓冲区)
-# x13 未定义
+# x13 始终是 ram_mode 位状态
 # x14始终是MAX_COPY_PAGE，并在执行boot后变为零(当作计数值使用了)
 # x15始终是第二个返回地址，用于嵌套调用
 
@@ -81,7 +81,6 @@
 _start:
 main:
     csrw mtvec, x0
-    sw x0, 0(x0)        # 可控死循环停止
     lla x3, FLASH_BASE
     lla x4, HB32_BASE
     li x14, MAX_COPY_PAGE
@@ -92,11 +91,10 @@ enable_transparent_ufm:
     li a0, 0x00000874   # 发送0x74 08 00 00
     jal no_data_frame
     DELAY_US(8)
-check_ram_stop:
+check_ram_mode_flag:
     READ_DEBUG(x7)
-    andi x6, x7, 0x02
-    bnez x6, boot_ram_mode
-check_download:
+    andi x13, x7, 0x02
+check_download_flag:
     andi x7, x7, 0x01
     bnez x7, download
 boot:
@@ -108,6 +106,7 @@ boot:
     addi x14, x14, -1
     bnez x14, 2b
 check_inst:
+    bnez x13, boot_ram_mode
     lw x7, 0(x0)
     beqz x7, error      # 首个指令为全0，则为无效程序代码
 boot_ram_mode:

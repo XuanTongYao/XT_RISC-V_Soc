@@ -18,11 +18,10 @@ package Rom_Pkg;
   // verilog_format: on
 
 
-  localparam int unsigned BOOT_DEPTH = 117;
+  localparam int unsigned BOOT_DEPTH = 116;
   localparam int unsigned BOOT_WIDTH = 32;
   localparam bit [BOOT_WIDTH-1:0] BOOT[BOOT_DEPTH] = '{
       32'h30501073,
-      32'h00002023,
       32'h000031B7,
       32'h07018193,
       32'h00002237,
@@ -36,17 +35,17 @@ package Rom_Pkg;
       32'hFFF28293,
       32'hFE029EE3,
       32'h00024383,
-      32'h0023F313,
-      32'h02031863,
+      32'h0023F693,
       32'h0013F393,
-      32'h02039E63,
-      32'h0EC000EF,
+      32'h04039063,
+      32'h0F0000EF,
       32'h01001537,
       32'h0CA50513,
       32'h08000593,
-      32'h0E8000EF,
+      32'h0EC000EF,
       32'hFFF70713,
       32'hFE0716E3,
+      32'h00069663,
       32'h00002383,
       32'h00038663,
       32'h00020023,
