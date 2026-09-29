@@ -11,47 +11,40 @@
 _exception:
     j Exception_Handler
 _software_int:
-    j ssoftware_IRQ_Handler # 未实现S模式
-    .space 4
-    j msoftware_IRQ_Handler
-    .space 4
+    j delete_IRQ_Handler
+    j delete_IRQ_Handler
+        j msoftware_IRQ_Handler
+    j delete_IRQ_Handler
 _timer_int:
-    j stimer_IRQ_Handler # 未实现S模式
-    .space 4
-    j mtimer_IRQ_Handler
-    .space 4
+    j delete_IRQ_Handler
+    j delete_IRQ_Handler
+        j mtimer_IRQ_Handler
+    j delete_IRQ_Handler
 _extern_int: # 外部中断由外部中断控制器重定向到自定义中断
-    j sextern_IRQ_Handler # 未实现S模式
-    .space 4
-    j mextern_IRQ_Handler # 由硬件重定向
-    .space 4
-    nop
-    nop
-    nop
+    .rept 7
+    j delete_IRQ_Handler
+    .endr
 # 自定义中断中断号16开始，对应外部中断的0号中断
 _custom_int:
-    j UART_RX_IRQ_Handler
-    mret # 保留
-    mret
-    mret
-    mret
-    mret
-    mret
-    mret
-    j I2C1_IRQ_Handler
-    j I2C2_IRQ_Handler
-    j SPI_IRQ_Handler
-    j Timer_IRQ_Handler
-    j WBC_UFM_IRQ_Handler
+        j UART_RX_IRQ_Handler
+    # 保留
+    .rept 7
+    j delete_IRQ_Handler
+    .endr
+        j I2C1_IRQ_Handler
+        j I2C2_IRQ_Handler
+        j SPI_IRQ_Handler
+        j Timer_IRQ_Handler
+        j WBC_UFM_IRQ_Handler
 
 
-# 弃置的自陷处理函数
+# 未实现的自陷处理函数
 .section .trap.delete_handler,"ax",@progbits
-.global delete_IRQ_handler
+.global delete_IRQ_Handler
 .global UnhandledFault
-# 未实现的中断处理函数死循环 没办法清空待处理中断位 应该死循环
-delete_IRQ_handler:
-    j delete_IRQ_handler
+# 未实现的中断处理函数 无法清空待处理中断位 应该死循环
+delete_IRQ_Handler:
+    j delete_IRQ_Handler
 
 # 未处理错误死循环
 UnhandledFault:

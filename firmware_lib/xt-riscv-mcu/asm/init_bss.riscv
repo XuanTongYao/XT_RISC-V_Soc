@@ -1,10 +1,10 @@
 .section .init.clear_bss,"ax",@progbits
     # 清空 .bss 段
     lla a0, __BSS_START__
-	lla a1, __BSS_END__
-	bgeu a0, a1, 2f
+    lla a1, __BSS_END__
+    bgeu a0, a1, 2f
 1:
-	sw x0, (a0)
-	addi a0, a0, 4
-	bltu a0, a1, 1b
+    sw x0, (a0)
+    addi a0, a0, 4
+    bltu a0, a1, 1b
 2:
