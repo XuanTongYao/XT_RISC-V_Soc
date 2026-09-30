@@ -1,11 +1,13 @@
 [target.riscv32i-unknown-none-elf]
-runner = "my-emulator"
 rustflags = [
     "-C",
     "link-arg=--nmagic",            # 禁用页对齐 降低elf文件大小
     "-C",
     "target-feature=+zicsr,+relax",
 ]
+runner = "probe-rs download --chip XT_RV32I --chip-description-path firmware_lib/chip_desc/xt_rv32i.yaml"
+# runner = "probe-rs erase --chip XT_RV32I --chip-description-path firmware_lib/chip_desc/xt_rv32i.yaml"
+# runner = "probe-rs debug --chip XT_RV32I --chip-description-path firmware_lib/chip_desc/xt_rv32i.yaml"
 
 [build]
 target = "riscv32i-unknown-none-elf"
