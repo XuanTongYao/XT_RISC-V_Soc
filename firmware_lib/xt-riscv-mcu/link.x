@@ -28,8 +28,7 @@ SECTIONS
     } > RAM
 
 
-    . = ALIGN(4);
-    .rodata : 
+    .rodata ALIGN(4) : 
     {
         *(.srodata .srodata.*)
         *(.rodata .rodata.*)
@@ -46,16 +45,15 @@ SECTIONS
         *(.sdata .sdata.* .sdata2 .sdata2.*)
     } > RAM
 
-    . = ALIGN(4);
-    __BSS_START__ = .;
-    .bss :
+    .bss ALIGN(4) :
     {
+        __BSS_START__ = .;
         *(.sbss .sbss.* .scommon)
         *(.bss .bss.*)
         *(COMMON)
+        . = ALIGN(4);
+        __BSS_END__ = .;
     } > RAM
-    . = ALIGN(4);
-    __BSS_END__ = .;
 
     _sstack = ORIGIN(RAM) + LENGTH(RAM);
     _estack = _sstack - __stack_size;
