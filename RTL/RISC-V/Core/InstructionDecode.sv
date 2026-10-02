@@ -3,6 +3,7 @@ module InstructionDecode
   import CoreConfig::*;
   import Exception_Pkg::*;
   import RV32I_Inst_Pkg::*;
+  import CSR_Pkg::csr_addr_t, CSR_Pkg::READONLY;
 #(
     parameter core_cfg_t CFG
 ) (
@@ -21,29 +22,32 @@ module InstructionDecode
 );
 
   //----------指令信息提取----------//
-  wire  [31:0] inst = if_id_inst.inst;
-  wire  [ 6:0] opcode = inst[6:0];
-  wire  [ 2:0] funct3 = inst[14:12];
-  wire  [ 6:0] funct7 = inst[31:25];
-  wire  [11:0] funct12 = inst[31:20];
-  wire  [ 4:0] rs1 = inst[19:15];
-  wire  [ 4:0] rs2 = inst[24:20];
-  wire  [ 4:0] shamt = rs2;
+  wire [31:0] inst = if_id_inst.inst;
+  wire [6:0] opcode = inst[6:0];
+  wire [2:0] funct3 = inst[14:12];
+  wire [6:0] funct7 = inst[31:25];
+  wire [11:0] funct12 = inst[31:20];
+  wire [4:0] rs1 = inst[19:15];
+  wire [4:0] rs2 = inst[24:20];
+  wire [4:0] shamt = rs2;
+  wire [4:0] rd = inst[11:7];
+
+  wire csr_addr_t csr_addr = inst[31:20];
 
   // 立即数
-  wire  [31:0] imm_i = CFG.XLEN'($signed(inst[31:20]));
-  wire  [31:0] imm_u = CFG.XLEN'($signed({inst[31:12], 12'b0}));
-  wire  [31:0] imm_s = CFG.XLEN'($signed({inst[31:25], inst[11:7]}));
-  wire  [31:0] imm_b = CFG.XLEN'($signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0}));
-  wire  [31:0] imm_j = CFG.XLEN'($signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}));
-  wire  [31:0] imm_sys = CFG.XLEN'(inst[19:15]);
+  wire [31:0] imm_i = CFG.XLEN'($signed(inst[31:20]));
+  wire [31:0] imm_u = CFG.XLEN'($signed({inst[31:12], 12'b0}));
+  wire [31:0] imm_s = CFG.XLEN'($signed({inst[31:25], inst[11:7]}));
+  wire [31:0] imm_b = CFG.XLEN'($signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0}));
+  wire [31:0] imm_j = CFG.XLEN'($signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}));
+  wire [31:0] imm_sys = CFG.XLEN'(inst[19:15]);
 
 
   // 源寄存器1的数据read_rs1.data一定和操作数1 operand1绑定
   // 源寄存器2的数据read_rs2.data一定和操作数2 operand2绑定
   // 立即数imm(imm_sys除外)一定与操作数2 operand2绑定
   logic [31:0] access_addr_imm;
-  wire  [31:0] access_addr = read_rs1.data + access_addr_imm;
+  wire [31:0] access_addr = read_rs1.data + access_addr_imm;
   always_comb begin
     // 寄存器读取地址直接赋值就行了
     // 刚好5bit不会越界，不同指令自己会选择是否读寄存器的
@@ -52,6 +56,8 @@ module InstructionDecode
     id_out.operand1 = 'x;
     id_out.operand2 = 'x;
     id_out.reg_wen = 0;
+    id_out.csr_ren = 0;
+    id_out.csr_wen = 0;
 
     // 不可能同时读/写，地址计算可以共用加法器
     access_addr_imm = 'x;
@@ -142,13 +148,30 @@ module InstructionDecode
               end
             endcase
           end
-          ZICSR_CSRRW, ZICSR_CSRRS, ZICSR_CSRRC: begin
-            id_out.reg_wen  = 1;
-            id_out.operand1 = read_rs1.data;
-          end
-          ZICSR_CSRRWI, ZICSR_CSRRSI, ZICSR_CSRRCI: begin
-            id_out.reg_wen  = 1;
-            id_out.operand1 = imm_sys;
+          ZICSR_CSRRW, ZICSR_CSRRS, ZICSR_CSRRC, ZICSR_CSRRWI, ZICSR_CSRRSI, ZICSR_CSRRCI: begin
+            id_out.reg_wen = 1;
+            unique case (funct3)
+              ZICSR_CSRRW, ZICSR_CSRRS, ZICSR_CSRRC: id_out.operand1 = read_rs1.data;
+              default: id_out.operand1 = imm_sys;
+            endcase
+
+            unique case (funct3)
+              ZICSR_CSRRS, ZICSR_CSRRSI, ZICSR_CSRRC, ZICSR_CSRRCI: begin
+                id_out.csr_ren = 1;
+                id_out.csr_wen = rs1 != 5'd0;
+              end
+              default: begin
+                id_out.csr_ren = rd != 5'd0;
+                id_out.csr_wen = 1;
+              end
+            endcase
+
+            // 我们没有实现progbuf，不会在Debug模式下执行指令
+            // 因此访问Debug的CSR寄存器永远引发异常
+            if ((csr_addr.mode == READONLY && id_out.csr_wen) || csr_addr[11:4] == 8'b01_11_1011) begin
+              id_exception.raise = 1;
+              id_exception.code  = ILLEGAL_INST;
+            end
           end
           default: ;
         endcase

@@ -103,8 +103,8 @@ module InstructionExecute
     jump_en_ex = 0;
 
     trap.returned = 0;
-    csr_rw.ren = 0;
-    csr_rw.wen = 0;
+    csr_rw.ren = id_ex_out.csr_ren;
+    csr_rw.wen = id_ex_out.csr_wen;
     csr_rw.addr = inst[31:20];
     csr_rw.wdata = 'x;
 
@@ -191,21 +191,9 @@ module InstructionExecute
               default: ;
             endcase
           end
-          ZICSR_CSRRW, ZICSR_CSRRWI: begin
-            csr_rw.ren   = rd != 5'd0;
-            csr_rw.wen   = 1;
-            csr_rw.wdata = operand1;
-          end
-          ZICSR_CSRRS, ZICSR_CSRRSI: begin
-            csr_rw.ren   = 1;
-            csr_rw.wen   = rs1 != 5'd0;
-            csr_rw.wdata = operand1 | csr_rw.rdata;
-          end
-          ZICSR_CSRRC, ZICSR_CSRRCI: begin
-            csr_rw.ren   = 1;
-            csr_rw.wen   = rs1 != 5'd0;
-            csr_rw.wdata = ~operand1 & csr_rw.rdata;
-          end
+          ZICSR_CSRRW, ZICSR_CSRRWI: csr_rw.wdata = operand1;
+          ZICSR_CSRRS, ZICSR_CSRRSI: csr_rw.wdata = operand1 | csr_rw.rdata;
+          ZICSR_CSRRC, ZICSR_CSRRCI: csr_rw.wdata = ~operand1 & csr_rw.rdata;
           default: ;
         endcase
       end

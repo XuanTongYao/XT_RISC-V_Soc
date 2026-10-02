@@ -47,8 +47,11 @@ interface id_to_ex_if #(
   logic [XLEN-1:0] store_data;
   logic [XLEN-1:0] operand1, operand2;
   logic reg_wen;
-  modport to_next(output load, store, load_addr, store_addr, store_data, operand1, operand2, reg_wen);
-  modport from_prev(input load, store, load_addr, store_addr, store_data, operand1, operand2, reg_wen);
+  logic csr_ren, csr_wen;
+  modport to_next(output load, store, load_addr, store_addr, store_data, operand1, operand2, reg_wen, csr_ren, csr_wen);
+  modport from_prev(
+      input load, store, load_addr, store_addr, store_data, operand1, operand2, reg_wen, csr_ren, csr_wen
+  );
 
 endinterface
 

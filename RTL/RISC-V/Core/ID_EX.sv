@@ -37,11 +37,15 @@ module ID_EX
       id_ex_out.store <= 0;
       id_ex_inst.inst <= INST_NOP;
       id_ex_out.reg_wen <= 0;
+      id_ex_out.csr_ren <= 0;
+      id_ex_out.csr_wen <= 0;
     end else if (stall_n) begin
       id_ex_out.load <= id_out.load;
       id_ex_out.store <= id_out.store;
       id_ex_inst.inst <= if_id_inst.inst;
       id_ex_out.reg_wen <= id_out.reg_wen;
+      id_ex_out.csr_ren <= id_out.csr_ren;
+      id_ex_out.csr_wen <= id_out.csr_wen;
     end
   end
 
