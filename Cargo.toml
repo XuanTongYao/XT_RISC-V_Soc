@@ -1,6 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["./firmware_lib/rust"]
+members = [
+    "firmware_lib/rust-pac",
+    "firmware_lib/xt-riscv-mcu",
+    "firmware_lib/rust-hal",
+]
 
 # [profile.release.package."*"]
 # debug = false
@@ -8,8 +12,8 @@ members = ["./firmware_lib/rust"]
 # panic = "abort"
 
 [profile.release]
-debug = false
+debug = true
 opt-level = "z"
 lto = "fat"
-strip = "debuginfo"
+strip = "debuginfo" # 会影响llvm objdump的结果，很坑
 panic = "abort"

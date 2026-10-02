@@ -111,7 +111,7 @@ package SocConfig;
 
 
   localparam gpio_af_cfg_t AF_CFGS[GPIO_COUNT] = '{
-      0: IN_OUT_0_1_2_3,  // GPIO复用计时器与SPI片选
+      0: IN_OUT_0_1_2_3,  // GPIO复用定时器与SPI片选
       1: IN_OUT_0_1_2_3,
       2: IN_OUT_0_1_2_3,
       3: IN_OUT_0_1_2_3,

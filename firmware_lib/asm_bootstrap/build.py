@@ -1,12 +1,13 @@
-import subprocess, os
+import os
+import subprocess
 from pathlib import Path
 
 os.chdir(Path(__file__).parent.resolve())
 
 gcc = "riscv-none-elf-gcc"
 objcopy = "riscv-none-elf-objcopy"
-编译参数 = "-march=rv32i -mabi=ilp32 -nostdlib -x assembler-with-cpp".split()
-链接脚本 = ["../rust/link.x", "../rust/trap_handler.x"]
+编译参数 = "-march=rv32i_zicsr -mabi=ilp32 -nostdlib -x assembler-with-cpp".split()
+链接脚本 = ["../xt-riscv-mcu/link.x", "../xt-riscv-mcu/trap_handler.x"]
 链接脚本参数 = [x for ld in 链接脚本 for x in ("-T", ld)]
 
 elf_output = "bootstrap.elf"

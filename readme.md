@@ -5,8 +5,8 @@
 一个极其简易的`RV32I_Zicsr_Sdext`指令集**单核MCU**，所有用户级与特权级指令支持，仅运行在机器模式或外部调试模式。
 
 1. [RTL](RTL)包含了所有Verilog代码，顶层文件在[这里](RTL\SOC\XT_Soc_Risc_V.sv)
-2. [firmware_lib](firmware_lib)包含了本MCU的固件库，有[C版本](firmware_lib/c)和[Rust版本](firmware_lib/rust)，C语言固件库已**不再维护**
-3. `rust_release/debug`是rust程序默认的构建输出位置
+2. [firmware_lib](firmware_lib)包含了本MCU的固件库、CMSIS-Pack闪存算法、寄存器描述文件等
+3. `rust_release`, `rust_debug`是[Rust构建向导](rs_build.py)默认的构建输出位置
 4. [ACT4](ACT4)包含了[RISC-V架构认证测试(ACT4框架)](ACT4/Readme.md)相关的内容
 5. [synthesis_report](synthesis_report)包含了此项目某一次的[综合报告](synthesis_report/readme.md)，为资源消耗情况提供参考
 
@@ -23,7 +23,7 @@
     - [时钟树与复位](#时钟树与复位)
     - [其他核心模块](#其他核心模块)
       - [外部中断控制器](#外部中断控制器)
-      - [MTime和Mtimecmp(机器计时器)](#mtime和mtimecmp机器计时器)
+      - [MTime和Mtimecmp(机器定时器)](#mtime和mtimecmp机器定时器)
   - [外设列表](#外设列表)
     - [挂载于XT\_HB32总线](#挂载于xt_hb32总线)
     - [挂载于XT\_LB总线](#挂载于xt_lb总线)
@@ -77,7 +77,7 @@
 - 内部振荡器频率**2.15MHz**，作为复位控制器的独立时钟源
 - PLL输入时钟频率**12MHz**
 - 核心、高速总线、WISHBONE总线位于同一时钟域，基准频率**12MHz**
-- 机器计时器固定频率**1MHz**
+- 机器定时器固定频率**1MHz**
 - UART采样频率**153.846KHz**，过采样率为**8**时**波特率19200误差0.16%**
 - 低速总线频率**100KHz**
 
@@ -89,7 +89,7 @@
 - 无优先级配置，但中断号越低越优先，0号**外部**中断先于其他**外部**中断触发
 - 不直接处理中断清零，通过读写外设寄存器清零
 
-#### MTime和Mtimecmp(机器计时器)
+#### MTime和Mtimecmp(机器定时器)
 
 - 无跨时钟域时序惩罚
 - 硬件不处理非原子读取一致性问题，通过软件处理
@@ -100,7 +100,7 @@
 
 1. 自举控制器
 2. 外部中断控制器
-3. 64bit机器计时器
+3. 64bit机器定时器
 4. UART通信接口
 5. 软件中断寄存器
 6. 复用GPIO
@@ -115,12 +115,11 @@
 
 该总线的外设为EFB硬核
 
-1. 左PLL动态配置 **TODO**
-2. 右PLL动态配置 **TODO**
-3. 1号/2号 I2C接口
-4. SPI接口
-5. 16bit定时器/计数器
-6. 程序存储Flash
+1. 左/右 PLL动态配置 **TODO**
+2. 主/次 I2C接口
+3. SPI接口
+4. 16bit定时器/计数器
+5. 程序存储Flash
 
 ## XT高速总线
 

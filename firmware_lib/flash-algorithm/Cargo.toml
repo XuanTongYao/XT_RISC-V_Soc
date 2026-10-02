@@ -1,0 +1,53 @@
+[workspace]
+
+[package]
+name = "xt_rv32i_ufm"
+version = "0.1.0"
+edition = "2024"
+authors = ["XunTongYao"]
+license = "Apache-2.0"
+description = "适用于XT_RISC-V_MCU的闪存算法，针对一个自制的嵌入式/MCU系统"
+
+[dependencies]
+riscv = { version = "0.16.1" }
+flash-algorithm = { version = "0.7.0", default-features = false, features = [
+    "erase-chip",
+] }
+
+[[bin]]
+name = "xt_rv32i_ufm"
+test = false
+bench = false
+
+[profile.dev]
+codegen-units = 1
+debug = 2
+debug-assertions = true
+incremental = false
+opt-level = 3
+overflow-checks = true
+
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false
+incremental = false
+lto = "fat"
+opt-level = "z"          # 只有这与模板不同
+overflow-checks = false
+panic = "abort"          # 只有这与模板不同
+
+# do not optimize proc-macro crates = faster builds from scratch
+[profile.dev.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false
+
+[profile.release.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false
