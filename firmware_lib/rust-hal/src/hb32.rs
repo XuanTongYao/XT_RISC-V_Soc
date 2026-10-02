@@ -381,13 +381,13 @@ impl Gpio {
             self.inst
                 .regs()
                 .afh
-                .modify(|reg| (reg & (0xFFFF_FFFC << offset)) | (af << offset));
+                .modify(|reg| reg & !(0b11 << offset) | ((af & 0b11) << offset));
         } else {
             let offset = (gpio) << 1;
             self.inst
                 .regs()
                 .afl
-                .modify(|reg| (reg & (0xFFFF_FFFC << offset)) | (af << offset));
+                .modify(|reg| reg & !(0b11 << offset) | ((af & 0b11) << offset));
         };
     }
 

@@ -250,13 +250,13 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
         let mut op_iter = operations.iter_mut().peekable();
 
         let mut err = Ok(());
-        while let Some(op) = op_iter.next() {
+        'op_loop: while let Some(op) = op_iter.next() {
             if let Read(buf) = op {
                 if last_op != OpType::Read {
                     last_op = OpType::Read;
                     if self.start_read(addr) {
                         err = Err(I2cError(NoAcknowledge(NoAcknowledgeSource::Address)));
-                        break;
+                        break 'op_loop;
                     }
                 }
 
@@ -287,7 +287,7 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
                     if let Some(first_byte) = iter.next() {
                         if self.write_block(*first_byte) {
                             err = Err(I2cError(NoAcknowledge(NoAcknowledgeSource::Address)));
-                            break;
+                            break 'op_loop;
                         }
                     }
                 }
@@ -295,7 +295,7 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
                 for byte in iter {
                     if self.write_block(*byte) {
                         err = Err(I2cError(NoAcknowledge(NoAcknowledgeSource::Data)));
-                        break;
+                        break 'op_loop;
                     }
                 }
 
@@ -303,6 +303,10 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
                     self.finish_write();
                 }
             }
+        }
+        if err.is_err() {
+            self.inst.regs().command.write(0x44.into());
+            while self.status().busy() {}
         }
         self.set_control(I2cControl::new().with_i2cen(false));
         err

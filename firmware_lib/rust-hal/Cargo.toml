@@ -12,6 +12,7 @@ no_start = ["xt-riscv-mcu/no_start"] # 无_start汇编初始化
 no_bss = ["xt-riscv-mcu/no_bss"]     # 不初始化.bss段
 no_trap = ["xt-riscv-mcu/no_trap"]   # 不初始化自陷功能与中断向量
 panic_halt = []
+defmt_example = []
 
 [dependencies]
 xt-rv32i-pac = { path = "../rust-pac" }
@@ -27,3 +28,7 @@ embedded-io = "0.7.1"
 semihosting = { version = "0.1.25", features = ["stdio"] }
 defmt = "1.1.1"
 defmt-rtt = "1.3.0"
+
+[[example]]
+name = "probe_rtt"
+required-features = ["defmt_example"]
