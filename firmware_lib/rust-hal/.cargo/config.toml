@@ -1,5 +1,4 @@
 [target.riscv32i-unknown-none-elf]
-runner = "my-emulator"
 rustflags = ["-C", "target-feature=+zicsr,+relax"]
 
 [build]

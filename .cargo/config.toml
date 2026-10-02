@@ -12,3 +12,6 @@ runner = "probe-rs run --chip XT_RV32I --chip-description-path firmware_lib/chip
 
 [build]
 target = "riscv32i-unknown-none-elf"
+
+[env]
+DEFMT_LOG = "info"
