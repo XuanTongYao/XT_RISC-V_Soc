@@ -333,27 +333,11 @@ pub struct Spi<MS> {
 
 pub use embedded_hal::spi::Mode as SpiMode;
 impl<MS> Spi<MS> {
-    crate::prop_value!(
-        /// # Warning
-        /// 写入会使SPI复位
-        control0,
-        control0,
-        SpiControl0,
-        get,
-        set
-    );
+    crate::prop_value!(control0, control0, SpiControl0, get);
     crate::prop_value!(control1, control1, SpiControl1, get);
     crate::prop_value!(control2, control2, SpiControl2, get);
 
-    crate::prop_value!(
-        /// # Warning
-        /// 写入会使SPI复位
-        cs,
-        cs,
-        u8,
-        get,
-        set
-    );
+    crate::prop_value!(cs, cs, u8, get);
 
     crate::prop_value!(status, status, SpiStatus, get);
     crate::prop_value!(int_status, int_status, SpiInterrupt, get, set);
@@ -373,7 +357,15 @@ impl<MS> Spi<MS> {
             return Err(InvalidParameters);
         }
         self.inst.regs().clock_prescale.write(div);
+        self.in_progress = false;
         Ok(())
+    }
+
+    /// # Warning
+    /// 写入会使SPI复位
+    pub fn set_control0(&mut self, value: SpiControl0) {
+        self.inst.regs().control0.write(value);
+        self.in_progress = false;
     }
 
     /// # Warning
@@ -384,6 +376,14 @@ impl<MS> Spi<MS> {
                 .with_cpha(mode.phase == Phase::CaptureOnSecondTransition)
                 .with_lsbf(lsb_first)
         });
+        self.in_progress = false;
+    }
+
+    /// # Warning
+    /// 写入会使SPI复位
+    pub fn set_cs(&mut self, value: u8) {
+        self.inst.regs().cs.write(value);
+        self.in_progress = false;
     }
 
     #[inline]
