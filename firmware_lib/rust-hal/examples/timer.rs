@@ -5,11 +5,12 @@
 use core::sync::atomic::{AtomicBool, AtomicU16, Ordering::Relaxed};
 use riscv::interrupt::Interrupt;
 use riscv_macros::entry;
-use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, enable_interrupt};
+use xt_riscv_mcu::{enable_global_interrupt, enable_interrupt};
 use xt_rv32i_hal::hb32::{EintController, Gpio, Uart};
 use xt_rv32i_hal::lb::Ledsd;
 use xt_rv32i_hal::wisbone::{Timer, TimerInterrupt};
 use xt_rv32i_hal::{PacPeripherals, take_pac};
+use xt_rv32i_pac::Interrupt as PacInterrupt;
 
 const RGB_MASK: u32 = 0b111_111 << 24;
 
@@ -28,7 +29,7 @@ fn main() -> ! {
     };
     let mut eint = EintController::new(eint);
     unsafe {
-        eint.set_enable(ExternalInterrupt::Timer.into_mask().into());
+        eint.set_enable((1 << (PacInterrupt::Timer as u32 - 16)).into());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }

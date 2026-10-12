@@ -1,12 +1,12 @@
 //! 高速32bit对齐总线
 
+use crate::pac::Interrupt;
 use crate::pac::bootstrap::InstanceBootstrap;
 use crate::pac::eint_controller::{self, InstanceEintController};
 use crate::pac::gpio::InstanceGpio;
 use crate::pac::msip::{self, InstanceMsip};
 use crate::pac::mtime::InstanceMtime;
 use crate::pac::uart::{self, InstanceUart};
-use xt_riscv_mcu::rv_core;
 
 // TODO riscv-rust 0.16.2更新之后加入临界区
 
@@ -100,7 +100,6 @@ pub struct EintController {
     inst: InstanceEintController,
 }
 
-use rv_core::ExternalInterrupt;
 impl EintController {
     pub fn new(inst: InstanceEintController) -> Self {
         Self { inst }
@@ -111,12 +110,12 @@ impl EintController {
     crate::prop_value!(pending, pending, EintFlags, get);
 
     #[inline(always)]
-    pub unsafe fn enable_interrupt(&mut self, int: ExternalInterrupt) {
-        unsafe { self.enable_interrupt_mask(int.into_mask()) }
+    pub unsafe fn enable_interrupt(&mut self, int: Interrupt) {
+        unsafe { self.enable_interrupt_mask(1 << (int as u32 - 16)) }
     }
     #[inline(always)]
-    pub fn disable_interrupt(&mut self, int: ExternalInterrupt) {
-        self.disable_interrupt_mask(int.into_mask())
+    pub fn disable_interrupt(&mut self, int: Interrupt) {
+        self.disable_interrupt_mask(1 << (int as u32 - 16))
     }
 
     #[inline(always)]
@@ -402,3 +401,5 @@ impl Gpio {
         }
     }
 }
+
+// TODO gpio相关的hal trait

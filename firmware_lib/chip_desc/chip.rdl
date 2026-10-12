@@ -16,6 +16,24 @@
 
 // Using SystemRDL 2.0
 
+struct Interrupt {
+    string name;
+    string desc;
+    longint unsigned value; // Interrupt number (中断号)
+};
+
+property InterruptSource {
+    type = Interrupt[];
+    component = addrmap | regfile;
+    default = '{};
+};
+
+property InterruptType {
+    type = string;
+    component = addrmap;
+    default = "";
+};
+
 addrmap Bootstrap {
     desc = "自举控制器";
     default regwidth = 8;
@@ -783,6 +801,7 @@ addrmap XtRv32i {
     desc = "基于 RISC-V RV32I 架构的微控制器, CPU频率为12MHz";
     addressing = compact;
     default reset = 0;
+    InterruptType = "riscv_core";
 
     // ---- HB32 ----
     Bootstrap bootstrap @ 0x2000;
@@ -792,6 +811,7 @@ addrmap XtRv32i {
     Mtime mtime @ 0x2040;
 
     Uart uart @ 0x2060;
+    uart->InterruptSource = '{ Interrupt'{ name: "UartRx", desc: "", value: 16 } };
 
     Msip msoftwareint @ 0x2080;
 
@@ -800,15 +820,20 @@ addrmap XtRv32i {
     // ---- WISHBONE ----
     I2c i2c1 @ 0x3040;
     i2c1->desc = "WISHBONE 主 I2C (I2C1).";
+    i2c1->InterruptSource = '{ Interrupt'{ name: "I2c1", desc: "", value: 24 } };
 
     I2c i2c2 @ 0x304A;
     i2c2->desc = "WISHBONE 次 I2C (I2C2).";
+    i2c2->InterruptSource = '{ Interrupt'{ name: "I2c2", desc: "", value: 25 } };
 
     Spi spi @ 0x3054;
+    spi->InterruptSource = '{ Interrupt'{ name: "Spi", desc: "", value: 26 } };
 
     Timer timer @ 0x305E;
+    timer->InterruptSource = '{ Interrupt'{ name: "Timer", desc: "", value: 27 } };
 
     Flash flash @ 0x3070;
+    flash->InterruptSource = '{ Interrupt'{ name: "WbcUfm", desc: "", value: 28 } };
 
     EfbIntSource efbintsource @ 0x3077;
 

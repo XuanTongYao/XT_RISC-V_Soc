@@ -4,10 +4,11 @@
 
 use riscv::interrupt::{Exception, Interrupt, Trap};
 use riscv_macros::entry;
-use xt_riscv_mcu::{ExternalInterrupt, delay_sec, enable_global_interrupt, enable_interrupt};
+use xt_riscv_mcu::{delay_sec, enable_global_interrupt, enable_interrupt};
 use xt_rv32i_hal::hb32::{EintController, Uart};
 use xt_rv32i_hal::lb::Ledsd;
 use xt_rv32i_hal::{PacPeripherals, take_pac};
+use xt_rv32i_pac::Interrupt as PacInterrupt;
 use xt_rv32i_pac::get_top;
 
 #[entry]
@@ -23,7 +24,7 @@ fn main() -> ! {
     let mut ledsd = Ledsd::new(ledsd);
     let mut eint = EintController::new(eint);
     unsafe {
-        eint.set_enable(ExternalInterrupt::Uart.into_mask().into());
+        eint.set_enable((1 << (PacInterrupt::UartRx as u32 - 16)).into());
         enable_interrupt::<{ Interrupt::MachineExternal as usize }>();
         enable_global_interrupt();
     }
@@ -40,7 +41,7 @@ fn main() -> ! {
 }
 
 #[unsafe(no_mangle)]
-extern "riscv-interrupt-m" fn UART_RX_IRQ_Handler() {
+extern "riscv-interrupt-m" fn UartRx_IRQ_Handler() {
     unsafe {
         let mut ledsd = Ledsd::new(get_top().ledsd());
         let mut uart = Uart::new(get_top().uart());
@@ -60,13 +61,13 @@ unsafe fn ecall_error_handler() {
 #[unsafe(no_mangle)]
 extern "riscv-interrupt-m" fn Exception_Handler() {
     let Ok(code) = riscv::interrupt::machine::try_cause::<Interrupt, Exception>() else {
-        unsafe { xt_riscv_mcu::goto_unhandled_fault() }
+        unsafe { xt_riscv_mcu::goto_abort_halt() }
     };
 
     unsafe {
         match code {
             Trap::Exception(Exception::MachineEnvCall) => ecall_error_handler(),
-            _ => xt_riscv_mcu::goto_unhandled_fault(),
+            _ => xt_riscv_mcu::goto_abort_halt(),
         }
     }
 }

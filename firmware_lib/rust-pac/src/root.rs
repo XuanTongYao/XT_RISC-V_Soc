@@ -21,3 +21,14 @@ use xt_rv32i::XtRv32i;
 pub const unsafe fn get_top() -> RegisterBlock<XtRv32i> {
     unsafe { RegisterBlock::<XtRv32i>::from_ptr(0 as _) }
 }
+
+#[riscv::pac_enum(unsafe CoreInterruptNumber)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Interrupt {
+    UartRx = 16,
+    I2c1 = 24,
+    I2c2 = 25,
+    Spi = 26,
+    Timer = 27,
+    WbcUfm = 28,
+}

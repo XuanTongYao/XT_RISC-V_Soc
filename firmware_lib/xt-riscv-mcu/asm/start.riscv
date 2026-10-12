@@ -6,7 +6,7 @@ _start:
 1:  auipc gp, %pcrel_hi(__global_pointer$)
     addi gp, gp, %pcrel_lo(1b)
     .option pop
-    lla sp, _sstack # 初始化栈指针
+    lla sp, _stack_start # 初始化栈指针
 
 
 

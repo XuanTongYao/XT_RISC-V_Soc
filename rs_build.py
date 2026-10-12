@@ -32,7 +32,7 @@ def main():
 VALID_CMDS = ("objdump", "objcopy", "build", "run")
 VALID_KIND = ("bin", "example", "test", "bench")
 
-RAM_SECTIONS = (".text", ".rodata", ".data", ".sdata", ".bss")
+RAM_SECTIONS = (".text", ".rodata", ".data", ".sdata", ".bss", ".uninit")
 DEFAULT_TOOL_ARGS = {
     "objcopy": ["-O", "binary"],
     "objdump": [

@@ -9,16 +9,16 @@ core::arch::global_asm!(include_str!("../asm/trap.riscv"));
 
 #[cfg(not(feature = "no_trap"))]
 unsafe extern "C" {
-    pub unsafe fn UnhandledFault() -> !;
+    pub unsafe fn AbortHalt() -> !;
 }
 
 #[cfg(not(feature = "no_trap"))]
 #[inline(always)]
-pub unsafe fn goto_unhandled_fault() -> ! {
+pub unsafe fn goto_abort_halt() -> ! {
     unsafe {
         core::arch::asm!(
             "jal zero, {dst}",
-            dst = sym UnhandledFault,
+            dst = sym AbortHalt,
             options(noreturn)
         );
     }
