@@ -22,7 +22,7 @@ impl Bootstrap {
         Self { inst }
     }
 
-    crate::prop_value!(
+    prop_value!(
         /// # Note
         /// 写入无效地址会导致preload寄存器硬件失效
         preload_str_addr,
@@ -105,9 +105,9 @@ impl EintController {
         Self { inst }
     }
 
-    crate::prop_value!(unsafe enable, enable, EintFlags, set, modify);
-    crate::prop_value!(enable, enable, EintFlags, get);
-    crate::prop_value!(pending, pending, EintFlags, get);
+    prop_value!(unsafe enable, enable, EintFlags, set, modify);
+    prop_value!(enable, enable, EintFlags, get);
+    prop_value!(pending, pending, EintFlags, get);
 
     #[inline(always)]
     pub unsafe fn enable_interrupt(&mut self, int: Interrupt) {
@@ -203,8 +203,8 @@ impl Mtime {
 
 #[cfg(target_arch = "riscv64")]
 impl Mtime {
-    crate::prop_value!(mtime, mtime, u64, get, set);
-    crate::prop_value!(mtimecmp, mtimecmp, u64, get, set);
+    prop_value!(mtime, mtime, u64, get, set);
+    prop_value!(mtimecmp, mtimecmp, u64, get, set);
 }
 
 use uart::status::Status as UartStatus;
@@ -219,7 +219,7 @@ impl Uart {
         Self { inst }
     }
 
-    crate::prop_value!(status, status, UartStatus, get);
+    prop_value!(status, status, UartStatus, get);
 
     /// 丢弃接收FIFO中的数据
     pub fn discard_rx_fifo(&mut self) {
@@ -366,9 +366,9 @@ impl Gpio {
     /// 有效GPIO数量
     pub const VALID_COUNT: u32 = 28;
 
-    crate::prop_value!(direction, direction, u32, get, set, modify);
-    crate::prop_value!(data, data, u32, get, set, modify);
-    crate::prop_value!(af_enable, af_enable, u32, get, set, modify);
+    prop_value!(direction, direction, u32, get, set, modify);
+    prop_value!(data, data, u32, get, set, modify);
+    prop_value!(af_enable, af_enable, u32, get, set, modify);
 
     pub fn set_af(&mut self, gpio: u32, af: u32) {
         if gpio >= Self::VALID_COUNT {

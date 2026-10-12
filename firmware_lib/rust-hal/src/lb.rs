@@ -11,8 +11,8 @@ impl KeySwitch {
     pub fn new(inst: InstanceKeySwitch) -> Self {
         Self { inst }
     }
-    crate::prop_value!(key, key, u8, get);
-    crate::prop_value!(switch, switch, u8, get);
+    prop_value!(key, key, u8, get);
+    prop_value!(switch, switch, u8, get);
 }
 
 pub struct Led {
@@ -22,7 +22,7 @@ impl Led {
     pub fn new(inst: InstanceLed) -> Self {
         Self { inst }
     }
-    crate::prop_value!(data, data, u8, get, set);
+    prop_value!(data, data, u8, get, set);
 }
 
 pub struct Ledsd {
@@ -32,9 +32,9 @@ impl Ledsd {
     pub fn new(inst: InstanceLedsd) -> Self {
         Self { inst }
     }
-    crate::prop_value!(data, data, u8, get, set);
-    crate::getset_field!(decimal_point, control, dp, u8);
-    crate::getset_field!(
+    prop_value!(data, data, u8, get, set);
+    getset_field!(decimal_point, control, dp, u8);
+    getset_field!(
         /// 低电平有效
         digit,
         control,

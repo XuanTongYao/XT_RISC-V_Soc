@@ -53,7 +53,7 @@ pub struct I2c<MS> {
 }
 
 impl<MS> I2c<MS> {
-    crate::prop_value!(
+    prop_value!(
         /// # Warning
         /// 设置会使I2C复位
         control,
@@ -62,10 +62,10 @@ impl<MS> I2c<MS> {
         get,
         set
     );
-    crate::prop_value!(status, status, I2cStatus, get);
-    crate::prop_value!(general_call_data, general_call_data, u8, get);
-    crate::prop_value!(int_status, int_status, I2cInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, I2cInterrupt, get, set, modify);
+    prop_value!(status, status, I2cStatus, get);
+    prop_value!(general_call_data, general_call_data, u8, get);
+    prop_value!(int_status, int_status, I2cInterrupt, get, set);
+    prop_value!(int_en, int_en, I2cInterrupt, get, set, modify);
 
     #[inline]
     pub fn reset(&mut self) {
@@ -333,15 +333,15 @@ pub struct Spi<MS> {
 
 pub use embedded_hal::spi::Mode as SpiMode;
 impl<MS> Spi<MS> {
-    crate::prop_value!(control0, control0, SpiControl0, get);
-    crate::prop_value!(control1, control1, SpiControl1, get);
-    crate::prop_value!(control2, control2, SpiControl2, get);
+    prop_value!(control0, control0, SpiControl0, get);
+    prop_value!(control1, control1, SpiControl1, get);
+    prop_value!(control2, control2, SpiControl2, get);
 
-    crate::prop_value!(cs, cs, u8, get);
+    prop_value!(cs, cs, u8, get);
 
-    crate::prop_value!(status, status, SpiStatus, get);
-    crate::prop_value!(int_status, int_status, SpiInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, SpiInterrupt, get, set, modify);
+    prop_value!(status, status, SpiStatus, get);
+    prop_value!(int_status, int_status, SpiInterrupt, get, set);
+    prop_value!(int_en, int_en, SpiInterrupt, get, set, modify);
 
     /// 获取预分频`div`，实际频率为`WISHBONE/(div+1)`
     pub fn prescale(&self) -> u8 {
@@ -651,8 +651,8 @@ impl Timer {
         Self { inst }
     }
 
-    crate::prop_value!(control0, control0, TimerControl0, get, set, modify);
-    crate::prop_value!(control2, control2, TimerControl2, get, set);
+    prop_value!(control0, control0, TimerControl0, get, set, modify);
+    prop_value!(control2, control2, TimerControl2, get, set);
 
     pub fn set_mode(&mut self, mode: TimerMode) {
         use TimerCounterMode::*;
@@ -695,9 +695,9 @@ impl Timer {
         Some(mode)
     }
 
-    crate::getset_field!(enable_overflow_flag, control1, sovfen, bool);
-    crate::getset_field!(top_autoload_sel, control1, tsel, bool);
-    crate::getset_field!(enable_input_capture, control1, icen, bool);
+    getset_field!(enable_overflow_flag, control1, sovfen, bool);
+    getset_field!(top_autoload_sel, control1, tsel, bool);
+    getset_field!(enable_input_capture, control1, icen, bool);
 
     #[inline]
     pub fn set_top(&mut self, value: u16) {
@@ -715,9 +715,9 @@ impl Timer {
     get_u16_from_2_u8!(compare, [compareh, comparel]);
     get_u16_from_2_u8!(capture, [captureh, capturel]);
 
-    crate::prop_value!(status, status, TimerStatus, get);
-    crate::prop_value!(int_status, int_status, TimerInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, TimerInterrupt, get, set, modify);
+    prop_value!(status, status, TimerStatus, get);
+    prop_value!(int_status, int_status, TimerInterrupt, get, set);
+    prop_value!(int_en, int_en, TimerInterrupt, get, set, modify);
 }
 
 #[derive(Debug)]
@@ -1011,5 +1011,5 @@ impl EfbIntSource {
         Self { inst }
     }
 
-    crate::prop_value!(source, source, EfbIntFlags, get);
+    prop_value!(source, source, EfbIntFlags, get);
 }
