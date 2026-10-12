@@ -72,7 +72,7 @@ impl<MS> I2c<MS> {
         let control = self.control();
         self.set_control(control.with_i2cen(false));
         // NOTE 原始C代码出于未知原因在这里延迟了50us，如果出现问题请加回来
-        self.set_control(control.with_i2cen(true));
+        self.set_control(control);
     }
 
     pub fn prescale(&self) -> u16 {
@@ -88,6 +88,10 @@ impl<MS> I2c<MS> {
     fn rx(&mut self) -> u8 {
         self.inst.regs().rx_data.read()
     }
+}
+
+pub struct I2cBuildError {
+    pub inst: InstanceI2c,
 }
 
 impl I2c<Slave> {
@@ -108,15 +112,12 @@ impl I2c<Slave> {
 }
 
 impl I2c<Master> {
-    pub fn init(inst: InstanceI2c, prescale: NonZeroU16) -> Result<Self, InvalidParameters> {
-        let mut i2c = Self {
-            inst,
-            write_delay_cycles: 0,
-            read_delay_cycles: 0,
-            _marker: PhantomData,
-        };
-        i2c.set_control(I2cControl::new());
-        i2c.set_prescale(prescale).and(Ok(i2c))
+    pub fn init(inst: InstanceI2c, prescale: NonZeroU16) -> Result<Self, I2cBuildError> {
+        let div = prescale.get();
+        if div >= 1024 {
+            return Err(I2cBuildError { inst: inst });
+        }
+        return Ok(unsafe { Self::init_unchecked(inst, div) });
     }
     pub unsafe fn init_unchecked(inst: InstanceI2c, prescale: u16) -> Self {
         let mut i2c = Self {
@@ -181,8 +182,12 @@ impl I2c<Master> {
         self.tx(addr | 0x01); // 最低位为1表示读操作
         self.inst.regs().command.write(0x94.into());
         while !self.status().srw() {}
-        self.inst.regs().command.write(0x24.into());
-        self.status().rarc()
+        rv_core::delay(self.write_delay_cycles as u32); // 等(0,6)个I2C时钟周期，接收到ACK状态
+        let ack_bit = self.status().rarc();
+        if !ack_bit {
+            self.inst.regs().command.write(0x24.into());
+        }
+        ack_bit
     }
 
     /// 必须处于**读取模式**中才能调用此函数
@@ -244,7 +249,7 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
         let mut last_op = OpType::Null;
 
         // 等待空闲
-        self.set_control(I2cControl::new().with_i2cen(true));
+        self.set_control(self.control().with_i2cen(true));
         while self.status().busy() {}
 
         let mut op_iter = operations.iter_mut().peekable();
@@ -306,9 +311,9 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
         }
         if err.is_err() {
             self.inst.regs().command.write(0x44.into());
-            while self.status().busy() {}
         }
-        self.set_control(I2cControl::new().with_i2cen(false));
+        while self.status().busy() {}
+        self.set_control(self.control().with_i2cen(false));
         err
     }
 }
