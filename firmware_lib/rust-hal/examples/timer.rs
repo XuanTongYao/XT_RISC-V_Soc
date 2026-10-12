@@ -35,7 +35,7 @@ fn main() -> ! {
     }
     let mut uart = Uart::new(uart);
     let mut timer = Timer::init(timer, TimerControl0::new());
-    timer.set_top_autoload(true);
+    timer.set_top_autoload_sel(true);
     let mut gpio = Gpio::new(gpio);
     let mut ledsd = Ledsd::new(ledsd);
     ledsd.set_digit(0b11); // 关闭LED数码管

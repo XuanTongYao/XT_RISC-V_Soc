@@ -668,8 +668,30 @@ impl Timer {
             .control1
             .modify(|con| con.with_tcm(counter).with_ocm(output));
     }
+
+    pub fn mode(&self) -> Option<TimerMode> {
+        use TimerCounterMode::*;
+        use TimerMode::*;
+        use TimerOutputMode::*;
+
+        let control1 = self.inst.regs().control1.read();
+        let output = control1.ocm();
+        let counter = control1.tcm();
+        let mode = match (output, counter) {
+            (TimerOutputMode::StaticLow, counter) => TimerMode::StaticLow(counter),
+            (ToggleOnTop, Watchdog) => ToggleOnTopWatchDog,
+            (ToggleOnTop, ClearTimerOnTop) => ToggleOnTopClearTimerOnTop,
+            (SetClear, FastPWM) => SetClearFastPWM,
+            (ClearSet, FastPWM) => ClearSetFastPWM,
+            (SetClear, PhaseAndFrequencyCorrectPWM) => SetClearPhaseAndFrequencyCorrectPWM,
+            (ClearSet, PhaseAndFrequencyCorrectPWM) => ClearSetPhaseAndFrequencyCorrectPWM,
+            _ => return None,
+        };
+        Some(mode)
+    }
+
     crate::getset_field!(enable_overflow_flag, control1, sovfen, bool);
-    crate::getset_field!(top_autoload, control1, tsel, bool);
+    crate::getset_field!(top_autoload_sel, control1, tsel, bool);
     crate::getset_field!(enable_input_capture, control1, icen, bool);
 
     #[inline]
@@ -693,21 +715,39 @@ impl Timer {
     crate::prop_value!(int_en, int_en, TimerInterrupt, get, set, modify);
 }
 
+#[derive(Debug)]
+pub struct TimerModeError(embedded_hal::pwm::ErrorKind);
+
+impl embedded_hal::pwm::Error for TimerModeError {
+    fn kind(&self) -> embedded_hal::pwm::ErrorKind {
+        self.0
+    }
+}
+
 impl embedded_hal::pwm::ErrorType for Timer {
-    type Error = !;
+    type Error = TimerModeError;
 }
 
 impl embedded_hal::pwm::SetDutyCycle for Timer {
     fn max_duty_cycle(&self) -> u16 {
-        return u16::MAX;
+        if self.top_autoload_sel() {
+            self.top()
+        } else {
+            u16::MAX
+        }
     }
 
     fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
-        self.set_top_autoload(false);
-        self.set_mode(TimerMode::ClearSetFastPWM);
-        self.set_control0(TimerControl0::new().with_prescale(TimerDivider::Div1));
-        self.set_compare(duty);
-        Ok(())
+        use TimerMode::*;
+        use embedded_hal::pwm::ErrorKind::*;
+
+        let mode = self.mode();
+        if let None | Some(ToggleOnTopClearTimerOnTop | ToggleOnTopWatchDog | StaticLow(_)) = mode {
+            Err(TimerModeError(Other))
+        } else {
+            self.set_compare(duty);
+            Ok(())
+        }
     }
 }
 

@@ -517,7 +517,11 @@ addrmap Timer {
             encode = TimerOutputMode_e;
         } OCM[3:2];
         field {
-            desc = "启用Top寄存器自动装载";
+            desc = "Top寄存器自动装载选择
+            
+            - `true`: 自动装载top_set寄存器的值
+            - `false`: 自动装载为`0xFFFF`
+            ";
         } TSEL[4:4];
         field {
             desc = "启用输入捕获";

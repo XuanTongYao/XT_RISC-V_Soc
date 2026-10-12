@@ -151,7 +151,10 @@ pub mod control1 {
 
         bitfield_accessor!(
             u8, bool, tsel, with_tsel, 0x10, 4
-            /// 启用Top寄存器自动装载
+            /// Top寄存器自动装载选择
+            ///
+            /// - `true`: 自动装载top_set寄存器的值
+            /// - `false`: 自动装载为`0xFFFF`
             ///
             /// Bits: `4`
         );
