@@ -5,6 +5,7 @@
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering::Relaxed;
 
+use panic_halt as _;
 use riscv::interrupt::Interrupt::*;
 use riscv_macros::entry;
 use xt_riscv_mcu::{enable_global_interrupt, set_interrupt};

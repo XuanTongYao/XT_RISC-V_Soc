@@ -2,6 +2,7 @@
 #![no_main]
 #![feature(abi_riscv_interrupt)]
 
+use panic_halt as _;
 use riscv::interrupt::{Exception, Interrupt, Trap};
 use riscv_macros::entry;
 use xt_riscv_mcu::{delay_sec, enable_global_interrupt, enable_interrupt};

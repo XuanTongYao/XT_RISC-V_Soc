@@ -10,13 +10,6 @@ pub mod wisbone;
 pub use xt_riscv_mcu;
 pub use xt_rv32i_pac as pac;
 
-#[cfg(feature = "panic_halt")]
-#[inline(never)]
-#[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {}
-}
-
 pub type PacPeripherals = pac::xt_rv32i::SubInstancesXtRv32i;
 
 pub fn take_pac() -> Option<PacPeripherals> {

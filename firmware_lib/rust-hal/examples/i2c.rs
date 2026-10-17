@@ -4,6 +4,7 @@
 use core::num::NonZeroU16;
 
 use embedded_hal::i2c::I2c as _;
+use panic_halt as _;
 use riscv_macros::entry;
 use xt_rv32i_hal::hb32::Uart;
 use xt_rv32i_hal::wisbone::{I2c, Master};

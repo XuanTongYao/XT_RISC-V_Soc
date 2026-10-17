@@ -2,6 +2,7 @@
 #![no_main]
 
 use embedded_hal::spi::{MODE_0, MODE_1, MODE_2, MODE_3};
+use panic_halt as _;
 use riscv_macros::entry;
 use xt_rv32i_hal::hb32::Uart;
 use xt_rv32i_hal::wisbone::{Master, Spi};

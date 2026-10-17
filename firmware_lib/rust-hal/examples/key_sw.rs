@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use panic_halt as _;
 use riscv_macros::entry;
 use xt_rv32i_hal::{
     PacPeripherals,

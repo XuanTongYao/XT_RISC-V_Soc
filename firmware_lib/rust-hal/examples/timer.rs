@@ -3,6 +3,7 @@
 #![feature(abi_riscv_interrupt)]
 
 use core::sync::atomic::{AtomicBool, AtomicU16, Ordering::Relaxed};
+use panic_halt as _;
 use riscv::interrupt::Interrupt;
 use riscv_macros::entry;
 use xt_riscv_mcu::{enable_global_interrupt, enable_interrupt};
