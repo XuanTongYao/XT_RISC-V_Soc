@@ -165,6 +165,7 @@ impl Mtime {
 
 #[cfg(target_arch = "riscv32")]
 impl Mtime {
+    #[inline]
     pub fn mtime(&self) -> u64 {
         loop {
             let high = self.inst.regs().mtimeh.read();
@@ -176,6 +177,7 @@ impl Mtime {
     }
     /// # Safety
     /// 设置mtime不当，可能会立即引发定时器中断
+    #[inline]
     pub unsafe fn set_mtime(&mut self, value: u64) {
         let high = (value >> 32) as u32;
         let low = value as u32;
@@ -185,6 +187,7 @@ impl Mtime {
         self.inst.regs().mtimeh.write(high);
     }
 
+    #[inline]
     pub fn mtimecmp(&self) -> u64 {
         let high = self.inst.regs().mtimecmph.read();
         let low = self.inst.regs().mtimecmpl.read();
@@ -192,6 +195,7 @@ impl Mtime {
     }
     /// # Safety
     /// 设置mtimecmp不当，可能会立即引发定时器中断
+    #[inline]
     pub unsafe fn set_mtimecmp(&mut self, value: u64) {
         let high = (value >> 32) as u32;
         let low = value as u32;

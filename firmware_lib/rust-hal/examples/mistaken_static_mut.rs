@@ -9,7 +9,8 @@ use panic_halt as _;
 use riscv::interrupt::Interrupt::*;
 use riscv_macros::entry;
 use xt_riscv_mcu::rv_core::{enable_global_interrupt, set_interrupt};
-use xt_rv32i_hal::{PacPeripherals, lb::Ledsd, take_pac};
+use xt_rv32i_hal::pac::get_top;
+use xt_rv32i_hal::{PacPeripherals, hb32::Mtime, lb::Ledsd, take_pac};
 
 static mut COMPARE: u8 = 0;
 
@@ -34,5 +35,9 @@ fn main() -> ! {
 
 #[unsafe(no_mangle)]
 extern "riscv-interrupt-m" fn mtimer_IRQ_Handler() {
-    unsafe { COMPARE += 1 }
+    unsafe {
+        COMPARE += 1;
+        let mut mtime = Mtime::new(get_top().mtime());
+        mtime.update_mtimecmp_forward(Mtime::sec_ticks(1));
+    }
 }
