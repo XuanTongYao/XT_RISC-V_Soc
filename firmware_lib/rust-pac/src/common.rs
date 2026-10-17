@@ -45,6 +45,7 @@ pub mod register {
         }
 
         /// Performs a read-modify-write operation
+        #[inline(always)]
         pub fn modify<F: FnOnce(T) -> T>(&self, f: F) {
             self.0.set(f(self.0.get()));
         }
@@ -89,21 +90,21 @@ pub mod register {
 
             impl core::ops::BitOr for $B {
                 type Output = Self;
-
+                #[inline(always)]
                 fn bitor(self, rhs: Self) -> Self::Output {
                     Self(self.0 | rhs.0)
                 }
             }
             impl core::ops::BitAnd for $B {
                 type Output = Self;
-
+                #[inline(always)]
                 fn bitand(self, rhs: Self) -> Self::Output {
                     Self(self.0 & rhs.0)
                 }
             }
             impl core::ops::BitXor for $B {
                 type Output = Self;
-
+                #[inline(always)]
                 fn bitxor(self, rhs: Self) -> Self::Output {
                     Self(self.0 ^ rhs.0)
                 }
@@ -177,7 +178,7 @@ pub mod register {
             self.0 as _
         }
         #[inline(always)]
-        pub const fn regs(&self) -> &'static T {
+        pub const fn regs(&self) -> &T {
             unsafe { &*self.0 }
         }
     }
