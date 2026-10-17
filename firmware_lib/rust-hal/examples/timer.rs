@@ -9,9 +9,9 @@ use riscv_macros::entry;
 use xt_riscv_mcu::{enable_global_interrupt, enable_interrupt};
 use xt_rv32i_hal::hb32::{EintController, Gpio, Uart};
 use xt_rv32i_hal::lb::Ledsd;
+use xt_rv32i_hal::pac::Interrupt as PacInterrupt;
 use xt_rv32i_hal::wisbone::{Timer, TimerInterrupt};
 use xt_rv32i_hal::{PacPeripherals, take_pac};
-use xt_rv32i_pac::Interrupt as PacInterrupt;
 
 const RGB_MASK: u32 = 0b111_111 << 24;
 

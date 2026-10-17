@@ -5,8 +5,8 @@ use panic_halt as _;
 use riscv_macros::entry;
 use xt_rv32i_hal::hb32::BootstrapPreloadStr;
 use xt_rv32i_hal::hb32::{Bootstrap, Uart};
+use xt_rv32i_hal::pac::get_top;
 use xt_rv32i_hal::wisbone::Flash;
-use xt_rv32i_pac::get_top;
 
 const MAX_TEXT_DATA_LEN: usize = 4096 + 4096 - 512; // 512是栈大小
 const MAX_PAGES: usize = if (MAX_TEXT_DATA_LEN >> 4) < Flash::TOTAL_PAGE {

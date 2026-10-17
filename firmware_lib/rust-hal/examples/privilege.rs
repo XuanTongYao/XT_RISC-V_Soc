@@ -8,9 +8,9 @@ use riscv_macros::entry;
 use xt_riscv_mcu::{delay_sec, enable_global_interrupt, enable_interrupt};
 use xt_rv32i_hal::hb32::{EintController, Uart};
 use xt_rv32i_hal::lb::Ledsd;
+use xt_rv32i_hal::pac::Interrupt as PacInterrupt;
+use xt_rv32i_hal::pac::get_top;
 use xt_rv32i_hal::{PacPeripherals, take_pac};
-use xt_rv32i_pac::Interrupt as PacInterrupt;
-use xt_rv32i_pac::get_top;
 
 #[entry]
 fn main() -> ! {

@@ -11,9 +11,9 @@ use riscv_macros::entry;
 use xt_riscv_mcu::{enable_global_interrupt, set_interrupt};
 use xt_rv32i_hal::hb32::{EintController, Mtime, Uart};
 use xt_rv32i_hal::lb::{Led, Ledsd};
+use xt_rv32i_hal::pac::Interrupt as PacInterrupt;
+use xt_rv32i_hal::pac::get_top;
 use xt_rv32i_hal::{PacPeripherals, take_pac};
-use xt_rv32i_pac::Interrupt as PacInterrupt;
-use xt_rv32i_pac::get_top;
 
 static MTIMER_IRQ_FLAG: AtomicBool = AtomicBool::new(false);
 
