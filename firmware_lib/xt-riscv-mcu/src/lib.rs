@@ -3,7 +3,7 @@
 #[cfg(not(feature = "no_start"))]
 core::arch::global_asm!(include_str!("../asm/start.riscv"));
 #[cfg(not(feature = "no_bss"))]
-core::arch::global_asm!(include_str!("../asm/init_bss.riscv"));
+core::arch::global_asm!(include_str!("../asm/init_data_bss.riscv"));
 #[cfg(not(feature = "no_trap"))]
 core::arch::global_asm!(include_str!("../asm/trap.riscv"));
 
