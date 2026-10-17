@@ -16,6 +16,7 @@ no_trap = ["xt-riscv-mcu/no_trap"]   # 不初始化自陷功能与中断向量
 xt-rv32i-pac = { path = "../rust-pac" }
 xt-riscv-mcu = { path = "../xt-riscv-mcu" }
 pastey = "0.2.3"
+critical-section = "1.2.0"
 
 embedded-hal = "1.0.0"
 embedded-io = "0.7.1"
