@@ -7,10 +7,10 @@ license = "Apache-2.0"
 
 [features]
 default = []
-zh_cn_prompt = []                    # 自举程序 汉字提示 不启用则默认为emoji提示
-no_start = ["xt-riscv-mcu/no_start"] # 无_start汇编初始化 
-no_bss = ["xt-riscv-mcu/no_bss"]     # 不初始化.bss段
-no_trap = ["xt-riscv-mcu/no_trap"]   # 不初始化自陷功能与中断向量
+zh_cn_prompt = []                          # 自举程序 汉字提示 不启用则默认为emoji提示
+no_start = ["xt-riscv-mcu/no_start"]       # 无_start汇编初始化 
+no_data_bss = ["xt-riscv-mcu/no_data_bss"] # 不初始化.data和.bss段
+no_trap = ["xt-riscv-mcu/no_trap"]         # 不初始化自陷功能与中断向量
 
 [dependencies]
 xt-rv32i-pac = { path = "../rust-pac" }

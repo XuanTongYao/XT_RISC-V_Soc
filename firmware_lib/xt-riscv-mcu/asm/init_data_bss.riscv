@@ -1,4 +1,4 @@
-.section .init.clear_bss,"ax",@progbits
+.section .init.data_and_bss,"ax",@progbits
     # 清空 .bss 段
     lla a0, __BSS_START__
     lla a1, __BSS_END__
@@ -8,3 +8,104 @@
     addi a0, a0, 4
     bltu a0, a1, 1b
 2:
+    # 如果LMA可以直接读取就用这个
+    # 从加载地址拷贝 .data 段到运行地址
+#     lla a0, __DATA_BEGIN__
+#     lla a1, __DATA_END__
+#     lla a2, __DATA_LOAD_START__
+#     bgeu a0, a1, 2f
+# 1:
+#     lw a3, 0(a2) # 读取LMA的数据
+#     sw a3, 0(a0)
+#     addi a2, a2, 4
+#     addi a0, a0, 4
+#     bltu a0, a1, 1b
+# 2:
+
+    # LMA不能直接读取，需要用下面的方法读取
+    j _load_data_entry
+
+
+# a0是缓冲区起点
+# a1是缓冲区终点(不含)
+# a2是命令与操作数，低位字节先发送
+# a3是操作数数量
+# a4控制是否读写 0x00读取 其他是写入
+cmd_op_4:
+    li a3, 0x04
+command_frame:
+    li t0, 0x80
+    sb t0, 0(s1) # WRITE_FLASH_CON
+# 写入命令与操作数
+1:  sb a2, 1(s1) # WRITE_FLASH_DATA
+    srli a2, a2, 8
+    addi a3, a3, -1
+    bnez a3, 1b;
+    
+# 读写数据
+1:  bgeu a0, a1, 4f # 起点>=终点直接跳过
+    bnez a4, 2f  # 不为0x00表示写入
+# 读取
+    lbu a2, 3(s1) # READ_FLASH_DATA
+    sb a2, 0(a0)
+    j 3f
+# 写入
+2:  lbu a2, 0(a0)
+    sb a2, 1(s1) # WRITE_FLASH_DATA
+# 循环末尾
+3:  addi a0, a0, 1  # 缓冲区地址递增
+    j 1b
+# 函数返回
+4:  sb x0, 0(s1) # WRITE_FLASH_CON
+    ret
+
+
+.equ WISHBONE_BASE, 12288
+.equ FLASH_BASE, WISHBONE_BASE+0x70
+
+.equ CORE_FREQ_MHZ, 12
+.equ _8US_COUNT, 1+(((8)*CORE_FREQ_MHZ)/4)
+
+.global _flash_load
+_flash_load:
+    lla s1, FLASH_BASE
+    lla a0, set_addr_cmd_op
+    mv a1, a0
+# 复位Flash
+    li a4, 0x40
+    sb a4, 0(s1) # WRITE_FLASH_CON
+# 开启透明传输
+    li a2, 0x00000874   # 发送0x74 08 00 00
+    jal cmd_op_4
+    li a2, _8US_COUNT
+1:  addi a2, a2, -1
+    bnez a2, 1b
+# 设置ufm地址
+    addi a1, a0, 4
+    li a2, 0x000000B4   # 发送0xB4 00 00 00
+    # 前面已经设为0x40了，不需要重复设置a4
+    jal cmd_op_4
+# 读取flash并写入Ram
+    lla a0, __DATA_BEGIN__
+    lla a5, __DATA_END__
+    li a4, 0x00         # 读
+read_ufm:
+    addi a1, a0, 16
+    li a2, 0x010010CA   # 发送0xCA 10 00 01
+    jal cmd_op_4
+    bltu a0, a5, read_ufm
+# 关闭透明传输
+    mv a1, a0
+    li a2, 0x000026     # 发送0x26 00 00
+    li a3, 0x03
+    jal command_frame
+    li a2, 0xFF     # 发送0xFF
+    li a3, 0x01
+    jal command_frame
+.global _flash_load_skip
+_flash_load_skip:
+
+.rodata
+set_addr_cmd_op:
+.align 2
+.word 0x00020040 # 设置ufm地址为512页(8192 byte) 发送0x40 00 02 00
