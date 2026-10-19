@@ -978,7 +978,7 @@ impl Flash {
             for _ in 0..Self::PAGE_BYTES {
                 unsafe {
                     ptr.write_volatile(fl.inst.regs().read_data.read());
-                    ptr = ptr.add(1);
+                    ptr = ptr.wrapping_add(1);
                 }
             }
         });
@@ -992,7 +992,7 @@ impl Flash {
             for _ in 0..Self::PAGE_BYTES {
                 unsafe {
                     fl.inst.regs().write_data.write(ptr.read_volatile());
-                    ptr = ptr.add(1);
+                    ptr = ptr.wrapping_add(1);
                 }
             }
         });
