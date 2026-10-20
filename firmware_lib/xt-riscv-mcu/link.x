@@ -5,7 +5,7 @@ ENTRY(_start)
 /* riscv-none-elf-ld "--verbose" *> default.ld */
 
 /* .data 复位后没有重置的问题 
-解决方法1:  预留暂存区，在bss留一个标记，首次启动拷贝到暂存区作为只读副本。后面启动时从暂存区拷贝回来。
+解决方法1:  预留一个与.data大小相同的输出段，llvm的链接器允许你将LMA设为这个段的起始地址。在gcc gold中会报错。
 解决方法2:  把.data加载地址放到超出RAM大小的区域（Flash还剩下4080 Bytes），启动时加载
             当.data段大于236字节时，才有实际收益
 解决方法3:  ROM与RAM不使用同样的地址，能随意切换从ROM或RAM读取指令
@@ -45,6 +45,8 @@ SECTIONS
         *(.rodata .rodata.*)
     } > RAM
 
+    /* 解决方法1 */
+    /* AT(ADDR(.data) + SIZEOF(.data)) */
     .data : AT(ORIGIN(RAM) + LENGTH(RAM)) ALIGN(16)
     {
         __DATA_BEGIN__ = .;
@@ -57,6 +59,12 @@ SECTIONS
     _load_data_entry = (__DATA_END__ == __DATA_BEGIN__) 
                     ? _flash_load_skip 
                     : _flash_load;
+
+    /* 解决方法1 */
+    /* .data_load (NOLOAD) : ALIGN(16)
+    {
+        . =  ADDR(.data) + (SIZEOF(.data)*2);
+    } > RAM */
 
     .bss : ALIGN(4)
     {
@@ -81,7 +89,8 @@ SECTIONS
     } > RAM
 
     /* 设置为尽量覆盖.bss段的地址 */
-    __global_pointer$ = MAX(__DATA_BEGIN__ + 0x800, __BSS_END__ - 0x800);
+    __global_pointer$ 
+        = MAX(__DATA_BEGIN__ + 0x800, __BSS_END__ - 0x800);
 
 
     _end = .;
