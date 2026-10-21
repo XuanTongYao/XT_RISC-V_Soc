@@ -49,7 +49,7 @@ module CoreCtrl
     end
 
     jump  = jump_en_ex || trap.occurred || debug.resume;
-    flush = jump || trap.valid_int_req || debug.valid_delay_halt;
+    flush = jump || trap.valid_int_req || debug.valid_delay_halt || debug.halt;
   end
 
   //----------程序流控制----------//
