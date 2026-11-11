@@ -60,7 +60,6 @@ module RISC_V_Core
   // 回归正常程序流的地址
   wire [CFG.PC_LEN-1:0] resume_addr;
   assign core_stall_n = stall_n;
-  assign core_inst_if.enable = stall_n;
 
   wire wfi;
 
