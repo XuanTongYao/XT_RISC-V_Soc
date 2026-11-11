@@ -71,13 +71,13 @@ interface trap_if #(
   mcause_t new_mcause;
   logic [PC_LEN-1:0] new_mepc;
 
-  wire any_int_come = (mie & mip) != 0;
+  logic any_int_come;
   logic valid_int_req;
   modport controller(
       output valid_int_req, occurred, jump_addr, new_mcause, new_mepc,
       input mstatus, mie, mip, mtvec, any_int_come
   );
-  modport csr(input occurred, returned, new_mepc, new_mcause, output mstatus, mie, mip, mtvec, mepc);
+  modport csr(input occurred, returned, new_mepc, new_mcause, output mstatus, mie, mip, any_int_come, mtvec, mepc);
   modport core_controller(input any_int_come, valid_int_req, occurred, jump_addr);
   modport execute(input mepc, output returned);
 endinterface
