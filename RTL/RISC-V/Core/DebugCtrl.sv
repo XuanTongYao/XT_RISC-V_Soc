@@ -56,10 +56,7 @@ module DebugCtrl
 
       if (recover_from_reset) begin
         recover_from_reset <= 0;
-        dm_hart.havereset  <= 1;
         dm_hart.dm_state   <= RUNNING;
-      end else if (dm_hart.ackhavereset) begin
-        dm_hart.havereset <= 0;
       end
 
       if (debug.halt) begin
@@ -68,6 +65,16 @@ module DebugCtrl
       end else if (debug.resume) begin
         debug.debug_mode <= 0;
         dm_hart.dm_state <= RUNNING;
+      end
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (!rst) begin
+      if (recover_from_reset) begin
+        dm_hart.havereset <= 1;
+      end else if (dm_hart.ackhavereset) begin
+        dm_hart.havereset <= 0;
       end
     end
   end
@@ -130,24 +137,35 @@ module DebugCtrl
       if (debug_override_csr) begin
         debug_override_csr <= 0;
         completed <= 1;
-        command0.rdata <= debug_rw_csr.rdata;
       end
       if (debug_override_gpr) begin
         debug_override_gpr <= 0;
         completed <= 1;
-        command0.rdata <= debug_read_gpr.data;
       end
       if (completed) completed <= 0;
 
       if (command0.transfer && !command0.failed) begin
         if (regno >= GPR_NO_BASE) begin
-          debug_override_gpr   <= 1;
+          debug_override_gpr <= 1;
+        end else begin
+          debug_override_csr <= 1;
+        end
+      end
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (!rst) begin
+      if (debug_override_csr) command0.rdata <= debug_rw_csr.rdata;
+      if (debug_override_gpr) command0.rdata <= debug_read_gpr.data;
+
+      if (command0.transfer && !command0.failed) begin
+        if (regno >= GPR_NO_BASE) begin
           debug_write_gpr.en   <= command0.write;
           debug_write_gpr.addr <= regno[4:0];
           debug_write_gpr.data <= command0.wdata;
           debug_read_gpr.addr  <= regno[4:0];
         end else begin
-          debug_override_csr <= 1;
           debug_rw_csr.ren   <= !command0.write;
           debug_rw_csr.wen   <= command0.write;
           debug_rw_csr.addr  <= regno[11:0];

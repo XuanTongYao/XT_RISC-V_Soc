@@ -18,7 +18,11 @@ module ExceptionPipeLine
   exception_t exception_if_id;
   exception_t exception_id_ex;
   always_ff @(posedge clk, posedge rst) begin
-    if (rst || flush) begin
+    if (rst) begin
+      exception_if_id <= 0;
+      exception_id_ex <= 0;
+    end else if (flush) begin
+      // ! 必须与上面的复位代码一致 !
       exception_if_id <= 0;
       exception_id_ex <= 0;
     end else if (stall_n) begin

@@ -26,7 +26,10 @@ module IF_ID
   generate
     if (INST_DELAY_1TICK) begin : gen_delay_1tick
       always_ff @(posedge clk, posedge rst) begin
-        if (rst || flush || if_exception.raise) begin
+        if (rst) begin
+          if_id_inst.inst <= INST_NOP;
+        end else if (flush || if_exception.raise) begin
+          // ! 必须与上面的复位代码一致 !
           if_id_inst.inst <= INST_NOP;
         end else if (stall_n) begin
           if_id_inst.inst <= if_inst.inst;
