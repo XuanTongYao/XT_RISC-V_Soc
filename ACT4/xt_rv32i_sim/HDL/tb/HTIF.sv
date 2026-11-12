@@ -18,8 +18,8 @@ class HTIF #(
     `REQUIRED_PLUSARG("elf_name=%s", elf_name)
     $value$plusargs("max_cycles=%d", max_cycles);
     `REQUIRED_PLUSARG("tohost=%x", tohost_addr)
-    `REQUIRED_PLUSARG("sig_begin_canary=%x", begin_signature)
-    `REQUIRED_PLUSARG("sig_end_canary=%x", end_signature)
+    `REQUIRED_PLUSARG("begin_signature=%x", begin_signature)
+    `REQUIRED_PLUSARG("end_signature=%x", end_signature)
     `REQUIRED_PLUSARG("signature=%s", signature_file)
     `REQUIRED_PLUSARG("log=%s", log_file)
     check_halt = 0;
@@ -72,11 +72,13 @@ class HTIF #(
 
     $fdisplay(fd, "using %s for test-signature output.", signature_file);
     $fdisplay(fd, "");
-    $fdisplay(fd, "RVCP-SUMMARY: Test File \"%s.S\": SIGRUN", elf_name);
+    $fdisplay(fd, "RVCP-SUMMARY: TEST SIGRUN - Test File \"%s.S\"", elf_name);
+    $fdisplay(fd, "");
     $fdisplay(fd, "HTIF located at 0x%08x", tohost_addr);
     $fdisplay(fd, "begin_signature: 0x%08x", begin_signature);
     // 我也不知道为什么要-4，官方的签名文件就是这样的
-    $fdisplay(fd, "end_signature: 0x%08x", end_signature - 4);
+    // 这个 BUG 已经被官方修复 不再需要 end_signature-4
+    $fdisplay(fd, "end_signature: 0x%08x", end_signature);
     $fdisplay(fd, "Entry point: 0x%08x", ram_base_addr);
     $fdisplay(fd, result);
 
@@ -84,10 +86,9 @@ class HTIF #(
   endfunction
 
   function void save_signature(ref logic [3:0][7:0] ram[RAM_WORD_DEPTH]);
-    int unsigned start_addr = (begin_signature - ram_base_addr) >> 2;
-    int unsigned finish_addr = (end_signature - ram_base_addr) >> 2;
-    // 官方的签名文件不包含begin_signature，不知道为什么，之前riscof框架是包含的
-    $writememh(signature_file, ram, start_addr + 1, finish_addr - 1);
+    int unsigned start_addr = (begin_signature - ram_base_addr) >> 2;  // 包含
+    int unsigned finish_addr = (end_signature - ram_base_addr) >> 2;  // 不含
+    $writememh(signature_file, ram, start_addr, finish_addr - 1);
   endfunction
 
 

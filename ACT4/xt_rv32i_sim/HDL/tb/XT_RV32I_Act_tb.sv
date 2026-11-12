@@ -13,7 +13,7 @@ module XT_RV32I_Act_tb
     clk = 1;
     #1;
   end
-  // 复位与超时检测逻辑
+  // 复位
   initial begin
     rst = 1;
     #4;

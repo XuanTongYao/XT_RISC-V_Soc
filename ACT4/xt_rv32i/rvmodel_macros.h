@@ -1,16 +1,28 @@
-#ifndef _COMPLIANCE_MODEL_H
-#define _COMPLIANCE_MODEL_H
+#ifndef _RVMODEL_MACROS_H
+#define _RVMODEL_MACROS_H
 
 #define RVMODEL_DATA_SECTION \
         .pushsection .tohost,"aw",@progbits;                \
-        .align 8; .global tohost; tohost: .dword 0;         \
-        .align 8; .global fromhost; fromhost: .dword 0;     \
+        .balign 8; .global tohost; tohost: .dword 0;         \
+        .balign 8; .global fromhost; fromhost: .dword 0;     \
         .popsection;
+
+// #define STANDARD_SM_SUPPORTED
 
 ##### STARTUP #####
 
-# Perform boot operations.Can be empty.
-#define RVMODEL_BOOT
+# Perform boot operations. Can be empty or left undefined unless needed for
+# DUT-specific behavior such as turning on a memory controller or
+# initializing custom state.
+//#define RVMODEL_BOOT
+
+// Custom RVMODEL_BOOT_TO_MMODE overrides default RVTEST_BOOT_TO_MMODE
+// if defined.  For most DUTs, the default should work and this macro
+// should not be defined.  If the DUT has no standard M-mode CSRs, do not
+// define STANDARD_SM_SUPPORTED.  If a nonconforming
+// M-mode is implemented, define this macro to set up the necessary
+// state in a fashion similar to RVTEST_BOOT_TO_MMODE.
+//#define RVMODEL_BOOT_TO_MMODE
 
 ##### TERMINATION #####
 
@@ -39,7 +51,7 @@
 ##### IO #####
 
 # Example UART implementation.
-# Expects a PC16550 - compatible UART.
+# Expects a PC16550-compatible UART.
 # Change these addresses to match your memory map
 .EQU UART_BASE_ADDR, 0x10000000
 .EQU UART_THR, (UART_BASE_ADDR + 0)
@@ -48,23 +60,31 @@
 
 # Initialization steps needed prior to writing to the console
 # _R1, _R2, and _R3 can be used as temporary registers if needed.
-# Do not modify any other registers(or make sure to restore them).
-#define RVMODEL_IO_INIT(_R1, _R2, _R3) 
+# Do not modify any other registers (or make sure to restore them).
+# Can be empty or left undefined if no initialization is needed.
+// #define RVMODEL_IO_INIT(_R1, _R2, _R3) 
 
-# Prints a null - terminated string using a DUT specific mechanism.
+# Prints a null-terminated string using a DUT specific mechanism.
 # A pointer to the string is passed in _STR_PTR.
 # _R1, _R2, and _R3 can be used as temporary registers if needed.
-# Do not modify any other registers(or make sure to restore them).
+# Do not modify any other registers (or make sure to restore them).
 #define RVMODEL_IO_WRITE_STR(_R1, _R2, _R3, _STR_PTR) 
 
 ##### Access Fault #####
 
 #define RVMODEL_ACCESS_FAULT_ADDRESS 0x00000000
 
-##### Machine Timer #####
+##### Interrupt Latency #####
 
 #define RVMODEL_INTERRUPT_LATENCY 10
 
+##### Machine Timer #####
+
+// Wally's mtime advances one tick per core clock, and the code between arming
+// mtimecmp and reaching the lower privilege mode (three CLINT stores plus
+// T-SBI mode switch) can take well over 100 cycles on a pipelined core
+// with caches.  With a delay of 100 the timer interrupt fires while still in
+// M-mode with MIE=1, so the trap records MPP=M instead of MPP=U/S.
 #define RVMODEL_TIMER_INT_SOON_DELAY 100
 
 #define RVMODEL_MTIME_ADDRESS  0x0200BFF8  /* Address of mtime CSR */
@@ -74,36 +94,31 @@
 ##### Machine Interrupts #####
 
 #define CLINT_BASE_ADDRESS 0x02000000
-#define MSIP_ADDRESS (CLINT_BASE_ADDRESS + 0x0)
+#define RVMODEL_MSIP_ADDRESS (CLINT_BASE_ADDRESS + 0x0)
 
-#define RVMODEL_SET_MEXT_INT(_R1, _R2)
 
-#define RVMODEL_CLR_MEXT_INT(_R1, _R2)
+#define PLIC_BASE_ADDRESS    0x0c000000
+#define PLIC_ENABLE_ADDRESS  0x0c002000
+#define PLIC_THRESH_ADDRESS  0x0c200000
+#define PLIC_CLAIM_ADDRESS   0x0c200004
+#define PLIC_SENABLE_ADDRESS 0x0c002080   /* For S mode */
+#define PLIC_STHRESH_ADDRESS 0x0c201000
+#define PLIC_SCLAIM_ADDRESS  0x0c201004
 
-#define RVMODEL_SET_MSW_INT(_R1, _R2) \
-  li _R1, 1; \
-  li _R2, MSIP_ADDRESS; \
-  sw _R1, 0(_R2);
+#define NS16550_BASE_ADDRESS 0x10000000
+#define UART_INT_SRC         10
 
-#define RVMODEL_CLR_MSW_INT(_R1, _R2) \
-  li _R2, MSIP_ADDRESS; \
-  sw zero, 0(_R2);
+// #define RVMODEL_SET_MEXT_INT(_R1, _R2) 
+
+// #define RVMODEL_CLR_MEXT_INT(_R1, _R2) 
 
 ##### Supervisor Interrupts #####
 
-#define CVW_SSIP_ADDRESS (CLINT_BASE_ADDRESS + 0xC000)
+// #define RVMODEL_SET_SEXT_INT(_R1, _R2) 
 
-#define RVMODEL_SET_SEXT_INT(_R1, _R2)
+// #define RVMODEL_CLR_SEXT_INT(_R1, _R2) 
 
-#define RVMODEL_CLR_SEXT_INT(_R1, _R2)
+// RVMODEL_SET_SSW_INT / RVMODEL_CLR_SSW_INT are intentionally undefined: Wally has no
+// supervisor software interrupt controller, so the test environment raises and clears SSI through mip.SSIP.
 
-#define RVMODEL_SET_SSW_INT(_R1, _R2) \
-  li _R1, 1; \
-  li _R2, CVW_SSIP_ADDRESS; \
-  sw _R1, 0(_R2);
-
-#define RVMODEL_CLR_SSW_INT(_R1, _R2) \
-  li _R2, CVW_SSIP_ADDRESS; \
-  sw zero, 0(_R2);
-
-#endif // _COMPLIANCE_MODEL_H
+#endif // _RVMODEL_MACROS_H
