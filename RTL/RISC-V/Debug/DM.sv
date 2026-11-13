@@ -58,21 +58,25 @@ module DM
       };
 
   // cmderr在抽象命令结束后才改变
-  abstractcs_variable_t abstractcs;  // 只有busy和cmderr是可用的
+  // relaxedpriv 未实现，恒为0，不进入时序逻辑以免反馈MUX
+  logic abstract_busy;
+  cmderr_t abstract_cmderr;
+  localparam bit RELAXEDPRIV = 1'b0;
   command_t command;
   logic busy_err;
 
-  logic [2:0] cmd_pending;
+  logic cmd_ar_pending;
+  logic cmd_am_pending;
   wire command_access_register_t cmd_ar = command.control;
   assign access_register.aarsize = cmd_ar.aarsize;
-  assign access_register.transfer = cmd_ar.transfer && cmd_pending[0];
+  assign access_register.transfer = cmd_ar.transfer && cmd_ar_pending;
   assign access_register.write = cmd_ar.write;
   assign access_register.regno = cmd_ar.regno;
   assign access_register.wdata = data[0];
 
   wire command_access_memory_t cmd_am = command.control;
-  assign memory.read = !cmd_am.write && cmd_pending[2];
-  assign memory.write = cmd_am.write && cmd_pending[2];
+  assign memory.read = !cmd_am.write && cmd_am_pending;
+  assign memory.write = cmd_am.write && cmd_am_pending;
   assign memory.read_size = cmd_am.aamsize[1:0];
   assign memory.write_size = cmd_am.aamsize[1:0];
   assign memory.raddr = data[1];
@@ -99,7 +103,10 @@ module DM
           DM_DATA_BASE: dmi.rsp_data <= data[0];
           DM_DATA_BASE + 'd1: dmi.rsp_data <= data[1];
           DM_DMSTATUS: dmi.rsp_data <= PadDmstatus(dmstatus, 4'd3);
-          DM_ABSTRACTCS: dmi.rsp_data <= PadAbstractcs(abstractcs, 0, DATACOUNT);
+          DM_ABSTRACTCS:
+          dmi.rsp_data <= PadAbstractcs(
+              '{busy: abstract_busy, relaxedpriv: RELAXEDPRIV, cmderr: abstract_cmderr}, 0, DATACOUNT
+          );
           DM_COMMAND: dmi.rsp_data <= command;
           DM_SBCS: dmi.rsp_data <= UNSUPPORTED_SBCS;
           default: ;
@@ -123,11 +130,11 @@ module DM
     end
 
     //----------抽象命令----------//
-    if (cmd_pending[0] && access_register.completed) begin  // 等待完成
+    if (cmd_ar_pending && access_register.completed) begin  // 等待完成
       if (!access_register.failed) begin
         data[0] <= access_register.rdata;
       end
-    end else if (cmd_pending[2] && !memory_rsp.stall_req) begin
+    end else if (cmd_am_pending && !memory_rsp.stall_req) begin
       data[0] <= memory.rdata;
     end
   end
@@ -137,9 +144,11 @@ module DM
       dmi.req_ready        <= 0;
       dmi.rsp_op           <= 2'b11;
       dmcontrol            <= 0;
-      abstractcs           <= '{default: 0};
+      abstract_busy        <= 0;
+      abstract_cmderr      <= ERR_NONE;
       command              <= 0;
-      cmd_pending          <= 0;
+      cmd_ar_pending       <= 0;
+      cmd_am_pending       <= 0;
       busy_err             <= 0;
 
       dm_hart.ackhavereset <= 0;
@@ -159,16 +168,16 @@ module DM
         unique case (dmi.req_addr)
           DM_ABSTRACTCS: begin
             if (&req_abstractcs.cmderr) begin
-              abstractcs.cmderr <= ERR_NONE;
+              abstract_cmderr <= ERR_NONE;
             end
           end
           DM_COMMAND: begin
-            if (abstractcs.cmderr == ERR_NONE) begin
-              if (abstractcs.busy) begin
+            if (abstract_cmderr == ERR_NONE) begin
+              if (abstract_busy) begin
                 busy_err <= 1;
               end else begin
                 command <= dmi.req_data;
-                abstractcs.busy <= 1;
+                abstract_busy <= 1;
               end
             end
           end
@@ -180,7 +189,7 @@ module DM
       if (dmi_req && dmi.req_addr == DM_DMCONTROL && dmi.req_op == 2'b10) begin
         if (dmcontrol.dmactive) begin
           dmcontrol.ndmreset <= req_dmcontrol.ndmreset;
-          if (!abstractcs.busy) begin  // 不进行抽象命令才允许写入
+          if (!abstract_busy) begin  // 不进行抽象命令才允许写入
             dm_hart.haltreq <= req_dmcontrol.haltreq;
             if (req_dmcontrol.resumereq && !dm_hart.haltreq) begin
               // haltreq时忽略对此的写入
@@ -194,47 +203,47 @@ module DM
       end
 
       //----------抽象命令----------//
-      if (abstractcs.busy) begin
-        if (cmd_pending[0]) begin  // 等待完成
+      if (abstract_busy) begin
+        if (cmd_ar_pending) begin  // 等待完成
           if (access_register.completed) begin
             if (busy_err) begin
-              abstractcs.cmderr <= ERR_BUSY;
+              abstract_cmderr <= ERR_BUSY;
             end else if (access_register.failed) begin
-              abstractcs.cmderr <= access_register.error_state ? ERR_HALT_OR_RESUME : ERR_NOT_SUPPORTED;
+              abstract_cmderr <= access_register.error_state ? ERR_HALT_OR_RESUME : ERR_NOT_SUPPORTED;
             end
-            cmd_pending <= 0;
-            abstractcs.busy <= 0;
+            cmd_ar_pending <= 0;
+            abstract_busy  <= 0;
           end
-        end else if (cmd_pending[2]) begin
+        end else if (cmd_am_pending) begin
           if (!memory_rsp.stall_req) begin
             if (busy_err) begin
-              abstractcs.cmderr <= ERR_BUSY;
+              abstract_cmderr <= ERR_BUSY;
             end
-            cmd_pending <= 0;
-            abstractcs.busy <= 0;
+            cmd_am_pending <= 0;
+            abstract_busy  <= 0;
           end
         end else begin  // 启动命令
           unique case (command.cmdtype)
             ACCESS_REGISTER: begin
               if (cmd_ar.aarpostincrement || cmd_ar.postexec) begin
-                abstractcs.busy   <= 0;
-                abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+                abstract_busy   <= 0;
+                abstract_cmderr <= ERR_NOT_SUPPORTED;
               end else begin
-                cmd_pending <= 3'b001;
+                cmd_ar_pending <= 1;
               end
             end
-            // QUICK_ACCESS: cmd_pending <= 3'b010;
+            // 由于不采用程序缓冲区，在可预见的未来内都不会实现 QUICK_ACCESS
             ACCESS_MEMORY: begin
               if (cmd_am.aampostincrement) begin
-                abstractcs.busy   <= 0;
-                abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+                abstract_busy   <= 0;
+                abstract_cmderr <= ERR_NOT_SUPPORTED;
               end else begin
-                cmd_pending <= 3'b100;
+                cmd_am_pending <= 1;
               end
             end
             default: begin
-              abstractcs.busy   <= 0;
-              abstractcs.cmderr <= ERR_NOT_SUPPORTED;
+              abstract_busy   <= 0;
+              abstract_cmderr <= ERR_NOT_SUPPORTED;
             end
           endcase
         end
