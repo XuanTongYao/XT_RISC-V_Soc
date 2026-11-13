@@ -22,7 +22,7 @@ module RISC_V_Core
   import CoreConfig::*;
   import Exception_Pkg::*;
 #(
-    parameter core_cfg_t CFG,
+    parameter core_cfg_t CFG = CORE_DEFAULT_CFG,
     parameter bit INST_FETCH_REG = 0,  // 读取指令时是否已经经过寄存器
     parameter int STALL_REQ_COUNT = 1,  // 暂停请求的数量
     parameter bit [CFG.XLEN-1:0] PC_RESET = 0
@@ -60,7 +60,6 @@ module RISC_V_Core
   // 回归正常程序流的地址
   wire [CFG.PC_LEN-1:0] resume_addr;
   assign core_stall_n = stall_n;
-  assign core_inst_if.enable = stall_n;
 
   wire wfi;
 
@@ -72,7 +71,12 @@ module RISC_V_Core
   reg_r_if #(.DATA_LEN(XLEN)) debug_read_gpr ();
   reg_w_if #(.DATA_LEN(XLEN)) debug_write_gpr ();
   csr_rw_if #(.DATA_LEN(XLEN)) debug_rw_csr ();
-  DebugCtrl #(.CFG(CFG)) u_DebugCtrl (.*);
+  DebugCtrl #(
+      .CFG(CFG)
+  ) u_DebugCtrl (
+      .*,
+      .pc_aligned(pc[CFG.XLEN-1:CFG.PC_ZEROS])
+  );
 
 
   //----------寄存器----------//

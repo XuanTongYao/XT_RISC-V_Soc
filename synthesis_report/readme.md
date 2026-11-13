@@ -1,16 +1,16 @@
 # 参考综合报告
 
-以LCMXO2-4000HC-4MG132C器件作为参考，使用Lattice Diamond 3.13进行综合。包含各个模块的资源消耗情况，便于其他人对本项目进行FPGA资源评估。
+以LCMXO2-4000HC-4MG132C器件作为参考，使用Lattice Diamond 3.13(Synplify Pro U-2023.03L-SP1)进行综合。包含各个模块的资源消耗情况，便于其他人对本项目进行FPGA资源评估。
 
-[Synthesis Report(综合报告)](process/GitTest_impl1_synplify.html)
-[Mapping Report(映射报告)](process/GitTest_impl1_mrp.html)
-[Place and Route Report(布局&布线报告)](process/GitTest_impl1_par.html)
-[PAD](process/GitTest_impl1_pad.html)
+- [Synthesis Report(综合报告)](process/GitTest_impl1_synplify.html)
+- [Mapping Report(映射报告)](process/GitTest_impl1_mrp.html)
+- [Place and Route Report(布局&布线报告)](process/GitTest_impl1_par.html)
+- [PAD](process/GitTest_impl1_pad.html)
 
 时序分析报告
 
-[Map TRACE](analysis/GitTest_impl1_tw1.html)
-[Place & Route TRACE](analysis/GitTest_impl1_twr.html)
+- [Map TRACE](analysis/GitTest_impl1_tw1.html)
+- [Place & Route TRACE](analysis/GitTest_impl1_twr.html)
 
 层次结构资源消耗表[数据来源](hierarchy_resources.csv):
 

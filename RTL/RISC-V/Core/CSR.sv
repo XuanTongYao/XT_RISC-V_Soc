@@ -75,6 +75,7 @@ module CSR
   assign trap.mstatus = PadMstatus(mstatus);
   assign trap.mie = mie;
   assign trap.mip = mip;
+  assign trap.any_int_come = |(mie & mip);
   assign trap.mtvec = mtvec;
   assign trap.mepc = mepc;
 

@@ -143,7 +143,11 @@ module XT_Soc_Risc_V
   wire msoftware_int;
   wire mtimer_int;
   wire [30:0] custom_int_code;
-  int_source_if mint (.*);
+  int_source_if mint ();
+  assign mint.mextern_int = mextern_int;
+  assign mint.msoftware_int = msoftware_int;
+  assign mint.mtimer_int = mtimer_int;
+  assign mint.custom_int_code = custom_int_code;
   // 外部中断
   localparam int EXTERNAL_INT_COUNT = 13;
   wire [EXTERNAL_INT_COUNT-1:0] irq_source;

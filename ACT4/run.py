@@ -1,5 +1,10 @@
-import subprocess, os, yaml, re
+import os
+import re
+import subprocess
+import warnings
 from pathlib import Path
+
+import yaml
 
 # 使用`uv run --with pyyaml python run.py`来运行测试
 
@@ -9,7 +14,9 @@ TOP_TB = "XT_RV32I_Act_tb"
 MAX_CYCLES_FACTOR = 3
 RAM_WORD_DEPTH = 0x000F_0000
 
-OBJCOPY_EXE = Path("riscv64-unknown-elf-objcopy")
+# 必须在此填入 objcopy 的可执行文件路径
+OBJCOPY_EXE: Path | None = None
+# Path("riscv64-unknown-elf-objcopy")
 ENTRY = "rvtest_entry_point"
 
 # Required paths 必要路径
@@ -24,12 +31,18 @@ PIN_TO_FRONT = []
 
 
 def main():
+    global OBJCOPY_EXE
     WORKDIR = RISCV_ARCH_TEST / "work"
     CONFIG_FILES = DUT_CONFIG / "test_config.yaml"
     CONFIG = yaml.safe_load(CONFIG_FILES.read_bytes())
     CONFIG_NAME: str = CONFIG["name"]
     OBJDUMP_EXE = Path(CONFIG["objdump_exe"])
     ELFS_DIR = Path(WORKDIR, CONFIG_NAME, "elfs")
+
+    if OBJCOPY_EXE is None:
+        speculative_objcopy = CONFIG["objdump_exe"].replace("objdump", "objcopy")
+        OBJCOPY_EXE = Path(speculative_objcopy)
+        warnings.warn(f"未设置 `OBJCOPY_EXE` 将使用猜测值 `{speculative_objcopy}`")
 
     generate_ELFs(RISCV_ARCH_TEST, WORKDIR, CONFIG_FILES)
 
@@ -41,7 +54,7 @@ def main():
         )
     ENTRY_POINT = get_symbols(elf_file, [ENTRY], OBJDUMP_EXE).get(ENTRY)
     if ENTRY_POINT is None:
-        raise Exception(f"The symbol {ENTRY} was not found. 没有找到 {ENTRY} 符号")
+        raise RuntimeError(f"The symbol {ENTRY} was not found. 没有找到 {ENTRY} 符号")
 
     exe = build_verilator_simulation_exe(ENTRY_POINT)
     run_test(ENTRY_POINT, ELFS_DIR, OBJDUMP_EXE, exe, MAX_CYCLES_FACTOR)
@@ -101,8 +114,10 @@ def run_test(
 ):
     print("\n\033[1;33m|:------TESTING------:|\033[0m")
     # sig_begin_canary和sig_end_canary才是正确的，begin/end_signature貌似不符合签名
-    SYMBOL_NAMES = [".bss", "sig_begin_canary", "sig_end_canary", "tohost", "fromhost"]
-    RESULTS_DIR = elfs_dir.parent / "build"
+    # 官方已经修复了这个 Bug，begin/end_signature 现在是正确的
+    SYMBOL_NAMES = [".bss", "begin_signature", "end_signature", "tohost", "fromhost"]
+    # 最新的代码把原 build 目录征用了，需要用另一个文件夹存放仿真结果
+    RESULTS_DIR = elfs_dir.parent / "test_build"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     WAVES_DIR = Path("./waves")
     WAVES_DIR.mkdir(parents=True, exist_ok=True)
@@ -130,7 +145,7 @@ def run_test(
         cmd = [
             str(simulation_exe),
             f"+elf_name={stem}",
-            f"+max_cycles={(symbols[".bss"]-entry_point)*max_cycles_factor//4}",
+            f"+max_cycles={(symbols['.bss'] - entry_point) * max_cycles_factor // 4}",
             f"+firmware={hex.resolve()}",
             f"+wave={wave.resolve()}",
             f"+signature={signature.resolve()}",

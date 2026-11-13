@@ -33,7 +33,10 @@ module ExceptionCtrl
   // 在valid_int_req时已经通过冲刷流水线，防止在下一个指令执行前被异常打断
   logic ready_for_int;
   always_ff @(posedge clk, posedge rst) begin
-    if (rst || ready_for_int) begin
+    if (rst) begin
+      ready_for_int <= 0;
+    end else if (ready_for_int) begin
+      // ! 必须与上面的复位代码一致 !
       ready_for_int <= 0;
     end else if (stall_n) begin
       ready_for_int <= trap.valid_int_req;

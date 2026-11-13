@@ -107,7 +107,7 @@ module XT_HB #(
 
 
   // 片选生成
-  localparam int OFFSET_WIDTH = ADDR_WIDTH - ID_WIDTH;
+  localparam int OFFSET_WIDTH  = ADDR_WIDTH - ID_WIDTH;
   localparam int SEL_IDX_WIDTH = (DEVICE_COUNT == 1) ? 1 : $clog2(DEVICE_COUNT);
   logic [DEVICE_COUNT-1:0] sel[2];
   logic [SEL_IDX_WIDTH-1:0] sel_idx[2];
@@ -130,8 +130,8 @@ module XT_HB #(
 
   // 读写等待控制
   logic [DEVICE_COUNT-1:0] read_finish, write_finish;
-  assign read_finished  = hb_ren ? ((read_finish & slave_rsel) != 0) : 1;
-  assign write_finished = hb_wen ? ((write_finish & slave_wsel) != 0) : 1;
+  assign read_finished  = hb_ren ? (|(read_finish & slave_rsel)) : 1;
+  assign write_finished = hb_wen ? (|(write_finish & slave_wsel)) : 1;
 
 
   // IO设备总线复用器

@@ -31,8 +31,16 @@ module ID_EX
   end
 
   always_ff @(posedge clk, posedge rst) begin
-    // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
-    if (rst || flush || (id_exception.raise && stall_n)) begin
+    if (rst) begin
+      id_ex_out.load <= 0;
+      id_ex_out.store <= 0;
+      id_ex_inst.inst <= INST_NOP;
+      id_ex_out.reg_wen <= 0;
+      id_ex_out.csr_ren <= 0;
+      id_ex_out.csr_wen <= 0;
+    end else if (flush || (id_exception.raise && stall_n)) begin
+      // 如果在执行模块有WFI命令时，不能在有异常指令时冲刷流水线
+      // ! 必须与上面的复位代码一致 !
       id_ex_out.load <= 0;
       id_ex_out.store <= 0;
       id_ex_inst.inst <= INST_NOP;

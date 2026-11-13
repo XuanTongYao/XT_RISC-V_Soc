@@ -4,15 +4,18 @@ module InstructionFetch
   import CoreConfig::*;
 (
     input [31:0] pc,
+    input stall_n,
+
     // 与上层连线
     instruction_if.requestor core_inst_if,
     // 传递给IF_ID
-    instruction_if.to_next if_inst,
+    instruction_if.to_next   if_inst,
 
     // 异常处理
     exception_if.source if_exception
 );
 
+  assign core_inst_if.enable = stall_n;
   assign core_inst_if.addr = pc;
   assign if_inst.addr = pc;
   assign if_inst.inst = core_inst_if.inst;
