@@ -8,7 +8,7 @@ module DebugCtrl
     input clk,
     input rst,
     input stall_n,
-    input [31:0] pc,
+    input [CFG.PC_LEN-1:0] pc_aligned,
 
     // 连接到外部
     dm_hart_minimal_if.hart dm_hart,
@@ -89,7 +89,7 @@ module DebugCtrl
     end
   end
 
-  assign debug.new_dpc = (reset_halt || step_trap) ? pc[CFG.XLEN-1:CFG.PC_ZEROS] : resume_addr;
+  assign debug.new_dpc = (reset_halt || step_trap) ? pc_aligned : resume_addr;
   always_comb begin
     debug.new_cause = 'x;
     if (reset_halt) begin
