@@ -15,17 +15,23 @@ module RoundRobinArbiter #(
   logic [IDX_WIDTH-1:0] next_grant_index;
   always_comb begin
     int unsigned cur_idx;
+    int unsigned candidate;
+    bit found;
     cur_idx = 32'(grant_idx);
     next_grant_index = 0;
-    for (int unsigned step = 1, candidate = 0; step < REQ_COUNT + 1; ++step) begin
+    found = 1'b0;
+    for (int unsigned step = 1; !found && step < REQ_COUNT + 1; ++step) begin
       candidate = cur_idx + step;
       if (candidate >= REQ_COUNT) begin
         candidate -= REQ_COUNT;
       end
-
-      if (req[candidate]) begin
-        next_grant_index = candidate[IDX_WIDTH-1:0];
-        break;
+      // 综合器无法通过语句来假设下标的值范围，这样写是为了避免警告
+      for (int unsigned n = 0; n < REQ_COUNT; ++n) begin
+        if ((candidate == n) && req[n]) begin
+          next_grant_index = n[IDX_WIDTH-1:0];
+          found = 1'b1;
+          break;
+        end
       end
     end
   end
