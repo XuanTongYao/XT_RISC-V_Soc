@@ -12,7 +12,7 @@ module JtagDTM
     input tck,
     input tms,
     input tdi,
-    output logic tdo = 1'bz,
+    output logic tdo,
 
 
     input dm_clk,
@@ -148,18 +148,25 @@ module JtagDTM
   end
 
 
+  logic tdo_shift;
+  logic tdo_output_enable = 1'b0;
   always_ff @(negedge tck) begin
     unique case (tap_state)
       SHIFT_DR: begin
-        if (ir_update.idcode) tdo <= dr_idcode[0];
-        else if (ir_update.dtmcs) tdo <= dr_dtmcs[0];
-        else if (ir_update.dmi) tdo <= dr_dmi[0];
-        else tdo <= dr_bypass;
+        tdo_output_enable <= 1'b1;
+        if (ir_update.idcode) tdo_shift <= dr_idcode[0];
+        else if (ir_update.dtmcs) tdo_shift <= dr_dtmcs[0];
+        else if (ir_update.dmi) tdo_shift <= dr_dmi[0];
+        else tdo_shift <= dr_bypass;
       end
-      SHIFT_IR: tdo <= ir[0];
-      default:  tdo <= 1'bz;
+      SHIFT_IR: begin
+        tdo_output_enable <= 1'b1;
+        tdo_shift <= ir[0];
+      end
+      default: tdo_output_enable <= 1'b0;
     endcase
   end
+  assign tdo = tdo_output_enable ? tdo_shift : 1'bz;
 
 
   always_ff @(negedge tck) begin
