@@ -84,7 +84,7 @@ Verilator可以将RTL模型与HDL代码编译为一个C++类，并构建出一�
 
 首先，你需要根据实际情况修改[测试启动脚本](run.py)中riscv-arch-test仓库路径等信息和仿真参数。
 
-还要把参与测试的SystemVerilog代码(处理器内核)放入`./xt_rv32i_sim/HDL`对应的目录中，或者修改脚本中的`HDL`路径参数
+还要把参与测试的SystemVerilog代码(处理器内核)放入`./xt_rv32i_sim/HDL`对应的目录中，或者修改脚本中的`HDL`路径参数。所需的SystemVerilog代码请看[移植手册](../porting_guide.md)。
 
 然后执行以下命令来运行架构认证测试（假设你已经根据官方文档安装了Python/uv），这里因为脚本中使用了pyyaml库，所以需要用此命令启动。
 

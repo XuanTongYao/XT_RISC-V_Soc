@@ -12,6 +12,8 @@
 
 部分模块与IP核(PLL, EFB, RAM)依赖了**LCMXO2-4000HC-4MG132C**器件与其[核心板](https://www.latticesemi.com/zh-CN/Products/DevelopmentBoardsAndKits/STEPMXO2Dev.aspx)上的专有资源，但是处理器内核可以很方便移植到其他设备上。IP核仅包含`ipx`和`lpc`文件，请使用开发工具重新生成`verilog`文件。
 
+[RTL移植手册](porting_guide.md)
+
 ## 目录
 
 - [XT\_RISC-V 微控制器](#xt_risc-v-微控制器)
@@ -57,7 +59,7 @@
 #### 异常/中断控制器
 
 - 支持标准中断：定时器中断、软件中断、外部中断
-- 所有外部中断，由自定义的外部中断控制器进行重定向，完成中断向量跳转
+- 所有外部中断由自定义的外部中断控制器进行重定向，完成中断向量跳转
 - 不在硬件层面实现中断嵌套
 
 #### 调试模块
