@@ -330,6 +330,38 @@ impl embedded_io::WriteReady for Uart {
     }
 }
 
+impl embedded_hal_nb::serial::ErrorType for Uart {
+    type Error = !;
+}
+
+impl embedded_hal_nb::serial::Read for Uart {
+    fn read(&mut self) -> embedded_hal_nb::nb::Result<u8, Self::Error> {
+        if !self.status().rx_end() {
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
+        } else {
+            Ok(self.rx())
+        }
+    }
+}
+
+impl embedded_hal_nb::serial::Write for Uart {
+    fn write(&mut self, word: u8) -> embedded_hal_nb::nb::Result<(), Self::Error> {
+        if !self.status().tx_ready() {
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
+        } else {
+            Ok(self.tx(word))
+        }
+    }
+
+    fn flush(&mut self) -> embedded_hal_nb::nb::Result<(), Self::Error> {
+        if !self.status().tx_empty() {
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
+        } else {
+            Ok(())
+        }
+    }
+}
+
 pub struct Msip {
     inst: InstanceMsip,
 }
