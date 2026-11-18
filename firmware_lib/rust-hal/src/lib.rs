@@ -3,6 +3,7 @@
 #[macro_use]
 mod macros;
 
+pub mod gpio;
 pub mod hb32;
 pub mod lb;
 pub mod wisbone;
