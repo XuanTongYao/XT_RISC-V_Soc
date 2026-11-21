@@ -20,28 +20,28 @@ pub mod status {
 
     impl Status {
         bitfield_accessor!(
-            u8, bool, tx_ready, with_tx_ready, 0x01, 0
+            u8, bool, tx_ready, 0x01, 0
             /// 发送缓冲区未满
             ///
             /// Bits: `0`
         );
 
         bitfield_accessor!(
-            u8, bool, rx_end, with_rx_end, 0x02, 1
+            u8, bool, rx_end, 0x02, 1
             /// 接收缓冲区未空
             ///
             /// Bits: `1`
         );
 
         bitfield_accessor!(
-            u8, bool, tx_empty, with_tx_empty, 0x04, 2
+            u8, bool, tx_empty, 0x04, 2
             /// 发送缓冲区已空
             ///
             /// Bits: `2`
         );
 
         bitfield_accessor!(
-            u8, bool, rx_full, with_rx_full, 0x08, 3
+            u8, bool, rx_full, 0x08, 3
             /// 接收缓冲区已满
             ///
             /// Bits: `3`

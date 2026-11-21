@@ -88,8 +88,11 @@ pub mod control0 {
     }
 
     impl TimerClkSel {
+        /// 占用位掩码
         pub const MASK: u8 = 0x1;
+        /// 复位值
         pub const RESET: Self = Self::ClockTree;
+        /// 从原生类型构造
         pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::ClockTree,
@@ -111,8 +114,11 @@ pub mod control0 {
     }
 
     impl TimerDivider {
+        /// 占用位掩码
         pub const MASK: u8 = 0x7;
+        /// 复位值
         pub const RESET: Self = Self::DISABLED;
+        /// 从原生类型构造
         pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::DISABLED,
@@ -184,8 +190,11 @@ pub mod control1 {
     }
 
     impl TimerCounterMode {
+        /// 占用位掩码
         pub const MASK: u8 = 0x3;
+        /// 复位值
         pub const RESET: Self = Self::Watchdog;
+        /// 从原生类型构造
         pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::Watchdog,
@@ -216,8 +225,11 @@ pub mod control1 {
     }
 
     impl TimerOutputMode {
+        /// 占用位掩码
         pub const MASK: u8 = 0x3;
+        /// 复位值
         pub const RESET: Self = Self::StaticLow;
+        /// 从原生类型构造
         pub const fn from_bits(bits: u8) -> Self {
             match bits & Self::MASK {
                 0 => Self::StaticLow,

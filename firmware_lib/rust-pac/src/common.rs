@@ -18,6 +18,7 @@ pub mod register {
     /// Write-Only register
     ///
     /// `default sw = w;`
+    #[repr(transparent)]
     pub struct WO<T: Copy>(VolatileCell<T>);
     impl<T: Copy> WO<T> {
         /// Writes `value` into the register
@@ -30,6 +31,7 @@ pub mod register {
     /// Read-Write register
     ///
     /// `default sw = rw;`/`default sw = wr;`
+    #[repr(transparent)]
     pub struct RW<T: Copy>(VolatileCell<T>);
     impl<T: Copy> RW<T> {
         /// Reads the value of the register
