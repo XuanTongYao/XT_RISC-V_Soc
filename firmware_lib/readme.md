@@ -5,7 +5,6 @@
 - [HAL库](rust-hal)
 - CMSIS-Pack[闪存算法](flash-algorithm)(可以在probe-rs上正常使用)
 - [芯片/寄存器描述(SystemRDL格式)](chip_desc)
-- [C语言固件库**已停止维护**](c)
 
 PAC使用[xt_rdl2rust](https://codeberg.org/XuanTongYao/xt_rdl2rust)工具从寄存器描述文件自动生成
 

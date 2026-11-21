@@ -4,30 +4,30 @@ package CoreConfig;
   typedef struct packed {
     bit Z;  // 保留
     bit Y;  // 保留
-    bit X;  // 未实现
+    bit X;  // 存在非标准扩展
     bit W;  // 保留
-    bit V;  // 未实现
-    bit U;  // 未实现
+    bit V;  // 当前未实现 向量扩展
+    bit U;  // 当前未实现 U 模式
     bit T;  // 保留
-    bit S;  // 未实现
+    bit S;  // 当前未实现 S 模式
     bit R;  // 保留
-    bit Q;  // 未实现
-    bit P;  // 未实现
+    bit Q;  // 当前未实现 四精度浮点数扩展
+    bit P;  // 当前未实现 
     bit O;  // 保留
-    bit N;  // 未实现
-    bit M;  // 未实现
+    bit N;  // 当前未实现
+    bit M;  // 当前未实现 整数乘除法扩展
     bit L;  // 保留
     bit K;  // 保留
     bit J;  // 保留
-    bit I;  // 未实现
-    bit H;  // 未实现
+    bit I;  // RV32I/64I 基本指令集（与 E 互斥）
+    bit H;  // 当前未实现 Hypervisor 扩展
     bit G;  // 保留
-    bit F;  // 未实现
-    bit E;  // E嵌入式指令集
-    bit D;  // 未实现
-    bit C;  // 未实现
-    bit B;  // 未实现
-    bit A;  // 未实现
+    bit F;  // 当前未实现 单精度浮点数扩展
+    bit E;  // RV32E/64E 嵌入式指令集（与 I 互斥，请勿直接设置此值）
+    bit D;  // 当前未实现 双精度浮点数扩展
+    bit C;  // 当前未实现 压缩指令集扩展
+    bit B;  // 当前未实现 B 扩展
+    bit A;  // 当前未实现 原子指令扩展
   } extension_cfg_t;
 
   typedef struct packed {
@@ -57,6 +57,7 @@ package CoreConfig;
     extension_cfg_t EXTENSION = raw_cfg.EXTENSION;
     int XLEN = raw_cfg.XLEN;
     core_cfg_t cfg = '{MXL: XLEN32, default: 0};
+    EXTENSION.E = !EXTENSION.I;  // 标准中要求将其设为 I 标志的补码
     cfg.XLEN = XLEN;
     cfg.EXTENSION = EXTENSION;
     cfg.MXL = XLEN == 32 ? XLEN32 : XLEN64;
@@ -69,7 +70,7 @@ package CoreConfig;
   endfunction
 
   // 默认配置参数
-  localparam core_raw_cfg_t CORE_RAW_DEFAULT_CFG = '{EXTENSION: '{default: 0}, XLEN: 32};
+  localparam core_raw_cfg_t CORE_RAW_DEFAULT_CFG = '{EXTENSION: '{I: 1'b1, default: 1'b0}, XLEN: 32};
   localparam core_cfg_t CORE_DEFAULT_CFG = ComputeCoreCfg(CORE_RAW_DEFAULT_CFG);
 
 
