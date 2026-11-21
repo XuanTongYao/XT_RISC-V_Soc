@@ -11,9 +11,9 @@
 # x9/s1是一个保存数据
 # x10/a0是函数参数/返回值
 # x11/a1是函数参数/返回值
-# x12/a2始终是Flash缓冲区地址(直接把整个内存当缓冲区)
+# x12/a2始终是Flash缓冲区地址，把0x00到0x10(不含)当做缓冲区
 # x13 始终是 ram_mode 位状态
-# x14始终是MAX_COPY_PAGE，并在执行boot后变为零(当作计数值使用了)
+# x14始终是内存顶部的地址
 # x15始终是第二个返回地址，用于嵌套调用
 
 
@@ -26,10 +26,9 @@
 .equ WISHBONE_BASE, 12288
 .equ FLASH_BASE, WISHBONE_BASE+0x70
 .equ PAGE_BYTES, 16
+.equ FLASH_PAGES, 767
 
-.equ STACK_SIZE, 512
-.equ SSTACK, 4096+4096
-.equ MAX_COPY_PAGE, (SSTACK - STACK_SIZE)>>4
+.equ RAM_LENGTH, 8192
 
 
 # "🔓:0x56"
@@ -69,6 +68,7 @@
     addi x5, x5, -1;\
     bnez x5, 1b;
 
+# 使用时需要避免1标签冲突
 #define CORE_FREQ_MHZ   12
 #define DELAY(cycle) \
     SET_COUNT(1+((cycle)/4)) \
@@ -83,7 +83,7 @@ main:
     csrw mtvec, x0
     lla x3, FLASH_BASE
     lla x4, HB32_BASE
-    li x14, MAX_COPY_PAGE
+    li x14, RAM_LENGTH
 reset_flash:
     li x7, 0x40
     WRITE_FLASH_CON(x7)
@@ -103,8 +103,7 @@ boot:
 2:  li a0, 0x010010CA   # 发送0xCA 10 00 01
     li a1, 0x80         # 读
     jal cmd_operands_4_frame
-    addi x14, x14, -1
-    bnez x14, 2b
+    bltu a2, x14, 2b
 check_inst:
     bnez x13, boot_ram_mode
     lw x7, 0(x0)
@@ -120,7 +119,6 @@ error:
 # 确认的立即数都换成0x55 还能减少两条指令
 
 # s0保存了要下载的页面长度
-# s1保存了要下载的字节数
 # 无限循环，要重新启动请使用复位
 download:
     SET_STR_ARGS(CMD)
@@ -139,8 +137,8 @@ download:
     jal uart_rx_block
     or s0, s0, a0
     beqz s0, 3b
-    bgtu s0, x14, 3b
-    slli s1, s0, 4      # 乘以16得到字节数
+    li x6, FLASH_PAGES
+    bgtu s0, x6, 3b
 # 确认
 3:
     SET_STR_ARGS(START_DOWNLOAD)
@@ -153,15 +151,17 @@ erase_ufm:
     jal no_data_frame
     DELAY(14401532)     # 必须等至少1000ms，这里等了约1200ms，频率变化需要修改此处
 from_uart_download:
-# 先从uart接收数据到缓冲区
-    li a2, 0            # 缓冲区地址
-1:  jal uart_rx_block
+    jal reset_ufm_addr
+# 数据超出了RAM的大小，需要接收一页就立刻写入
+    li s1, PAGE_BYTES
+3:  li a2, 0            # 重置缓冲区地址
+2:  jal uart_rx_block
     sb a0, 0(a2)
     addi a2, a2, 1
-    bltu a2, s1, 1b     # 地址小于下载字节数说明还没接收完
-# 再写入到Flash
-    jal reset_ufm_addr
-3:  li a0, 0x010000C9   # 发送0xC9 00 00 01
+    bltu a2, s1, 2b     # 地址小于页字节数说明还没接收完一页
+# 写入到Flash
+    li a2, 0            # 重置缓冲区地址
+    li a0, 0x010000C9   # 发送0xC9 00 00 01
     li a1, 0x02         # 写
     jal cmd_operands_4_frame # 写入flash
     DELAY_US(200)          # 至少等200us

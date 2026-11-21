@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use panic_halt as _;
 use riscv_macros::entry;
 use semihosting::println;
 use semihosting::sys::arm_compat::sys_write0;

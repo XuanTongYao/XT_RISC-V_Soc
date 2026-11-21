@@ -149,35 +149,35 @@ pub mod status {
 
     impl Status {
         bitfield_accessor!(
-            u8, bool, mdf, with_mdf, 0x01, 0
+            u8, bool, mdf, 0x01, 0
             /// Mode fault
             ///
             /// Bits: `0`
         );
 
         bitfield_accessor!(
-            u8, bool, roe, with_roe, 0x02, 1
+            u8, bool, roe, 0x02, 1
             /// Receive overflow
             ///
             /// Bits: `1`
         );
 
         bitfield_accessor!(
-            u8, bool, rrdy, with_rrdy, 0x08, 3
+            u8, bool, rrdy, 0x08, 3
             /// Receive ready
             ///
             /// Bits: `3`
         );
 
         bitfield_accessor!(
-            u8, bool, trdy, with_trdy, 0x10, 4
+            u8, bool, trdy, 0x10, 4
             /// Transmit ready
             ///
             /// Bits: `4`
         );
 
         bitfield_accessor!(
-            u8, bool, tip, with_tip, 0x80, 7
+            u8, bool, tip, 0x80, 7
             /// Transfer in progress
             ///
             /// Bits: `7`

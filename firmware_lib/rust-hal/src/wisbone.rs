@@ -53,7 +53,7 @@ pub struct I2c<MS> {
 }
 
 impl<MS> I2c<MS> {
-    crate::prop_value!(
+    prop_value!(
         /// # Warning
         /// 设置会使I2C复位
         control,
@@ -62,17 +62,17 @@ impl<MS> I2c<MS> {
         get,
         set
     );
-    crate::prop_value!(status, status, I2cStatus, get);
-    crate::prop_value!(general_call_data, general_call_data, u8, get);
-    crate::prop_value!(int_status, int_status, I2cInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, I2cInterrupt, get, set, modify);
+    prop_value!(status, status, I2cStatus, get);
+    prop_value!(general_call_data, general_call_data, u8, get);
+    prop_value!(int_status, int_status, I2cInterrupt, get, set);
+    prop_value!(int_en, int_en, I2cInterrupt, get, set, modify);
 
     #[inline]
     pub fn reset(&mut self) {
         let control = self.control();
         self.set_control(control.with_i2cen(false));
         // NOTE 原始C代码出于未知原因在这里延迟了50us，如果出现问题请加回来
-        self.set_control(control.with_i2cen(true));
+        self.set_control(control);
     }
 
     pub fn prescale(&self) -> u16 {
@@ -88,6 +88,10 @@ impl<MS> I2c<MS> {
     fn rx(&mut self) -> u8 {
         self.inst.regs().rx_data.read()
     }
+}
+
+pub struct I2cBuildError {
+    pub inst: InstanceI2c,
 }
 
 impl I2c<Slave> {
@@ -108,15 +112,12 @@ impl I2c<Slave> {
 }
 
 impl I2c<Master> {
-    pub fn init(inst: InstanceI2c, prescale: NonZeroU16) -> Result<Self, InvalidParameters> {
-        let mut i2c = Self {
-            inst,
-            write_delay_cycles: 0,
-            read_delay_cycles: 0,
-            _marker: PhantomData,
-        };
-        i2c.set_control(I2cControl::new());
-        i2c.set_prescale(prescale).and(Ok(i2c))
+    pub fn init(inst: InstanceI2c, prescale: NonZeroU16) -> Result<Self, I2cBuildError> {
+        let div = prescale.get();
+        if div >= 1024 {
+            return Err(I2cBuildError { inst: inst });
+        }
+        return Ok(unsafe { Self::init_unchecked(inst, div) });
     }
     pub unsafe fn init_unchecked(inst: InstanceI2c, prescale: u16) -> Self {
         let mut i2c = Self {
@@ -181,8 +182,12 @@ impl I2c<Master> {
         self.tx(addr | 0x01); // 最低位为1表示读操作
         self.inst.regs().command.write(0x94.into());
         while !self.status().srw() {}
-        self.inst.regs().command.write(0x24.into());
-        self.status().rarc()
+        rv_core::delay(self.write_delay_cycles as u32); // 等(0,6)个I2C时钟周期，接收到ACK状态
+        let ack_bit = self.status().rarc();
+        if !ack_bit {
+            self.inst.regs().command.write(0x24.into());
+        }
+        ack_bit
     }
 
     /// 必须处于**读取模式**中才能调用此函数
@@ -244,7 +249,7 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
         let mut last_op = OpType::Null;
 
         // 等待空闲
-        self.set_control(I2cControl::new().with_i2cen(true));
+        self.set_control(self.control().with_i2cen(true));
         while self.status().busy() {}
 
         let mut op_iter = operations.iter_mut().peekable();
@@ -306,9 +311,9 @@ impl embedded_hal::i2c::I2c for I2c<Master> {
         }
         if err.is_err() {
             self.inst.regs().command.write(0x44.into());
-            while self.status().busy() {}
         }
-        self.set_control(I2cControl::new().with_i2cen(false));
+        while self.status().busy() {}
+        self.set_control(self.control().with_i2cen(false));
         err
     }
 }
@@ -328,31 +333,15 @@ pub struct Spi<MS> {
 
 pub use embedded_hal::spi::Mode as SpiMode;
 impl<MS> Spi<MS> {
-    crate::prop_value!(
-        /// # Warning
-        /// 写入会使SPI复位
-        control0,
-        control0,
-        SpiControl0,
-        get,
-        set
-    );
-    crate::prop_value!(control1, control1, SpiControl1, get);
-    crate::prop_value!(control2, control2, SpiControl2, get);
+    prop_value!(control0, control0, SpiControl0, get);
+    prop_value!(control1, control1, SpiControl1, get);
+    prop_value!(control2, control2, SpiControl2, get);
 
-    crate::prop_value!(
-        /// # Warning
-        /// 写入会使SPI复位
-        cs,
-        cs,
-        u8,
-        get,
-        set
-    );
+    prop_value!(cs, cs, u8, get);
 
-    crate::prop_value!(status, status, SpiStatus, get);
-    crate::prop_value!(int_status, int_status, SpiInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, SpiInterrupt, get, set, modify);
+    prop_value!(status, status, SpiStatus, get);
+    prop_value!(int_status, int_status, SpiInterrupt, get, set);
+    prop_value!(int_en, int_en, SpiInterrupt, get, set, modify);
 
     /// 获取预分频`div`，实际频率为`WISHBONE/(div+1)`
     pub fn prescale(&self) -> u8 {
@@ -368,7 +357,15 @@ impl<MS> Spi<MS> {
             return Err(InvalidParameters);
         }
         self.inst.regs().clock_prescale.write(div);
+        self.in_progress = false;
         Ok(())
+    }
+
+    /// # Warning
+    /// 写入会使SPI复位
+    pub fn set_control0(&mut self, value: SpiControl0) {
+        self.inst.regs().control0.write(value);
+        self.in_progress = false;
     }
 
     /// # Warning
@@ -379,6 +376,14 @@ impl<MS> Spi<MS> {
                 .with_cpha(mode.phase == Phase::CaptureOnSecondTransition)
                 .with_lsbf(lsb_first)
         });
+        self.in_progress = false;
+    }
+
+    /// # Warning
+    /// 写入会使SPI复位
+    pub fn set_cs(&mut self, value: u8) {
+        self.inst.regs().cs.write(value);
+        self.in_progress = false;
     }
 
     #[inline]
@@ -646,8 +651,8 @@ impl Timer {
         Self { inst }
     }
 
-    crate::prop_value!(control0, control0, TimerControl0, get, set, modify);
-    crate::prop_value!(control2, control2, TimerControl2, get, set);
+    prop_value!(control0, control0, TimerControl0, get, set, modify);
+    prop_value!(control2, control2, TimerControl2, get, set);
 
     pub fn set_mode(&mut self, mode: TimerMode) {
         use TimerCounterMode::*;
@@ -668,9 +673,31 @@ impl Timer {
             .control1
             .modify(|con| con.with_tcm(counter).with_ocm(output));
     }
-    crate::getset_field!(enable_overflow_flag, control1, sovfen, bool);
-    crate::getset_field!(top_autoload, control1, tsel, bool);
-    crate::getset_field!(enable_input_capture, control1, icen, bool);
+
+    pub fn mode(&self) -> Option<TimerMode> {
+        use TimerCounterMode::*;
+        use TimerMode::*;
+        use TimerOutputMode::*;
+
+        let control1 = self.inst.regs().control1.read();
+        let output = control1.ocm();
+        let counter = control1.tcm();
+        let mode = match (output, counter) {
+            (TimerOutputMode::StaticLow, counter) => TimerMode::StaticLow(counter),
+            (ToggleOnTop, Watchdog) => ToggleOnTopWatchDog,
+            (ToggleOnTop, ClearTimerOnTop) => ToggleOnTopClearTimerOnTop,
+            (SetClear, FastPWM) => SetClearFastPWM,
+            (ClearSet, FastPWM) => ClearSetFastPWM,
+            (SetClear, PhaseAndFrequencyCorrectPWM) => SetClearPhaseAndFrequencyCorrectPWM,
+            (ClearSet, PhaseAndFrequencyCorrectPWM) => ClearSetPhaseAndFrequencyCorrectPWM,
+            _ => return None,
+        };
+        Some(mode)
+    }
+
+    getset_field!(enable_overflow_flag, control1, sovfen, bool);
+    getset_field!(top_autoload_sel, control1, tsel, bool);
+    getset_field!(enable_input_capture, control1, icen, bool);
 
     #[inline]
     pub fn set_top(&mut self, value: u16) {
@@ -688,26 +715,44 @@ impl Timer {
     get_u16_from_2_u8!(compare, [compareh, comparel]);
     get_u16_from_2_u8!(capture, [captureh, capturel]);
 
-    crate::prop_value!(status, status, TimerStatus, get);
-    crate::prop_value!(int_status, int_status, TimerInterrupt, get, set);
-    crate::prop_value!(int_en, int_en, TimerInterrupt, get, set, modify);
+    prop_value!(status, status, TimerStatus, get);
+    prop_value!(int_status, int_status, TimerInterrupt, get, set);
+    prop_value!(int_en, int_en, TimerInterrupt, get, set, modify);
+}
+
+#[derive(Debug)]
+pub struct TimerModeError(embedded_hal::pwm::ErrorKind);
+
+impl embedded_hal::pwm::Error for TimerModeError {
+    fn kind(&self) -> embedded_hal::pwm::ErrorKind {
+        self.0
+    }
 }
 
 impl embedded_hal::pwm::ErrorType for Timer {
-    type Error = !;
+    type Error = TimerModeError;
 }
 
 impl embedded_hal::pwm::SetDutyCycle for Timer {
     fn max_duty_cycle(&self) -> u16 {
-        return u16::MAX;
+        if self.top_autoload_sel() {
+            self.top()
+        } else {
+            u16::MAX
+        }
     }
 
     fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
-        self.set_top_autoload(false);
-        self.set_mode(TimerMode::ClearSetFastPWM);
-        self.set_control0(TimerControl0::new().with_prescale(TimerDivider::Div1));
-        self.set_compare(duty);
-        Ok(())
+        use TimerMode::*;
+        use embedded_hal::pwm::ErrorKind::*;
+
+        let mode = self.mode();
+        if let None | Some(ToggleOnTopClearTimerOnTop | ToggleOnTopWatchDog | StaticLow(_)) = mode {
+            Err(TimerModeError(Other))
+        } else {
+            self.set_compare(duty);
+            Ok(())
+        }
     }
 }
 
@@ -877,10 +922,10 @@ impl Flash {
     /// 启用UFM透明传输
     /// # Warning
     /// 启用透明传输会暂时禁用以下功能
-    /// 1. 电源控制
-    /// 2. 全局置位/复位
-    /// 3. 用户SPI接口
-    /// 4. 用户主I2C接口
+    /// - 电源控制
+    /// - 全局置位/复位
+    /// - 用户SPI接口
+    /// - 用户主I2C接口
     pub fn enable_transparent_ufm(&mut self) {
         self.command(|fl| flash_write!(fl, Self::ISC_ENABLE_X, 0x08, 0, 0));
         rv_core::delay_us(8); // 至少等5us，保险一点等8us
@@ -933,7 +978,7 @@ impl Flash {
             for _ in 0..Self::PAGE_BYTES {
                 unsafe {
                     ptr.write_volatile(fl.inst.regs().read_data.read());
-                    ptr = ptr.add(1);
+                    ptr = ptr.wrapping_add(1);
                 }
             }
         });
@@ -947,7 +992,7 @@ impl Flash {
             for _ in 0..Self::PAGE_BYTES {
                 unsafe {
                     fl.inst.regs().write_data.write(ptr.read_volatile());
-                    ptr = ptr.add(1);
+                    ptr = ptr.wrapping_add(1);
                 }
             }
         });
@@ -966,5 +1011,5 @@ impl EfbIntSource {
         Self { inst }
     }
 
-    crate::prop_value!(source, source, EfbIntFlags, get);
+    prop_value!(source, source, EfbIntFlags, get);
 }

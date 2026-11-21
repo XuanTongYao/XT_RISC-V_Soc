@@ -5,13 +5,15 @@
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering::Relaxed;
 
+use panic_halt as _;
 use riscv::interrupt::Interrupt::*;
 use riscv_macros::entry;
-use xt_riscv_mcu::{ExternalInterrupt, enable_global_interrupt, set_interrupt};
+use xt_riscv_mcu::{enable_global_interrupt, set_interrupt};
 use xt_rv32i_hal::hb32::{EintController, Mtime, Uart};
 use xt_rv32i_hal::lb::{Led, Ledsd};
+use xt_rv32i_hal::pac::Interrupt as PacInterrupt;
+use xt_rv32i_hal::pac::get_top;
 use xt_rv32i_hal::{PacPeripherals, take_pac};
-use xt_rv32i_pac::get_top;
 
 static MTIMER_IRQ_FLAG: AtomicBool = AtomicBool::new(false);
 
@@ -30,7 +32,7 @@ fn main() -> ! {
     let mut eint = EintController::new(eint);
     let mut mtime = Mtime::new(mtime);
     unsafe {
-        eint.set_enable(ExternalInterrupt::Uart.into_mask().into());
+        eint.set_enable((1 << (PacInterrupt::UartRx as u32 - 16)).into());
         set_interrupt::<{ (1 << MachineExternal as usize) | (1 << MachineTimer as usize) }>();
         mtime.update_mtimecmp_forward(Mtime::sec_ticks(1));
         enable_global_interrupt();
@@ -53,7 +55,7 @@ fn main() -> ! {
 }
 
 #[unsafe(no_mangle)]
-extern "riscv-interrupt-m" fn UART_RX_IRQ_Handler() {
+extern "riscv-interrupt-m" fn UartRx_IRQ_Handler() {
     unsafe {
         let mut ledsd = Ledsd::new(get_top().ledsd());
         let mut uart = Uart::new(get_top().uart());

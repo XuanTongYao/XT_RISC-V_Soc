@@ -17,27 +17,27 @@ pub mod source {
 
     impl Source {
         bitfield_accessor!(
-            u8, bool, i2c1, with_i2c1, 0x01, 0
+            u8, bool, i2c1, 0x01, 0
             /// Bits: `0`
         );
 
         bitfield_accessor!(
-            u8, bool, i2c2, with_i2c2, 0x02, 1
+            u8, bool, i2c2, 0x02, 1
             /// Bits: `1`
         );
 
         bitfield_accessor!(
-            u8, bool, spi, with_spi, 0x04, 2
+            u8, bool, spi, 0x04, 2
             /// Bits: `2`
         );
 
         bitfield_accessor!(
-            u8, bool, tc, with_tc, 0x08, 3
+            u8, bool, tc, 0x08, 3
             /// Bits: `3`
         );
 
         bitfield_accessor!(
-            u8, bool, ufmcfg, with_ufmcfg, 0x10, 4
+            u8, bool, ufmcfg, 0x10, 4
             /// Bits: `4`
         );
     }

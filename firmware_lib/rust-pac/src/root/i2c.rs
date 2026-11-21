@@ -135,35 +135,35 @@ pub mod status {
 
     impl Status {
         bitfield_accessor!(
-            u8, bool, hgc, with_hgc, 0x01, 0
+            u8, bool, hgc, 0x01, 0
             /// 收到通用广播
             ///
             /// Bits: `0`
         );
 
         bitfield_accessor!(
-            u8, bool, troe, with_troe, 0x02, 1
+            u8, bool, troe, 0x02, 1
             /// 发送/接收溢出或在主机模式收到NACK
             ///
             /// Bits: `1`
         );
 
         bitfield_accessor!(
-            u8, bool, trrdy, with_trrdy, 0x04, 2
+            u8, bool, trrdy, 0x04, 2
             /// 发送/接收就绪
             ///
             /// Bits: `2`
         );
 
         bitfield_accessor!(
-            u8, bool, arbl, with_arbl, 0x08, 3
+            u8, bool, arbl, 0x08, 3
             /// 仲裁丢失
             ///
             /// Bits: `3`
         );
 
         bitfield_accessor!(
-            u8, bool, srw, with_srw, 0x10, 4
+            u8, bool, srw, 0x10, 4
             /// - 1: 主机接收，从机发送
             /// - 0: 从机接收，主机发送
             ///
@@ -171,7 +171,7 @@ pub mod status {
         );
 
         bitfield_accessor!(
-            u8, bool, rarc, with_rarc, 0x20, 5
+            u8, bool, rarc, 0x20, 5
             /// 收到的 ACK 位.
             ///
             /// - `true`: NACK
@@ -181,14 +181,14 @@ pub mod status {
         );
 
         bitfield_accessor!(
-            u8, bool, busy, with_busy, 0x40, 6
+            u8, bool, busy, 0x40, 6
             /// 总线忙
             ///
             /// Bits: `6`
         );
 
         bitfield_accessor!(
-            u8, bool, tip, with_tip, 0x80, 7
+            u8, bool, tip, 0x80, 7
             /// 传输进行中
             ///
             /// Bits: `7`

@@ -2,7 +2,7 @@ use crate::common::register::*;
 
 #[repr(C)]
 pub struct Flash {
-    /// Flash control. Reset writes RSTE=1 (0x40). Command frame asserts WBCE then deasserts it.
+    /// Flash 控制
     pub control: RW<control::Control>,
     pub write_data: WO<u8>,
     pub status: RO<status::Status>,
@@ -28,14 +28,14 @@ pub mod control {
     impl Control {
         bitfield_accessor!(
             u8, bool, rste, with_rste, 0x40, 6
-            /// Reset enable
+            /// 复位连接，复位输入输出 FIFO 的相关逻辑。此位是电平敏感的。
             ///
             /// Bits: `6`
         );
 
         bitfield_accessor!(
             u8, bool, wbce, with_wbce, 0x80, 7
-            /// WISHBONE command enable
+            /// 开启 WISHBONE 总线到 Flash 逻辑的连接。每次执行命令前都必须设置此位，命令结束后必须清空此位。
             ///
             /// Bits: `7`
         );
@@ -51,50 +51,50 @@ pub mod status {
 
     impl Status {
         bitfield_accessor!(
-            u8, bool, i2cact, with_i2cact, 0x01, 0
-            /// I2C激活
+            u8, bool, i2cact, 0x01, 0
+            /// `wbce`启用时，主 I2C 接口与 Flash 逻辑主动通信。 I2C 拥有更高的优先级，将抢占任何现有的 WISHBONE 事务。
             ///
             /// Bits: `0`
         );
 
         bitfield_accessor!(
-            u8, bool, sspiact, with_sspiact, 0x02, 1
-            /// SPI激活
+            u8, bool, sspiact, 0x02, 1
+            /// `wbce`启用时， SPI 接口与 Flash 逻辑主动通信。 SPI 拥有最高的优先级，将抢占任何现有的 WISHBONE/I2C 事务。
             ///
             /// Bits: `1`
         );
 
         bitfield_accessor!(
-            u8, bool, rxff, with_rxff, 0x04, 2
+            u8, bool, rxff, 0x04, 2
             /// 接收FIFO已满
             ///
             /// Bits: `2`
         );
 
         bitfield_accessor!(
-            u8, bool, rxfe, with_rxfe, 0x08, 3
+            u8, bool, rxfe, 0x08, 3
             /// 接收FIFO已空
             ///
             /// Bits: `3`
         );
 
         bitfield_accessor!(
-            u8, bool, txff, with_txff, 0x10, 4
+            u8, bool, txff, 0x10, 4
             /// 发送FIFO已满
             ///
             /// Bits: `4`
         );
 
         bitfield_accessor!(
-            u8, bool, txfe, with_txfe, 0x20, 5
+            u8, bool, txfe, 0x20, 5
             /// 发送FIFO已空
             ///
             /// Bits: `5`
         );
 
         bitfield_accessor!(
-            u8, bool, wbcact, with_wbcact, 0x80, 7
-            /// WB总线到配置(FPGA配置)接口激活(慎用)
+            u8, bool, wbcact, 0x80, 7
+            /// WISHBONE 总线到 Flash 逻辑的接口已激活
             ///
             /// Bits: `7`
         );
@@ -111,14 +111,14 @@ pub mod flash_interrupt {
     impl FlashInterrupt {
         bitfield_accessor!(
             u8, bool, i2cact, with_i2cact, 0x01, 0
-            /// I2C激活
+            /// 指示`status`寄存器的`i2cact`被设置
             ///
             /// Bits: `0`
         );
 
         bitfield_accessor!(
             u8, bool, sspiact, with_sspiact, 0x02, 1
-            /// SPI激活
+            /// 指示`status`寄存器的`sspiact`被设置
             ///
             /// Bits: `1`
         );

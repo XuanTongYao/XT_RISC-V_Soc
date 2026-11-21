@@ -1,14 +1,12 @@
 //! 高速32bit对齐总线
 
+use crate::pac::Interrupt;
 use crate::pac::bootstrap::InstanceBootstrap;
 use crate::pac::eint_controller::{self, InstanceEintController};
 use crate::pac::gpio::InstanceGpio;
 use crate::pac::msip::{self, InstanceMsip};
 use crate::pac::mtime::InstanceMtime;
 use crate::pac::uart::{self, InstanceUart};
-use xt_riscv_mcu::rv_core;
-
-// TODO riscv-rust 0.16.2更新之后加入临界区
 
 pub struct Bootstrap {
     inst: InstanceBootstrap,
@@ -22,7 +20,7 @@ impl Bootstrap {
         Self { inst }
     }
 
-    crate::prop_value!(
+    prop_value!(
         /// # Note
         /// 写入无效地址会导致preload寄存器硬件失效
         preload_str_addr,
@@ -100,23 +98,22 @@ pub struct EintController {
     inst: InstanceEintController,
 }
 
-use rv_core::ExternalInterrupt;
 impl EintController {
     pub fn new(inst: InstanceEintController) -> Self {
         Self { inst }
     }
 
-    crate::prop_value!(unsafe enable, enable, EintFlags, set, modify);
-    crate::prop_value!(enable, enable, EintFlags, get);
-    crate::prop_value!(pending, pending, EintFlags, get);
+    prop_value!(unsafe enable, enable, EintFlags, set, modify);
+    prop_value!(enable, enable, EintFlags, get);
+    prop_value!(pending, pending, EintFlags, get);
 
     #[inline(always)]
-    pub unsafe fn enable_interrupt(&mut self, int: ExternalInterrupt) {
-        unsafe { self.enable_interrupt_mask(int.into_mask()) }
+    pub unsafe fn enable_interrupt(&mut self, int: Interrupt) {
+        unsafe { self.enable_interrupt_mask(1 << (int as u32 - 16)) }
     }
     #[inline(always)]
-    pub fn disable_interrupt(&mut self, int: ExternalInterrupt) {
-        self.disable_interrupt_mask(int.into_mask())
+    pub fn disable_interrupt(&mut self, int: Interrupt) {
+        self.disable_interrupt_mask(1 << (int as u32 - 16))
     }
 
     #[inline(always)]
@@ -166,6 +163,7 @@ impl Mtime {
 
 #[cfg(target_arch = "riscv32")]
 impl Mtime {
+    #[inline]
     pub fn mtime(&self) -> u64 {
         loop {
             let high = self.inst.regs().mtimeh.read();
@@ -177,6 +175,7 @@ impl Mtime {
     }
     /// # Safety
     /// 设置mtime不当，可能会立即引发定时器中断
+    #[inline]
     pub unsafe fn set_mtime(&mut self, value: u64) {
         let high = (value >> 32) as u32;
         let low = value as u32;
@@ -186,6 +185,7 @@ impl Mtime {
         self.inst.regs().mtimeh.write(high);
     }
 
+    #[inline]
     pub fn mtimecmp(&self) -> u64 {
         let high = self.inst.regs().mtimecmph.read();
         let low = self.inst.regs().mtimecmpl.read();
@@ -193,6 +193,7 @@ impl Mtime {
     }
     /// # Safety
     /// 设置mtimecmp不当，可能会立即引发定时器中断
+    #[inline]
     pub unsafe fn set_mtimecmp(&mut self, value: u64) {
         let high = (value >> 32) as u32;
         let low = value as u32;
@@ -204,8 +205,8 @@ impl Mtime {
 
 #[cfg(target_arch = "riscv64")]
 impl Mtime {
-    crate::prop_value!(mtime, mtime, u64, get, set);
-    crate::prop_value!(mtimecmp, mtimecmp, u64, get, set);
+    prop_value!(mtime, mtime, u64, get, set);
+    prop_value!(mtimecmp, mtimecmp, u64, get, set);
 }
 
 use uart::status::Status as UartStatus;
@@ -220,7 +221,7 @@ impl Uart {
         Self { inst }
     }
 
-    crate::prop_value!(status, status, UartStatus, get);
+    prop_value!(status, status, UartStatus, get);
 
     /// 丢弃接收FIFO中的数据
     pub fn discard_rx_fifo(&mut self) {
@@ -327,6 +328,38 @@ impl embedded_io::WriteReady for Uart {
     }
 }
 
+impl embedded_hal_nb::serial::ErrorType for Uart {
+    type Error = !;
+}
+
+impl embedded_hal_nb::serial::Read for Uart {
+    fn read(&mut self) -> embedded_hal_nb::nb::Result<u8, Self::Error> {
+        if !self.status().rx_end() {
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
+        } else {
+            Ok(self.rx())
+        }
+    }
+}
+
+impl embedded_hal_nb::serial::Write for Uart {
+    fn write(&mut self, word: u8) -> embedded_hal_nb::nb::Result<(), Self::Error> {
+        if !self.status().tx_ready() {
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
+        } else {
+            Ok(self.tx(word))
+        }
+    }
+
+    fn flush(&mut self) -> embedded_hal_nb::nb::Result<(), Self::Error> {
+        if !self.status().tx_empty() {
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
+        } else {
+            Ok(())
+        }
+    }
+}
+
 pub struct Msip {
     inst: InstanceMsip,
 }
@@ -360,45 +393,171 @@ pub struct Gpio {
 }
 
 impl Gpio {
+    /// 有效GPIO数量
+    pub const VALID_COUNT: u32 = 30;
+    const AF_BITS_MASK: u32 = 0b11;
+
     pub fn new(inst: InstanceGpio) -> Self {
         Self { inst }
     }
 
-    /// 有效GPIO数量
-    pub const VALID_COUNT: u32 = 28;
+    pub fn reset(&mut self) {
+        self.set_af_enable(0);
+        self.set_direction(0);
+        self.set_data(0);
+    }
 
-    crate::prop_value!(direction, direction, u32, get, set, modify);
-    crate::prop_value!(data, data, u32, get, set, modify);
-    crate::prop_value!(af_enable, af_enable, u32, get, set, modify);
+    prop_value!(direction, direction, u32, get, set, modify);
+    prop_value!(data, data, u32, get, set, modify);
+    prop_value!(af_enable, af_enable, u32, get, set, modify);
+    prop_value!(afl, afl, u32, get, set, modify);
+    prop_value!(afh, afh, u32, get, set, modify);
 
-    pub fn set_af(&mut self, gpio: u32, af: u32) {
-        if gpio >= Self::VALID_COUNT {
-            return;
-        }
+    #[inline]
+    pub const fn af_bit_offset(id: u32) -> u32 {
+        // & 0xF 取模16，因为就是16个为一组的
+        // 占用2bit需要乘2，也就是左移一位
+        (id & 0xF) << 1
+    }
 
-        if gpio >= 16 {
-            let offset = (gpio - 16) << 1;
-            self.inst
-                .regs()
-                .afh
-                .modify(|reg| reg & !(0b11 << offset) | ((af & 0b11) << offset));
+    #[inline]
+    pub const fn af_mask(id: u32, af: u32) -> u32 {
+        (af & Self::AF_BITS_MASK) << Self::af_bit_offset(id)
+    }
+
+    #[inline]
+    pub const fn af_clear_mask(id: u32) -> u32 {
+        !((Self::AF_BITS_MASK) << Self::af_bit_offset(id))
+    }
+
+    #[inline]
+    const fn expanded_af_mask(af: u32) -> u32 {
+        let mut af = af & Self::AF_BITS_MASK;
+        af |= af << 2;
+        af |= af << 4;
+        af |= af << 8;
+        af |= af << 16;
+
+        af
+    }
+
+    pub fn set_af(&mut self, id: u32, af: u32) {
+        let af_mask = Self::af_mask(id, af);
+        let af_clear_mask = Self::af_clear_mask(id);
+
+        if id >= 16 {
+            self.modify_afh(|reg| (reg & af_clear_mask) | af_mask);
         } else {
-            let offset = (gpio) << 1;
-            self.inst
-                .regs()
-                .afl
-                .modify(|reg| reg & !(0b11 << offset) | ((af & 0b11) << offset));
+            self.modify_afl(|reg| (reg & af_clear_mask) | af_mask);
         };
     }
 
     #[inline(always)]
-    pub fn af(&mut self, gpio: u32) -> u32 {
-        if gpio as u32 >= 16 {
-            let offset = (gpio - 16) << 1;
-            (self.inst.regs().afh.read() >> offset) & 0b11
+    pub fn af(&mut self, id: u32) -> u32 {
+        let offset = Self::af_bit_offset(id);
+        if id >= 16 {
+            (self.afh() >> offset) & Self::AF_BITS_MASK
         } else {
-            let offset = gpio << 1;
-            (self.inst.regs().afl.read() >> offset) & 0b11
+            (self.afl() >> offset) & Self::AF_BITS_MASK
         }
+    }
+}
+
+pub use crate::gpio::{
+    Af0, Af1, Af2, Af3, DisableAf, Input, Output, Pin, PinId, into_alt_funct_in_batches,
+    into_direction_in_batches, into_dyn_pin_in_batches, set_pin_state_in_batches,
+};
+use crate::gpio::{CtrlGetter, CtrlGetterGuard, DynAltFunction, DynDirection, IoController};
+use embedded_hal::digital::PinState;
+
+pub struct GpioGetter();
+impl CtrlGetter for GpioGetter {
+    fn ctrl(_: CtrlGetterGuard) -> impl IoController {
+        Gpio::new(unsafe { crate::pac::get_top().gpio() })
+    }
+}
+
+// 我们只有一组GPIO端口共30个引脚
+crate::gpio::pins!(
+    Gpio, GpioGetter, Input, DisableAf, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+);
+
+/// [很神奇完成位复制的方法](https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN)
+const fn interleave_expand_bits(a: u16) -> u32 {
+    let mut a = a as u32;
+    a = (a | (a << 8)) & 0x00FF00FF;
+    a = (a | (a << 4)) & 0x0F0F0F0F;
+    a = (a | (a << 2)) & 0x33333333;
+    a = (a | (a << 1)) & 0x55555555;
+
+    a | (a << 1)
+}
+
+impl IoController for Gpio {
+    #[inline]
+    fn set_direction(&mut self, mask: u32, direction: DynDirection) {
+        if direction == DynDirection::Output {
+            self.modify_direction(|reg| reg | mask);
+        } else {
+            self.modify_direction(|reg| reg & !mask);
+        };
+    }
+
+    fn set_alt_function(&mut self, mask: u32, alt_func: DynAltFunction) {
+        if mask == 0 {
+            return;
+        }
+        if alt_func == DynAltFunction::DisableAf {
+            self.modify_af_enable(|reg| reg & !mask);
+        } else {
+            let af_bits = Self::expanded_af_mask(alt_func as u32);
+
+            let half_mask = mask as u16;
+            if half_mask != 0 {
+                let low_mask = interleave_expand_bits(half_mask);
+                self.modify_afl(|reg| (reg & !low_mask) | (af_bits & low_mask));
+            }
+
+            let half_mask = (mask >> 16) as u16;
+            if half_mask != 0 {
+                let high_mask = interleave_expand_bits(half_mask);
+                self.modify_afh(|reg| (reg & !high_mask) | (af_bits & high_mask));
+            }
+
+            self.modify_af_enable(|reg| reg | mask);
+        }
+    }
+
+    #[inline]
+    fn set_state(&mut self, mask: u32, state: PinState) {
+        if state == PinState::High {
+            self.modify_data(|reg| reg | mask);
+        } else {
+            self.modify_data(|reg| reg & !mask);
+        };
+    }
+
+    #[inline]
+    fn get_all_state(&self) -> u32 {
+        self.data()
+    }
+
+    #[inline]
+    fn set_id_alt_function<T: PinId>(&mut self, id: T, alt_func: DynAltFunction) {
+        if alt_func == DynAltFunction::DisableAf {
+            self.modify_af_enable(|reg| reg & !id.mask());
+        } else {
+            self.set_af(id.id() as u32, alt_func as u32);
+            self.modify_af_enable(|reg| reg | id.mask());
+        }
+    }
+}
+
+impl GpioPins {
+    pub fn init(inst: InstanceGpio) -> Self {
+        let mut gpio = Gpio::new(inst);
+        gpio.reset();
+        Self::new()
     }
 }
