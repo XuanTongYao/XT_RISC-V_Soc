@@ -3,7 +3,7 @@ package SocConfig;
   import AfGpio_Pkg::*;
 
   //----------内核配置----------//
-  localparam core_raw_cfg_t CORE_RAW_CFG = '{EXTENSION: '{E: 0, default: 0}, XLEN: 32};
+  localparam core_raw_cfg_t CORE_RAW_CFG = '{EXTENSION: '{I: 1'b1, default: 1'b0}, XLEN: 32};
   localparam core_cfg_t CORE_CFG = ComputeCoreCfg(CORE_RAW_CFG);
 
 
