@@ -46,7 +46,7 @@ impl RegisterBlock<XtRv32i> {
     pub const unsafe fn msoftwareint(&self) -> RegisterBlock<Msip> {
         unsafe { RegisterBlock::<Msip>::from_ptr(self.as_ptr().wrapping_byte_add(0x2080)) }
     }
-    /// GPIO。 只有0-27共28个GPIO，超出的部分会被硬件自动忽略。
+    /// GPIO。 只有0-29共30个GPIO，超出的部分会被硬件自动忽略。
     #[inline(always)]
     pub const unsafe fn gpio(&self) -> RegisterBlock<Gpio> {
         unsafe { RegisterBlock::<Gpio>::from_ptr(self.as_ptr().wrapping_byte_add(0x20A0)) }
@@ -71,7 +71,16 @@ impl RegisterBlock<XtRv32i> {
     pub const unsafe fn timer(&self) -> RegisterBlock<Timer> {
         unsafe { RegisterBlock::<Timer>::from_ptr(self.as_ptr().wrapping_byte_add(0x305E)) }
     }
-    /// WISHBONE UFM / configuration flash interface. TOTAL_PAGE=767, PAGE_BYTES=16, PAGE_MASK=0x3FFF. Transparent UFM access temporarily disables power control, global set/reset, user SPI and user primary I2C.
+    /// WISHBONE 总线到 UFM(用户闪存)/Configuration(FPGA配置) 的接口。
+    ///
+    /// UFM 共有767页，每页16字节。总计98,176bits
+    ///
+    /// # Warning
+    /// 操作 UFM/Configuration 时，会暂时禁用以下功能：
+    /// - 电源控制
+    /// - 全局置位/复位
+    /// - 用户SPI接口
+    /// - 用户主I2C接口
     #[inline(always)]
     pub const unsafe fn flash(&self) -> RegisterBlock<Flash> {
         unsafe { RegisterBlock::<Flash>::from_ptr(self.as_ptr().wrapping_byte_add(0x3070)) }
@@ -109,7 +118,7 @@ pub struct SubInstancesXtRv32i {
     pub uart: RegisterBlock<Uart>,
     /// RISC-V M模式软件中断寄存器
     pub msoftwareint: RegisterBlock<Msip>,
-    /// GPIO。 只有0-27共28个GPIO，超出的部分会被硬件自动忽略。
+    /// GPIO。 只有0-29共30个GPIO，超出的部分会被硬件自动忽略。
     pub gpio: RegisterBlock<Gpio>,
     /// WISHBONE 主 I2C (I2C1).
     pub i2c1: RegisterBlock<I2c>,
@@ -119,7 +128,16 @@ pub struct SubInstancesXtRv32i {
     pub spi: RegisterBlock<Spi>,
     /// WISHBONE 16位定时器/计数器.
     pub timer: RegisterBlock<Timer>,
-    /// WISHBONE UFM / configuration flash interface. TOTAL_PAGE=767, PAGE_BYTES=16, PAGE_MASK=0x3FFF. Transparent UFM access temporarily disables power control, global set/reset, user SPI and user primary I2C.
+    /// WISHBONE 总线到 UFM(用户闪存)/Configuration(FPGA配置) 的接口。
+    ///
+    /// UFM 共有767页，每页16字节。总计98,176bits
+    ///
+    /// # Warning
+    /// 操作 UFM/Configuration 时，会暂时禁用以下功能：
+    /// - 电源控制
+    /// - 全局置位/复位
+    /// - 用户SPI接口
+    /// - 用户主I2C接口
     pub flash: RegisterBlock<Flash>,
     /// 指示 EFB 中断来源于什么
     pub efbintsource: RegisterBlock<EfbIntSource>,

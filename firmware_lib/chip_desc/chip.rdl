@@ -157,12 +157,16 @@ addrmap Msip {
 };
 
 addrmap Gpio {
-    desc = "GPIO。 只有0-27共28个GPIO，超出的部分会被硬件自动忽略。";
+    desc = "GPIO。 只有0-29共30个GPIO，超出的部分会被硬件自动忽略。";
     default sw = rw;
     default hw = r;
     // addressBlock size = 0x20
     reg {
-        desc = "GPIO 方向。 1 = 输出，0 = 输入";
+        desc = "
+        GPIO 方向。 
+        - `1`: 输出
+        - `0`: 输入
+        ";
         field {} DIR[31:0];
     } direction @ 0x0;
 
@@ -182,8 +186,8 @@ addrmap Gpio {
     } afl @ 0xC;
 
     reg {
-        desc = "GPIO 16-27 的复用选择，每个引脚2 bits";
-        field {} AF1627[31:0];
+        desc = "GPIO 16-29 的复用选择，每个引脚2 bits";
+        field {} AF1629[31:0];
     } afh @ 0x10;
 };
 
@@ -654,18 +658,29 @@ addrmap Timer {
 };
 
 addrmap Flash {
-    desc = "WISHBONE UFM / configuration flash interface. TOTAL_PAGE=767, PAGE_BYTES=16, PAGE_MASK=0x3FFF. Transparent UFM access temporarily disables power control, global set/reset, user SPI and user primary I2C.";
+    desc = "
+    WISHBONE 总线到 UFM(用户闪存)/Configuration(FPGA配置) 的接口。
+
+    UFM 共有767页，每页16字节。总计98,176bits
+
+    # Warning
+    操作 UFM/Configuration 时，会暂时禁用以下功能：
+    - 电源控制
+    - 全局置位/复位
+    - 用户SPI接口
+    - 用户主I2C接口
+    ";
     default sw = rw;
     default hw = r;
     default regwidth = 8;
     // addressBlock size = 0x6
     reg {
-        desc = "Flash control. Reset writes RSTE=1 (0x40). Command frame asserts WBCE then deasserts it.";
+        desc = "Flash 控制";
         field {
-            desc = "Reset enable";
+            desc = "复位连接，复位输入输出 FIFO 的相关逻辑。此位是电平敏感的。";
         } RSTE[6:6];
         field {
-            desc = "WISHBONE command enable";
+            desc = "开启 WISHBONE 总线到 Flash 逻辑的连接。每次执行命令前都必须设置此位，命令结束后必须清空此位。";
         } WBCE[7:7];
     } control @ 0x0;
 
@@ -679,10 +694,10 @@ addrmap Flash {
         default sw = r;
         default hw = w;
         field {
-            desc = "I2C激活";
+            desc = "`wbce`启用时，主 I2C 接口与 Flash 逻辑主动通信。 I2C 拥有更高的优先级，将抢占任何现有的 WISHBONE 事务。";
         } I2CACT[0:0];
         field {
-            desc = "SPI激活";
+            desc = "`wbce`启用时， SPI 接口与 Flash 逻辑主动通信。 SPI 拥有最高的优先级，将抢占任何现有的 WISHBONE/I2C 事务。";
         } SSPIACT[1:1];
         field {
             desc = "接收FIFO已满";
@@ -697,7 +712,7 @@ addrmap Flash {
             desc = "发送FIFO已空";
         } TXFE[5:5];
         field {
-            desc = "WB总线到配置(FPGA配置)接口激活(慎用)";
+            desc = "WISHBONE 总线到 Flash 逻辑的接口已激活";
         } WBCACT[7:7];
     } status @ 0x2;
 
@@ -711,10 +726,10 @@ addrmap Flash {
         default hw = STATUS ? rw : r;
         default woclr = STATUS;
         field {
-            desc = "I2C激活";
+            desc = "指示`status`寄存器的`i2cact`被设置";
         } I2CACT[0:0];
         field {
-            desc = "SPI激活";
+            desc = "指示`status`寄存器的`sspiact`被设置";
         } SSPIACT[1:1];
         field {
             desc = "接收FIFO已满";

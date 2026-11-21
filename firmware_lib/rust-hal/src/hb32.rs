@@ -8,8 +8,6 @@ use crate::pac::msip::{self, InstanceMsip};
 use crate::pac::mtime::InstanceMtime;
 use crate::pac::uart::{self, InstanceUart};
 
-// TODO riscv-rust 0.16.2更新之后加入临界区
-
 pub struct Bootstrap {
     inst: InstanceBootstrap,
 }

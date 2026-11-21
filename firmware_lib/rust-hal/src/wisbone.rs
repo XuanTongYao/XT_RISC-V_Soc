@@ -922,10 +922,10 @@ impl Flash {
     /// 启用UFM透明传输
     /// # Warning
     /// 启用透明传输会暂时禁用以下功能
-    /// 1. 电源控制
-    /// 2. 全局置位/复位
-    /// 3. 用户SPI接口
-    /// 4. 用户主I2C接口
+    /// - 电源控制
+    /// - 全局置位/复位
+    /// - 用户SPI接口
+    /// - 用户主I2C接口
     pub fn enable_transparent_ufm(&mut self) {
         self.command(|fl| flash_write!(fl, Self::ISC_ENABLE_X, 0x08, 0, 0));
         rv_core::delay_us(8); // 至少等5us，保险一点等8us
